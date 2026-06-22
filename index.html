@@ -579,7 +579,7 @@
     #sl-root .doc-prog-lbl{display:block!important;font-size:11px!important;font-weight:600!important;color:#888!important;margin-bottom:6px!important;}
     #sl-root .doc-prog-bar{display:block!important;width:100%!important;height:8px!important;background:#eee!important;border-radius:10px!important;overflow:hidden!important;}
     #sl-root .doc-prog-fill{display:block!important;height:8px!important;background:var(--grad2)!important;border-radius:10px!important;transition:width .4s ease!important;width:0%!important;}
-    #sl-root .sticky-sim{display:none!important;position:fixed!important;bottom:20px!important;right:24px!important;background:linear-gradient(135deg,#13A3AC,#3CAE68)!important;border-radius:50px!important;padding:10px 22px!important;box-shadow:0 6px 24px rgba(19,163,172,.42)!important;z-index:9999!important;font-size:0!important;}
+    #sl-root .sticky-sim{display:none!important;position:sticky!important;bottom:16px!important;float:right!important;background:linear-gradient(135deg,#13A3AC,#3CAE68)!important;border-radius:50px!important;padding:10px 22px!important;box-shadow:0 6px 24px rgba(19,163,172,.42)!important;z-index:9999!important;font-size:0!important;margin-right:0!important;margin-bottom:16px!important;clear:both!important;}
     #sl-root .sticky-sim.on{display:block!important;}
     #sl-root .sticky-sim-lbl{display:inline-block!important;vertical-align:middle!important;font-size:11px!important;font-weight:600!important;color:rgba(255,255,255,.8)!important;margin-right:8px!important;}
     #sl-root .sticky-sim-val{display:inline-block!important;vertical-align:middle!important;font-size:18px!important;font-weight:800!important;color:#fff!important;}
@@ -974,7 +974,6 @@
 
       </div>
 
-      <div class="sticky-sim" id="sticky-sim"><span class="sticky-sim-lbl">Mensualité est.</span><span class="sticky-sim-val" id="sticky-sim-val">—</span></div>
       <div class="modal-overlay" id="modal-confirm-overlay"><div class="modal-box"><span class="modal-ico">&#128203;</span><span class="modal-tit">Confirmer la création</span><span class="modal-sub">Vérifiez avant de soumettre.</span><div class="modal-recap" id="modal-recap-content"></div><div class="modal-btns"><button class="modal-cancel" onclick="closeConfirm()">← Modifier</button><button class="modal-confirm" onclick="doSubmit()">✓ Confirmer</button></div></div></div>
     </div>
   </div>
