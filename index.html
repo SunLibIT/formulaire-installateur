@@ -1394,7 +1394,9 @@ setClient('part');
 
 // Resize dynamique iframe → Softr
 function sendHeight(){
-  window.parent.postMessage({iframeHeight:document.body.scrollHeight},'*');
+  var el=document.getElementById('sl-root');
+  var h=el?el.getBoundingClientRect().height:document.body.scrollHeight;
+  window.parent.postMessage({iframeHeight:Math.ceil(h)+32},'*');
 }
 var _origShowScreen=showScreen;
 showScreen=function(sc,pos){_origShowScreen(sc,pos);setTimeout(sendHeight,350);};
