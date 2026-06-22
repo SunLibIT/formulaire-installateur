@@ -1394,13 +1394,26 @@ setClient('part');
 
 // Resize dynamique iframe → Softr
 function sendHeight(){
-  var el=document.getElementById('sl-root');
-  var h=el?el.getBoundingClientRect().height:document.body.scrollHeight;
-  window.parent.postMessage({iframeHeight:Math.ceil(h)+32},'*');
+  var h=Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.offsetHeight
+  );
+  window.parent.postMessage({iframeHeight:h},'*');
 }
 var _origShowScreen=showScreen;
-showScreen=function(sc,pos){_origShowScreen(sc,pos);setTimeout(sendHeight,350);};
+showScreen=function(sc,pos){
+  _origShowScreen(sc,pos);
+  setTimeout(sendHeight,100);
+  setTimeout(sendHeight,600);
+  setTimeout(sendHeight,1500);
+};
 window.addEventListener('resize',sendHeight);
+// Observer les changements de taille du DOM (carte Maps async)
+if(window.ResizeObserver){
+  new ResizeObserver(function(){sendHeight();}).observe(document.body);
+}
 sendHeight();
 })();
   </script>
