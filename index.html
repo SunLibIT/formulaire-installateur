@@ -998,6 +998,7 @@ function showScreen(sc, pos){
   if(sc===3&&ct==='pro') renderCollabs();
   if(sc===6) buildRecap();
   window.scrollTo({top:0,behavior:'smooth'});
+  window.parent.postMessage({scrollToIframe:true},'*');
 }
 
 window.goNext=function(){
