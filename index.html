@@ -1391,6 +1391,15 @@ window.slSubmit=function(){
 
 aC=1;abos=[{id:1,civ:'',nom:'',prenom:'',email:'',tel:''}];
 setClient('part');
+
+// Resize dynamique iframe → Softr
+function sendHeight(){
+  window.parent.postMessage({iframeHeight:document.body.scrollHeight},'*');
+}
+var _origShowScreen=showScreen;
+showScreen=function(sc,pos){_origShowScreen(sc,pos);setTimeout(sendHeight,350);};
+window.addEventListener('resize',sendHeight);
+sendHeight();
 })();
   </script>
 </body>
