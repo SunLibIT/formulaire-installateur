@@ -615,7 +615,6 @@
         <div class="stepper" id="stepper"></div>
         <div class="slbls" id="slbls"></div>
       </div>
-      <div class="sticky-sim" id="sticky-sim" style="display:none;"><span class="sticky-sim-lbl">Mensualité est.</span><span class="sticky-sim-val" id="sticky-sim-val">—</span></div>
       <div class="body">
 
         <!-- SC1 : ACCUEIL -->
@@ -1310,14 +1309,11 @@ window.updateSim=function(){
 };
 
 function updateSticky(){
-  var ss=document.getElementById('sticky-sim'),sv=document.getElementById('sticky-sim-val');
-  if(!ss||!sv)return;
   if(simResult){
     var isPro=(ct==='pro');var mShow=isPro?simResult.mHT:simResult.mTTC;var lbl=isPro?'HT':'TTC';
-    sv.textContent=eu(mShow)+' '+lbl+'/mois';
-    ss.style.display='block';
+    window.parent.postMessage({stickyAmount:eu(mShow)+' '+lbl+'/mois'},'*');
   }else{
-    ss.style.display='none';
+    window.parent.postMessage({stickyAmount:'hide'},'*');
   }
 }
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
