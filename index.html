@@ -579,7 +579,7 @@
     #sl-root .doc-prog-lbl{display:block!important;font-size:11px!important;font-weight:600!important;color:#888!important;margin-bottom:6px!important;}
     #sl-root .doc-prog-bar{display:block!important;width:100%!important;height:8px!important;background:#eee!important;border-radius:10px!important;overflow:hidden!important;}
     #sl-root .doc-prog-fill{display:block!important;height:8px!important;background:var(--grad2)!important;border-radius:10px!important;transition:width .4s ease!important;width:0%!important;}
-    #sl-root .sticky-sim{display:none!important;position:sticky!important;bottom:16px!important;float:right!important;background:linear-gradient(135deg,#13A3AC,#3CAE68)!important;border-radius:50px!important;padding:10px 22px!important;box-shadow:0 6px 24px rgba(19,163,172,.42)!important;z-index:9999!important;font-size:0!important;margin-right:0!important;margin-bottom:16px!important;clear:both!important;}
+    #sl-root .sticky-sim{display:none!important;position:sticky!important;top:0!important;z-index:100!important;width:780px!important;background:linear-gradient(135deg,#13A3AC,#3CAE68)!important;padding:10px 32px!important;font-size:0!important;box-shadow:0 4px 16px rgba(19,163,172,.3)!important;text-align:right!important;}
     #sl-root .sticky-sim.on{display:block!important;}
     #sl-root .sticky-sim-lbl{display:inline-block!important;vertical-align:middle!important;font-size:11px!important;font-weight:600!important;color:rgba(255,255,255,.8)!important;margin-right:8px!important;}
     #sl-root .sticky-sim-val{display:inline-block!important;vertical-align:middle!important;font-size:18px!important;font-weight:800!important;color:#fff!important;}
@@ -615,6 +615,7 @@
         <div class="stepper" id="stepper"></div>
         <div class="slbls" id="slbls"></div>
       </div>
+      <div class="sticky-sim" id="sticky-sim" style="display:none;"><span class="sticky-sim-lbl">Mensualité est.</span><span class="sticky-sim-val" id="sticky-sim-val">—</span></div>
       <div class="body">
 
         <!-- SC1 : ACCUEIL -->
@@ -966,7 +967,6 @@
           </div>
           <div class="sec" style="margin-top:20px;"><span class="sec-icon">✅</span><span class="sec-txt">Récapitulatif</span></div>
           <div id="sl-recap"></div>
-          <div class="sticky-sim" id="sticky-sim"><span class="sticky-sim-lbl">Mensualité est.</span><span class="sticky-sim-val" id="sticky-sim-val">—</span></div>
           <div class="nav">
             <button class="btn-back" onclick="goPrev()">← Retour</button>
             <button class="btn-next g" onclick="slSubmit()">✓ Créer le dossier</button>
@@ -1315,9 +1315,9 @@ function updateSticky(){
   if(simResult){
     var isPro=(ct==='pro');var mShow=isPro?simResult.mHT:simResult.mTTC;var lbl=isPro?'HT':'TTC';
     sv.textContent=eu(mShow)+' '+lbl+'/mois';
-    ss.style.setProperty('display','block','important');
+    ss.style.display='block';
   }else{
-    ss.style.setProperty('display','none','important');
+    ss.style.display='none';
   }
 }
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
