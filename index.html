@@ -1172,7 +1172,7 @@ function fillFromAPI(r){
   var cp=sg.code_postal||'',ville=sg.libelle_commune||'';
   if(adr&&cp)adr=adr.replace(cp,'').replace(ville,'').replace(/\s+/g,' ').trim();
   setV('sl-siege-addr',adr);setV('sl-siege-cp',cp);setV('sl-siege-ville',ville);
-  if(ville){setV('sl-pro-rcs',(r.siren||'')+' RCS '+ville);setV('sl-pro-lieu','Greffe de '+ville);}
+  if(ville){setV('sl-pro-rcs',r.siren||'');setV('sl-pro-lieu','Greffe de '+ville);}
   var dirs=r.dirigeants||[],dir=null;
   dirs.forEach(function(d){var p=d.prenoms||d.prenom||'';if(!dir&&p&&d.nom)dir=d;});
   if(!dir&&dirs.length)dir=dirs[0];
@@ -1198,7 +1198,7 @@ window.lookupPropSiren=function(){
         var cp=sg.code_postal||'',ville=sg.libelle_commune||'';
         if(adr&&cp)adr=adr.replace(cp,'').replace(ville,'').replace(/\s+/g,' ').trim();
         setV('prop-addr',(adr+' '+cp+' '+ville).trim());
-        if(ville){setV('prop-rcs',(r.siren||'')+' RCS '+ville);setV('prop-lieu','Greffe de '+ville);}
+        if(ville){setV('prop-rcs',r.siren||'');setV('prop-lieu','Greffe de '+ville);}
         var dirs=r.dirigeants||[],dir=null;
         dirs.forEach(function(d){if(!dir&&(d.prenoms||d.prenom)&&d.nom)dir=d;});
         if(!dir&&dirs.length)dir=dirs[0];
