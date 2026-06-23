@@ -1321,8 +1321,15 @@ window.onF=function(inp,key){
   updateDocProgress();
 };
 function updateDocProgress(){
-  var done=document.querySelectorAll('#sl-root .uz.ok').length;
-  var total=document.querySelectorAll('#sl-root .uz input[type=file]').length;
+  var allUz=document.querySelectorAll('#sl-root .uz');
+  var visible=[],done=0;
+  allUz.forEach(function(uz){
+    var p=uz.parentElement;
+    var hidden=false;
+    while(p&&p.id!=='sl-root'){if(p.classList.contains('hide')){hidden=true;break;}p=p.parentElement;}
+    if(!hidden){visible.push(uz);if(uz.classList.contains('ok'))done++;}
+  });
+  var total=visible.length;
   var pct=total>0?Math.round(done/total*100):0;
   var fill=document.getElementById('doc-prog-fill');
   var lbl=document.getElementById('doc-prog-lbl');
