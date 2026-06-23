@@ -1249,7 +1249,7 @@ function tauxPV(duree,kwc){
 }
 function pmt(cap,ta,n){var tm=ta/12;return cap*tm/(1-Math.pow(1+tm,-n));}
 function eu(n){return n.toFixed(2).replace('.',',')+'\u00a0€';}
-function toDMS(dd,isLat){var d=Math.floor(Math.abs(dd));var mf=(Math.abs(dd)-d)*60,m=Math.floor(mf);var s=((mf-m)*60).toFixed(1);var dir=isLat?(dd>=0?'N':'S'):(dd>=0?'E':'W');return d+'°'+m+"'"+s+'"'+dir;}
+function toDMS(dd,isLat){var d=Math.floor(Math.abs(dd));var mf=(Math.abs(dd)-d)*60,m=Math.floor(mf);var s=((mf-m)*60).toFixed(1);var dir=isLat?(dd>=0?'N':'S'):(dd>=0?'E':'W');return d+'°'+m+String.fromCharCode(39)+s+String.fromCharCode(34)+dir;}
 function fmtCoords(lat,lng){return toDMS(lat,true)+' '+toDMS(lng,false);}
 function gn(id){var el=document.getElementById(id);return el?parseFloat(el.value)||0:0;}
 function gs(id){var el=document.getElementById(id);return el?el.value:'';}
