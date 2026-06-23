@@ -1249,6 +1249,8 @@ function tauxPV(duree,kwc){
 }
 function pmt(cap,ta,n){var tm=ta/12;return cap*tm/(1-Math.pow(1+tm,-n));}
 function eu(n){return n.toFixed(2).replace('.',',')+'\u00a0€';}
+function toDMS(dd,isLat){var d=Math.floor(Math.abs(dd));var mf=(Math.abs(dd)-d)*60,m=Math.floor(mf);var s=((mf-m)*60).toFixed(1);var dir=isLat?(dd>=0?'N':'S'):(dd>=0?'E':'W');return d+'°'+m+"'"+s+'"'+dir;}
+function fmtCoords(lat,lng){return toDMS(lat,true)+' '+toDMS(lng,false);}
 function gn(id){var el=document.getElementById(id);return el?parseFloat(el.value)||0:0;}
 function gs(id){var el=document.getElementById(id);return el?el.value:'';}
 
@@ -1380,7 +1382,7 @@ function pickAddr(f){
   document.getElementById('g-region').textContent=geo.region||'—';
   document.getElementById('g-insee').textContent=geo.insee||'—';
   document.getElementById('g-cp').textContent=geo.cp||'—';
-  document.getElementById('g-coords').textContent='Lat : '+lat.toFixed(6)+' — Lng : '+lng.toFixed(6)+' (ajustable via le marqueur)';
+  document.getElementById('g-coords').textContent=fmtCoords(lat,lng)+' (ajustable via le marqueur)';
   document.getElementById('geo-card').classList.add('on');
   showMap(lat,lng);
 }
@@ -1394,7 +1396,7 @@ function showMap(lat,lng){
     var hint=document.getElementById('map-hint');
     hint.setAttribute('style','position:absolute!important;bottom:12px!important;left:50%!important;transform:translateX(-50%)!important;background:rgba(19,163,172,0.85)!important;color:#fff!important;font-size:11px!important;font-weight:500!important;padding:6px 16px!important;border-radius:20px!important;pointer-events:none!important;white-space:nowrap!important;z-index:10!important;display:block!important;');
     setTimeout(function(){hint.setAttribute('style',hint.getAttribute('style').replace('display:block','display:none'));},4000);
-    google.maps.event.addListener(gmk,'dragend',function(e){geo.lat=e.latLng.lat();geo.lng=e.latLng.lng();var co=document.getElementById('g-coords');if(co)co.textContent='Lat : '+geo.lat.toFixed(6)+' — Lng : '+geo.lng.toFixed(6)+' ✓ Position ajustée';});
+    google.maps.event.addListener(gmk,'dragend',function(e){geo.lat=e.latLng.lat();geo.lng=e.latLng.lng();var co=document.getElementById('g-coords');if(co)co.textContent=fmtCoords(geo.lat,geo.lng)+' ✓ Position ajustée';});
   }
   if(window.google&&window.google.maps)initMap();
   else{if(!window._slML){window._slML=true;var sc=document.createElement('script');sc.src='https://maps.googleapis.com/maps/api/js?key='+KEY+'&loading=async';sc.onload=function(){if(window.google&&window.google.maps)initMap();};document.head.appendChild(sc);}
