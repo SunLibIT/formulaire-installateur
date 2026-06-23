@@ -595,6 +595,14 @@
     #sl-root .modal-btns{display:block!important;font-size:0!important;text-align:center!important;}
     #sl-root .modal-cancel{display:inline-block!important;vertical-align:middle!important;margin-right:10px!important;padding:0 24px!important;height:42px!important;line-height:40px!important;border:1.5px solid #ddd!important;border-radius:30px!important;font-size:13px!important;font-weight:600!important;color:#aaa!important;background:none!important;cursor:pointer!important;}
     #sl-root .modal-confirm{display:inline-block!important;vertical-align:middle!important;padding:0 30px!important;height:42px!important;line-height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--grad2)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(96,184,48,.32)!important;}
+
+    /* ── MINI CARTES ABONNES ── */
+    #sl-root .rc-person-grid{display:block!important;width:100%!important;font-size:0!important;margin-top:4px!important;}
+    #sl-root .rc-person{display:inline-block!important;vertical-align:top!important;width:210px!important;margin-right:8px!important;margin-bottom:8px!important;background:linear-gradient(135deg,#f0fbfc,#f0fff6)!important;border:1px solid #c8eaf0!important;border-radius:10px!important;padding:10px 12px!important;}
+    #sl-root .rc-person:last-child{margin-right:0!important;}
+    #sl-root .rc-person-name{display:block!important;font-size:12px!important;font-weight:700!important;color:#1a1a1a!important;margin-bottom:4px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}
+    #sl-root .rc-person-line{display:block!important;font-size:11px!important;color:#888!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin-bottom:2px!important;}
+    #sl-root .rc-person-badge{display:inline-block!important;margin-top:5px!important;background:rgba(19,163,172,0.1)!important;color:var(--teal)!important;font-size:9px!important;font-weight:700!important;padding:2px 7px!important;border-radius:8px!important;}
   </style>
 </head>
 <body>
@@ -1392,10 +1400,17 @@ function buildRecap(){
   var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat'};
   var h='';
   if(ct==='part'){
-    h+='<div class="rc-card-full"><div class="rc-head"><span class="rc-ico">&#128101;</span><span class="rc-tit">Abonné(s)</span></div>';
+    h+='<div class="rc-card-full"><div class="rc-head"><span class="rc-ico">&#128101;</span><span class="rc-tit">Abonné(s) ('+abos.length+')</span></div>';
     h+='<button class="rc-edit" onclick="goToStep(2)">&#9999; Modifier</button>';
-    abos.forEach(function(a,i){h+=rcr('Abonné '+(i+1),(a.civ+' '+a.prenom+' '+a.nom).trim());h+=rcr('Email',a.email);if(a.tel)h+=rcr('Tél.',a.tel);});
-    h+='</div>';
+    h+='<div class="rc-person-grid">';
+    abos.forEach(function(a){
+      h+='<div class="rc-person">';
+      h+='<span class="rc-person-name">'+(a.civ?a.civ+' ':'')+a.prenom+' '+a.nom+'</span>';
+      if(a.email)h+='<span class="rc-person-line">&#9993; '+a.email+'</span>';
+      if(a.tel)h+='<span class="rc-person-line">&#128222; '+a.tel+'</span>';
+      h+='</div>';
+    });
+    h+='</div></div>';
   }else{
     h+='<div class="rc-card-full"><div class="rc-head"><span class="rc-ico">&#127970;</span><span class="rc-tit">Entreprise</span></div>';
     h+='<button class="rc-edit" onclick="goToStep(2)">&#9999; Modifier</button>';
@@ -1406,8 +1421,16 @@ function buildRecap(){
     if(collabs.length>0){
       h+='<div class="rc-card-full"><div class="rc-head"><span class="rc-ico">&#128100;</span><span class="rc-tit">Collaborateurs ('+collabs.length+')</span></div>';
       h+='<button class="rc-edit" onclick="goToStep(3)">&#9999; Modifier</button>';
-      collabs.forEach(function(c,i){h+=rcr('Collaborateur '+(i+1),(c.civ+' '+c.prenom+' '+c.nom).trim()+(c.role?' — '+c.role:''));});
-      h+='</div>';
+      h+='<div class="rc-person-grid">';
+      collabs.forEach(function(col){
+        h+='<div class="rc-person">';
+        h+='<span class="rc-person-name">'+(col.civ?col.civ+' ':'')+col.prenom+' '+col.nom+'</span>';
+        if(col.email)h+='<span class="rc-person-line">&#9993; '+col.email+'</span>';
+        if(col.tel)h+='<span class="rc-person-line">&#128222; '+col.tel+'</span>';
+        if(col.role)h+='<span class="rc-person-badge">'+col.role+'</span>';
+        h+='</div>';
+      });
+      h+='</div></div>';
     }
   }
   h+='<div class="rc-grid">';
@@ -1418,7 +1441,30 @@ function buildRecap(){
   h+='</div>';
   h+='<div class="rc-card"><div class="rc-head"><span class="rc-ico">&#9889;</span><span class="rc-tit">Installation</span></div>';
   h+='<button class="rc-edit" onclick="goToStep(5)">&#9999; Modifier</button>';
-  h+=rcr('Type',tl[iType]||'—');h+=rcr('PDL',v('sl-pdl'));h+=rcr('Durée',v('sl-duree'));h+=rcr('Suivi',v(sm[iType]||''));
+  h+=rcr('Type',tl[iType]||'—');
+  h+=rcr('Durée',v('sl-duree'));
+  h+=rcr('PDL',v('sl-pdl'));
+  if(iType==='pv'){
+    if(v('sl-kwc'))h+=rcr('Puissance',v('sl-kwc')+' kWc');
+    if(v('sl-prix'))h+=rcr('Prix HT',v('sl-prix')+' €');
+    if(v('sl-vers')&&v('sl-vers')!=='0')h+=rcr('Versement initial',v('sl-vers')+' € TTC');
+  }else if(iType==='pvbv'){
+    if(v('sl-kwc-bv'))h+=rcr('Puissance',v('sl-kwc-bv')+' kWc');
+    if(v('sl-prix-bv'))h+=rcr('Prix HT',v('sl-prix-bv')+' €');
+    if(v('sl-vers-bv')&&v('sl-vers-bv')!=='0')h+=rcr('Versement initial',v('sl-vers-bv')+' € TTC');
+  }else if(iType==='pvb'){
+    if(v('sl-pvb-kwc'))h+=rcr('Puissance PV',v('sl-pvb-kwc')+' kWc');
+    if(v('sl-pvb-prix'))h+=rcr('Prix PV HT',v('sl-pvb-prix')+' €');
+    if(v('sl-pvb-vers')&&v('sl-pvb-vers')!=='0')h+=rcr('Versement initial',v('sl-pvb-vers')+' € TTC');
+    if(v('sl-pvb-kwh'))h+=rcr('Batterie',v('sl-pvb-kwh')+' kWh');
+    if(v('sl-pvb-bat-prix'))h+=rcr('Prix batterie HT',v('sl-pvb-bat-prix')+' €');
+    if(v('sl-pvb-bat-dur'))h+=rcr('Durée batterie',v('sl-pvb-bat-dur'));
+  }else if(iType==='bat'){
+    if(v('sl-bat-kwh'))h+=rcr('Capacité',v('sl-bat-kwh')+' kWh');
+    if(v('sl-bat-prix'))h+=rcr('Prix batterie HT',v('sl-bat-prix')+' €');
+    if(v('sl-bat-dur'))h+=rcr('Durée batterie',v('sl-bat-dur'));
+  }
+  h+=rcr('Suivi',v(sm[iType]||''));
   h+='</div></div>';
   if(simResult){
     var isPro=(ct==='pro');var mShow=isPro?simResult.mHT:simResult.mTTC;var lbl=isPro?'HT/mois':'TTC/mois';
