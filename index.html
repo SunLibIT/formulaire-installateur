@@ -1450,7 +1450,6 @@ function buildRecap(){
   h+='<button class="rc-edit" onclick="goToStep(5)">&#9999; Modifier</button>';
   h+=rcr('Type',tl[iType]||'—');
   h+=rcr('Durée',v('sl-duree'));
-  h+=rcr('PDL',v('sl-pdl'));
   if(iType==='pv'){
     if(v('sl-kwc'))h+=rcr('Puissance',v('sl-kwc')+' kWc');
     if(v('sl-prix'))h+=rcr('Prix HT',v('sl-prix')+' €');
@@ -1471,7 +1470,6 @@ function buildRecap(){
     if(v('sl-bat-prix'))h+=rcr('Prix batterie HT',v('sl-bat-prix')+' €');
     if(v('sl-bat-dur'))h+=rcr('Durée batterie',v('sl-bat-dur'));
   }
-  h+=rcr('Suivi',v(sm[iType]||''));
   h+='</div></div>';
   if(simResult){
     var isPro=(ct==='pro');var mShow=isPro?simResult.mHT:simResult.mTTC;var lbl=isPro?'HT/mois':'TTC/mois';
