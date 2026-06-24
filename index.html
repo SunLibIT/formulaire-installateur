@@ -32,6 +32,17 @@
       --shadow-lg: 0 6px 28px rgba(0, 0, 0, 0.12);
       --r: 10px;
       --rl: 14px;
+      /* Charte SunLib — réutiliser ces variables, jamais de couleur en dur */
+      --brand-gradient: linear-gradient(90deg, #13A3AC, #3CAE68);
+      --brand-gradient-diag: linear-gradient(125deg, #13A3AC 0%, #3CAE68 100%);
+      --color-teal: #0EA3B4;
+      --color-teal-deep: #13A3AC;
+      --color-green: #3CAE68;
+      --color-green-bright: #60B830;
+      --line: #e6e9ec;
+      --danger: #dc2626;
+      --ink: #1f2937;
+      --ink-soft: #6b7280;
     }
 
     #sl-root .wrap {
@@ -48,7 +59,7 @@
     #sl-root .hero {
       display: block !important;
       width: 780px !important;
-      background: var(--grad) !important;
+      background: var(--brand-gradient-diag) !important;
       padding: 28px 32px 22px !important;
       position: relative !important;
       overflow: hidden !important;
@@ -67,16 +78,24 @@
     }
 
     #sl-root .hero-pill {
-      display: inline-block !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
       background: rgba(255, 255, 255, 0.18) !important;
       border: 1px solid rgba(255, 255, 255, 0.3) !important;
       color: #fff !important;
       font-size: 13px !important;
       font-weight: 700 !important;
-      padding: 5px 16px !important;
+      padding: 5px 14px !important;
       border-radius: 30px !important;
       margin-bottom: 12px !important;
     }
+
+    /* Icône soleil SVG — rayons en rotation lente (20s) + respiration d'opacité (6s) */
+    #sl-root .hero-pill .sl-sun { width: 16px !important; height: 16px !important; display: block !important; animation: sl-breathe 6s ease-in-out infinite; }
+    #sl-root .hero-pill .sl-sun .rays { transform-box: fill-box; transform-origin: center; animation: sl-spin 20s linear infinite; }
+    @keyframes sl-spin { to { transform: rotate(360deg); } }
+    @keyframes sl-breathe { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
 
     #sl-root .hero-title {
       display: block !important;
@@ -102,8 +121,10 @@
     }
 
     #sl-root .ts-btn {
-      display: inline-block !important;
-      padding: 8px 24px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 7px !important;
+      padding: 8px 22px !important;
       border-radius: 26px !important;
       border: none !important;
       font-size: 13px !important;
@@ -114,6 +135,8 @@
       transition: all 0.22s !important;
       vertical-align: top !important;
     }
+    /* Icônes onglets : outline monochrome, suit la couleur du texte (currentColor) */
+    #sl-root .ts-btn svg { width: 15px !important; height: 15px !important; flex: 0 0 auto !important; }
 
     #sl-root .ts-btn.on {
       background: #fff !important;
@@ -121,105 +144,153 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14) !important;
     }
 
-    /* STEPPER */
+    /* STEPPER — <ol> sémantique : rail neutre + remplissage dégradé piloté par --progress */
     #sl-root .stepper-wrap {
       display: block !important;
       width: 780px !important;
-      padding: 20px 40px 4px !important;
+      padding: 22px 40px 18px !important;
       background: #fff !important;
     }
 
     #sl-root .stepper {
-      display: block !important;
-      width: 700px !important;
+      display: flex !important;
+      list-style: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
       position: relative !important;
-      height: 40px !important;
+      --progress: 0;            /* fraction 0→1 de la progression, posée en JS (setStep) */
+      --n: 5;                   /* nombre d'étapes, posé en JS (buildStepper) */
     }
 
-    #sl-root .stepper-line {
+    /* Rail neutre + remplissage : positionnés sur le centre des ronds (top 18px) */
+    #sl-root .stepper::before,
+    #sl-root .stepper::after {
+      content: '' !important;
       position: absolute !important;
       top: 18px !important;
-      height: 2px !important;
-      background: #e8e8e8 !important;
-      transition: background 0.3s !important;
+      left: calc(100% / var(--n) / 2) !important;          /* centre du 1er rond */
+      height: 3px !important;
+      border-radius: 3px !important;
+      transform: translateY(-50%) !important;
+    }
+    #sl-root .stepper::before { right: calc(100% / var(--n) / 2) !important; background: var(--line) !important; }
+    #sl-root .stepper::after {
+      width: calc((100% - 100% / var(--n)) * var(--progress)) !important;   /* distance entre centres × progression */
+      background: var(--brand-gradient) !important;
+      transition: width 0.45s ease !important;
     }
 
-    #sl-root .stepper-line.done {
-      background: var(--green) !important;
+    #sl-root .step {
+      flex: 1 1 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      position: relative !important;
+      z-index: 1 !important;
     }
 
-    #sl-root .sdot {
-      position: absolute !important;
-      top: 0 !important;
+    /* Tous les ronds portent le dégradé de marque + liseré blanc pour les détacher du rail */
+    #sl-root .step-dot {
       width: 36px !important;
       height: 36px !important;
       border-radius: 50% !important;
-      border: 2px solid #ddd !important;
-      background: #fff !important;
-      color: #bbb !important;
+      background: var(--brand-gradient) !important;
+      color: #fff !important;
       font-size: 13px !important;
       font-weight: 700 !important;
-      text-align: center !important;
-      line-height: 32px !important;
-      transition: all 0.25s !important;
-      cursor: default !important;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
-      z-index: 2 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 0 0 3px #fff !important;
+      transition: box-shadow 0.25s !important;
     }
+    #sl-root .step.done .step-dot { cursor: pointer !important; }
+    #sl-root .step.done .step-dot:hover { box-shadow: 0 0 0 3px #fff, 0 2px 10px rgba(19, 163, 172, 0.35) !important; }
+    /* Étape courante : halo teal en plus */
+    #sl-root .step.current .step-dot { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(14, 163, 180, 0.20) !important; }
 
-    #sl-root .sdot.done {
-      background: var(--green) !important;
-      border-color: var(--green) !important;
-      color: #fff !important;
-      cursor: pointer !important;
-      box-shadow: 0 2px 8px rgba(60, 174, 104, 0.3) !important;
-    }
-
-    #sl-root .sdot.done:hover {
-      transform: scale(1.1) !important;
-    }
-
-    #sl-root .sdot.active {
-      background: var(--grad) !important;
-      border: none !important;
-      color: #fff !important;
-      line-height: 36px !important;
-      box-shadow: 0 3px 12px rgba(19, 163, 172, 0.38) !important;
-    }
-
-    #sl-root .slbls {
-      display: block !important;
-      width: 700px !important;
-      position: relative !important;
-      height: 24px !important;
-      margin-top: 6px !important;
-      margin-bottom: 16px !important;
-    }
-
-    #sl-root .slbl {
-      position: absolute !important;
-      top: 0 !important;
+    #sl-root .step-label {
+      margin-top: 8px !important;
       font-size: 10px !important;
       font-weight: 500 !important;
       color: #bbb !important;
       text-align: center !important;
-      width: 80px !important;
-      cursor: default !important;
       transition: color 0.2s !important;
     }
+    #sl-root .step.done .step-label { color: var(--color-green) !important; }
+    #sl-root .step.current .step-label { color: var(--color-teal-deep) !important; font-weight: 700 !important; }
 
-    #sl-root .slbl.active {
-      color: var(--teal) !important;
-      font-weight: 700 !important;
-    }
+    /* Compteur du pied (« Étape N sur 5 ») */
+    #sl-root .step-counter { display: inline-block !important; vertical-align: middle !important; font-size: 13px !important; font-weight: 600 !important; color: #8a9299 !important; }
 
-    #sl-root .slbl.done {
-      color: var(--green) !important;
-      cursor: pointer !important;
-    }
+    /* ── EN-TÊTE : badge type (lecture seule, affiché dès l'étape 2) ── */
+    #sl-root .type-badge { display: inline-flex !important; align-items: center !important; gap: 10px !important; margin-top: 4px !important; }
+    #sl-root .type-chip { display: inline-flex !important; align-items: center !important; gap: 7px !important; background: rgba(255,255,255,0.18) !important; border: 1px solid rgba(255,255,255,0.32) !important; color: #fff !important; font-size: 13px !important; font-weight: 700 !important; padding: 6px 14px !important; border-radius: 30px !important; }
+    #sl-root .type-chip svg { width: 15px !important; height: 15px !important; flex: 0 0 auto !important; display: block !important; }
+    #sl-root .type-edit { background: transparent !important; border: none !important; color: #fff !important; font-size: 12px !important; font-weight: 600 !important; text-decoration: underline !important; cursor: pointer !important; padding: 4px 6px !important; border-radius: 6px !important; opacity: .9 !important; }
+    #sl-root .type-edit:hover { opacity: 1 !important; }
+    #sl-root .type-edit:focus-visible { outline: 2px solid #fff !important; outline-offset: 2px !important; }
 
-    #sl-root .slbl.done:hover {
-      text-decoration: underline !important;
+    /* ── ACCUEIL : cartes radio « Type de dossier » ── */
+    #sl-root .type-fs { border: none !important; margin: 0 0 12px !important; padding: 0 !important; min-width: 0 !important; }
+    #sl-root .type-lg { display: block !important; font-size: 10px !important; font-weight: 700 !important; letter-spacing: 1.2px !important; text-transform: uppercase !important; color: var(--color-teal-deep) !important; padding: 0 !important; margin-bottom: 10px !important; }
+    #sl-root .type-cards { display: flex !important; gap: 12px !important; }
+    #sl-root .type-card { flex: 1 1 0 !important; display: flex !important; align-items: flex-start !important; gap: 12px !important; position: relative !important; border: 2px solid var(--line) !important; border-radius: var(--rl) !important; padding: 16px !important; cursor: pointer !important; background: #fff !important; transition: border-color .18s, background .18s !important; }
+    #sl-root .type-card input[type=radio] { position: absolute !important; opacity: 0 !important; width: 1px !important; height: 1px !important; margin: 0 !important; }
+    #sl-root .type-card:hover { border-color: #c7d0d6 !important; }
+    /* Sélection : bordure + fond teal léger + coche (charte : état actif = teal) */
+    #sl-root .type-card:has(input:checked), #sl-root .type-card.sel { border-color: var(--color-teal) !important; background: #e8f7f9 !important; }
+    /* Focus clavier visible via le radio natif */
+    #sl-root .type-card:has(input:focus-visible) { outline: 2px solid var(--color-teal) !important; outline-offset: 2px !important; }
+    #sl-root .tc-ico { flex: 0 0 auto !important; width: 30px !important; height: 30px !important; border-radius: 9px !important; background: #f0f4f6 !important; color: #8a9299 !important; display: flex !important; align-items: center !important; justify-content: center !important; transition: all .18s !important; }
+    #sl-root .tc-ico svg { width: 17px !important; height: 17px !important; }
+    #sl-root .type-card:has(input:checked) .tc-ico, #sl-root .type-card.sel .tc-ico { background: #d3eef2 !important; color: var(--color-teal-deep) !important; }
+    #sl-root .tc-body { display: flex !important; flex-direction: column !important; gap: 2px !important; }
+    #sl-root .tc-title { font-size: 14px !important; font-weight: 700 !important; color: #1a1a1a !important; }
+    #sl-root .tc-desc { font-size: 12px !important; color: #777 !important; line-height: 1.4 !important; }
+    /* Coche teal — visible uniquement si la carte est sélectionnée */
+    #sl-root .tc-check { position: absolute !important; top: 12px !important; right: 12px !important; width: 20px !important; height: 20px !important; border-radius: 50% !important; background: var(--color-teal) !important; color: #fff !important; display: none !important; align-items: center !important; justify-content: center !important; }
+    #sl-root .tc-check svg { width: 12px !important; height: 12px !important; }
+    #sl-root .type-card:has(input:checked) .tc-check, #sl-root .type-card.sel .tc-check { display: flex !important; }
+
+    /* Récap réactif (« Pour un dossier <type>, préparez : … ») */
+    #sl-root .type-recap { display: block !important; width: 716px !important; font-size: 12px !important; color: #555 !important; line-height: 1.6 !important; background: #f6f9fa !important; border: 1px solid var(--line) !important; border-radius: var(--r) !important; padding: 11px 14px !important; margin-bottom: 12px !important; }
+    #sl-root .type-recap strong { color: var(--color-teal-deep) !important; text-transform: capitalize !important; }
+
+    /* Bouton destructeur de modale — rouge réservé à cette action à risque */
+    #sl-root .modal-danger { display: inline-block !important; vertical-align: middle !important; padding: 0 24px !important; height: 42px !important; line-height: 42px !important; border: none !important; border-radius: 30px !important; font-size: 14px !important; font-weight: 700 !important; color: #fff !important; background: var(--danger) !important; cursor: pointer !important; box-shadow: 0 4px 14px rgba(220,38,38,.28) !important; }
+    #sl-root .modal-danger:hover { filter: brightness(.95) !important; }
+    #sl-root .modal-danger:focus-visible { outline: 2px solid var(--danger) !important; outline-offset: 2px !important; }
+
+    /* ── ÉTAPE 2 : IDENTITÉ — grille abonné, validation, pied ── */
+    /* Grille 6 colonnes (1 colonne ≤ 640px) */
+    #sl-root .abo-grid { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; gap: 12px !important; width: 100% !important; }
+    #sl-root .fld { display: flex !important; flex-direction: column !important; min-width: 0 !important; font-size: 14px !important; }
+    #sl-root .fld.col2 { grid-column: span 2 !important; }
+    #sl-root .fld.col3 { grid-column: span 3 !important; }
+    #sl-root .fld > label { display: block !important; font-size: 11px !important; font-weight: 600 !important; color: var(--ink-soft) !important; margin-bottom: 5px !important; }
+    /* Focus teal — un champ valide n'est jamais rouge */
+    #sl-root .abo-grid input:focus, #sl-root .abo-grid select:focus { border-color: var(--color-teal) !important; box-shadow: 0 0 0 3px rgba(14,163,180,.15) !important; }
+    /* Message d'erreur sous le champ — visible uniquement si touché + invalide */
+    #sl-root .fld-err { display: none !important; align-items: center !important; gap: 5px !important; margin: 5px 0 0 !important; font-size: 11px !important; color: var(--danger) !important; line-height: 1.3 !important; }
+    #sl-root .fld-err.on { display: flex !important; }
+    #sl-root .fld-err svg { flex: 0 0 auto !important; width: 13px !important; height: 13px !important; }
+    /* Bouton « Retirer » d'une carte (masqué par le rendu si une seule carte) */
+    #sl-root .btn-rm { display: inline-flex !important; align-items: center !important; gap: 5px !important; float: right !important; font-size: 12px !important; font-weight: 600 !important; color: var(--ink-soft) !important; }
+    #sl-root .btn-rm svg { width: 13px !important; height: 13px !important; }
+    #sl-root .btn-rm:hover { color: var(--danger) !important; background: #fee8e8 !important; }
+    /* Compteur de caractères des motivations */
+    #sl-root .char-counter { display: block !important; text-align: right !important; font-size: 11px !important; color: var(--ink-soft) !important; margin-top: 4px !important; }
+    /* Pied étape 2 : indicateur d'état (gauche) + actions (droite) */
+    #sl-root .nav2 { display: flex !important; align-items: center !important; gap: 12px !important; }
+    #sl-root .foot-status { flex: 1 1 auto !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; font-size: 12px !important; color: var(--ink-soft) !important; }
+    #sl-root .foot-status.ok { color: var(--color-teal-deep) !important; font-weight: 600 !important; }
+    #sl-root .foot-status svg { flex: 0 0 auto !important; width: 14px !important; height: 14px !important; }
+    @media (max-width: 640px) {
+      #sl-root .abo-grid { grid-template-columns: 1fr !important; }
+      #sl-root .fld.col2, #sl-root .fld.col3 { grid-column: span 1 !important; }
+      #sl-root .nav2 { flex-direction: column !important; align-items: stretch !important; }
+      #sl-root .nav2 .btn-back, #sl-root .nav2 .btn-next { float: none !important; width: 100% !important; text-align: center !important; }
     }
 
     /* BODY */
@@ -495,24 +566,92 @@
     #sl-root .uz-chk { position: absolute !important; top: 12px !important; right: 14px !important; width: 22px !important; height: 22px !important; border-radius: 50% !important; background: var(--green) !important; color: #fff !important; font-size: 12px !important; text-align: center !important; line-height: 22px !important; display: none !important; }
     #sl-root .uz.ok .uz-chk { display: block !important; }
 
-    /* MAP */
-    #sl-root .map-wrap { display: block !important; width: 716px !important; height: 480px !important; border-radius: var(--rl) !important; overflow: hidden !important; border: 1.5px solid #e0e0e0 !important; margin-top: 12px !important; background: #f4f9f7 !important; position: relative !important; }
-    #sl-root .map-ph { display: block !important; width: 716px !important; height: 480px !important; text-align: center !important; padding-top: 180px !important; }
-    #sl-root .map-ph-ico { display: block !important; font-size: 36px !important; opacity: 0.4 !important; margin-bottom: 8px !important; }
-    #sl-root .map-ph-txt { display: block !important; font-size: 13px !important; color: #bbb !important; }
-    #sl-root .map-ph-sub { display: block !important; font-size: 11px !important; color: #ccc !important; margin-top: 3px !important; }
-    #sl-root #sl-map-div { width: 716px !important; height: 480px !important; display: none !important; }
-    #sl-root .map-hint { position: absolute !important; bottom: 12px !important; left: 50% !important; transform: translateX(-50%) !important; background: rgba(19,163,172,0.82) !important; color: #fff !important; font-size: 11px !important; font-weight: 500 !important; padding: 6px 16px !important; border-radius: 20px !important; pointer-events: none !important; white-space: nowrap !important; display: none !important; z-index: 10 !important; }
+    /* ── ÉTAPE 3 : ADRESSE ── */
+    /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
+    #sl-root .sl-sunlogo { position: absolute !important; top: 14px !important; right: 18px !important; width: 86px !important; height: 86px !important; z-index: 0 !important; pointer-events: none !important; }
+    #sl-root .sl-sunlogo .ray { stroke: #fff !important; stroke-width: 1.6 !important; opacity: .20 !important; transition: opacity .35s ease !important; }
+    #sl-root .sl-sunlogo .ray.on { opacity: 1 !important; }
 
-    /* GEO */
-    #sl-root .geo-card { display: block !important; width: 716px !important; background: linear-gradient(135deg, #dff7f4, #edfff4) !important; border: 1.5px solid rgba(19,163,172,0.2) !important; border-radius: var(--rl) !important; padding: 14px 16px !important; margin-top: 10px !important; display: none !important; }
-    #sl-root .geo-card.on { display: block !important; }
-    #sl-root .geo-tit { display: block !important; font-size: 10px !important; font-weight: 700 !important; letter-spacing: 1px !important; text-transform: uppercase !important; color: var(--teal) !important; margin-bottom: 10px !important; }
-    #sl-root .geo-grid { display: block !important; font-size: 0 !important; }
-    #sl-root .geo-item { display: inline-block !important; vertical-align: top !important; width: 220px !important; margin-right: 8px !important; margin-bottom: 6px !important; }
-    #sl-root .geo-item label { display: block !important; font-size: 10px !important; color: var(--green) !important; font-weight: 600 !important; margin-bottom: 2px !important; }
-    #sl-root .geo-item span { display: block !important; font-size: 13px !important; font-weight: 600 !important; color: #1a1a1a !important; }
-    #sl-root .geo-coords { display: block !important; font-size: 11px !important; color: #aaa !important; margin-top: 6px !important; font-style: italic !important; }
+    /* En-tête de section : icône épingle TEAL + titre teal, sans astérisque */
+    #sl-root .adr-head { display: flex !important; align-items: center !important; gap: 10px !important; margin: 6px 0 12px !important; }
+    #sl-root .adr-head .adr-ico { flex: 0 0 auto !important; width: 30px !important; height: 30px !important; border-radius: 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; background: rgba(14,163,180,.10) !important; color: var(--color-teal) !important; }
+    #sl-root .adr-head .adr-ico svg { width: 17px !important; height: 17px !important; }
+    #sl-root .adr-head h2 { margin: 0 !important; font-size: 12px !important; letter-spacing: 1.2px !important; text-transform: uppercase !important; color: var(--color-teal) !important; font-weight: 700 !important; }
+    #sl-root .adr-head .adr-rule { flex: 1 1 auto !important; height: 1px !important; background: var(--line) !important; }
+    #sl-root .adr-legend { font-size: 12px !important; color: var(--ink-soft) !important; margin: 0 0 14px !important; }
+    #sl-root .adr-legend .req { color: var(--danger) !important; }
+
+    /* Recherche d'adresse */
+    #sl-root .adr-search { position: relative !important; margin-bottom: 16px !important; }
+    #sl-root .adr-search > label { display: block !important; font-size: 11px !important; font-weight: 600 !important; color: var(--ink-soft) !important; margin-bottom: 6px !important; }
+    #sl-root .adr-sbox { position: relative !important; }
+    #sl-root .adr-sico { position: absolute !important; left: 12px !important; top: 50% !important; transform: translateY(-50%) !important; color: var(--ink-soft) !important; pointer-events: none !important; display: flex !important; }
+    #sl-root .adr-sico svg { width: 17px !important; height: 17px !important; }
+    #sl-root .adr-sbox input { display: block !important; width: 100% !important; height: 42px !important; font-size: 14px !important; padding: 0 40px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; background: #fff !important; color: var(--ink) !important; transition: border-color .15s, box-shadow .15s !important; }
+    #sl-root .adr-sbox input:focus { outline: none !important; border-color: var(--color-teal) !important; box-shadow: 0 0 0 3px rgba(14,163,180,.15) !important; }
+    #sl-root .adr-clear { position: absolute !important; right: 7px !important; top: 50% !important; transform: translateY(-50%) !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; width: 26px !important; height: 26px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+    #sl-root .adr-clear:hover { background: #f1f4f6 !important; color: var(--ink) !important; }
+    #sl-root .adr-clear svg { width: 15px !important; height: 15px !important; }
+    /* Liste de suggestions */
+    #sl-root .adr-sg { position: absolute !important; left: 0 !important; right: 0 !important; top: calc(100% + 6px) !important; background: #fff !important; border: 1px solid var(--line) !important; border-radius: 12px !important; box-shadow: 0 14px 36px rgba(15,40,50,.14) !important; overflow: hidden !important; z-index: 9999 !important; }
+    #sl-root .adr-sg[hidden] { display: none !important; }
+    #sl-root .adr-sg-item { display: flex !important; align-items: center !important; gap: 10px !important; width: 100% !important; text-align: left !important; padding: 10px 14px !important; font-size: 13px !important; color: var(--ink) !important; background: #fff !important; cursor: pointer !important; border-bottom: 1px solid #f2f5f6 !important; }
+    #sl-root .adr-sg-item:last-child { border-bottom: 0 !important; }
+    #sl-root .adr-sg-item:hover, #sl-root .adr-sg-item.active { background: #f3fbfb !important; }
+    #sl-root .adr-sg-ico { flex: 0 0 auto !important; color: var(--color-teal) !important; display: flex !important; }
+    #sl-root .adr-sg-ico svg { width: 16px !important; height: 16px !important; }
+    #sl-root .adr-sg-lbl { font-weight: 600 !important; }
+    #sl-root .adr-sg-ctx { color: var(--ink-soft) !important; font-weight: 400 !important; font-size: 12px !important; }
+
+    /* Grille des champs (6 colonnes) */
+    #sl-root .adr-grid { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; gap: 14px 16px !important; margin-bottom: 16px !important; }
+    #sl-root .adr-fld { display: flex !important; flex-direction: column !important; min-width: 0 !important; }
+    #sl-root .adr-fld.c4 { grid-column: span 4 !important; }
+    #sl-root .adr-fld.c2 { grid-column: span 2 !important; }
+    #sl-root .adr-fld > label { font-size: 11px !important; font-weight: 600 !important; color: var(--ink-soft) !important; margin-bottom: 5px !important; }
+    #sl-root .adr-fld .req { color: var(--danger) !important; }
+    #sl-root .adr-fld input { display: block !important; width: 100% !important; height: 42px !important; font-size: 14px !important; color: var(--ink) !important; padding: 0 12px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; background: #fff !important; transition: border-color .15s, box-shadow .15s !important; }
+    #sl-root .adr-fld input:focus { outline: none !important; border-color: var(--color-teal) !important; box-shadow: 0 0 0 3px rgba(14,163,180,.15) !important; }
+    #sl-root .adr-err { display: none !important; align-items: center !important; gap: 5px !important; margin: 5px 0 0 !important; font-size: 11px !important; color: var(--danger) !important; line-height: 1.3 !important; }
+    #sl-root .adr-err.on { display: flex !important; }
+    #sl-root .adr-err svg { width: 13px !important; height: 13px !important; flex: 0 0 auto !important; }
+
+    /* Carte (intégration Google Maps existante) */
+    #sl-root .adr-map { position: relative !important; width: 100% !important; height: 360px !important; border-radius: 12px !important; overflow: hidden !important; border: 1.5px solid var(--line) !important; margin-bottom: 4px !important; background: #eef3f4 !important; }
+    #sl-root .adr-map-ph { position: absolute !important; inset: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 6px !important; color: var(--ink-soft) !important; background: #f4f7f8 !important; z-index: 1 !important; }
+    #sl-root .adr-map-ph svg { width: 34px !important; height: 34px !important; opacity: .4 !important; }
+    #sl-root .adr-map-ph span { font-size: 13px !important; color: var(--ink-soft) !important; }
+    #sl-root #sl-map-div { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; display: none !important; }
+    #sl-root .adr-seg { position: absolute !important; top: 12px !important; right: 12px !important; display: none !important; background: #fff !important; border: 1px solid var(--line) !important; border-radius: 9px !important; padding: 3px !important; box-shadow: 0 4px 12px rgba(0,0,0,.08) !important; z-index: 3 !important; }
+    #sl-root .adr-seg button { border: 0 !important; background: transparent !important; font-size: 13px !important; font-weight: 600 !important; color: var(--ink-soft) !important; padding: 6px 12px !important; border-radius: 7px !important; cursor: pointer !important; }
+    #sl-root .adr-seg button[aria-pressed="true"] { background: var(--color-teal) !important; color: #fff !important; }
+    #sl-root .adr-hint { position: absolute !important; left: 12px !important; bottom: 12px !important; background: rgba(17,33,38,.78) !important; color: #fff !important; font-size: 12px !important; padding: 6px 11px !important; border-radius: 999px !important; z-index: 3 !important; display: none !important; pointer-events: none !important; }
+
+    /* Adresse localisée (carte de succès VERTE) */
+    #sl-root .adr-geo { display: none !important; margin-top: 12px !important; border: 1.5px solid #b9e6cb !important; background: #f0fbf5 !important; border-radius: 12px !important; padding: 16px 18px !important; }
+    #sl-root .adr-geo.on { display: block !important; }
+    #sl-root .adr-geo-head { display: flex !important; align-items: center !important; gap: 9px !important; margin-bottom: 14px !important; }
+    #sl-root .adr-geo-head .adr-geo-ico { color: var(--color-green) !important; display: flex !important; }
+    #sl-root .adr-geo-head .adr-geo-ico svg { width: 18px !important; height: 18px !important; }
+    #sl-root .adr-geo-head h3 { margin: 0 !important; font-size: 12px !important; font-weight: 700 !important; letter-spacing: 1px !important; text-transform: uppercase !important; color: #1d7a4a !important; }
+    #sl-root .adr-geo-status { margin-left: auto !important; font-size: 12px !important; font-weight: 600 !important; color: var(--color-green) !important; display: none !important; align-items: center !important; gap: 5px !important; }
+    #sl-root .adr-geo-status.on { display: inline-flex !important; }
+    #sl-root .adr-geo-status svg { width: 13px !important; height: 13px !important; }
+    #sl-root .adr-geo-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 12px 24px !important; }
+    #sl-root .adr-geo-item .k { font-size: 12px !important; color: var(--ink-soft) !important; margin-bottom: 2px !important; }
+    #sl-root .adr-geo-item .v { font-size: 14px !important; font-weight: 600 !important; color: var(--ink) !important; }
+    #sl-root .adr-geo-coords { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 14px !important; padding-top: 12px !important; border-top: 1px solid #b9e6cb !important; }
+    #sl-root .adr-geo-coords .c { font-size: 12px !important; color: var(--ink-soft) !important; font-variant-numeric: tabular-nums !important; }
+    #sl-root .adr-copy { margin-left: auto !important; border: 1px solid #b9e6cb !important; background: #fff !important; color: #1d7a4a !important; font-size: 12px !important; font-weight: 600 !important; padding: 5px 10px !important; border-radius: 8px !important; cursor: pointer !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+    #sl-root .adr-copy:hover { background: #eafaf1 !important; }
+    #sl-root .adr-copy svg { width: 13px !important; height: 13px !important; }
+
+    @media (max-width: 640px) {
+      #sl-root .adr-grid { grid-template-columns: 1fr !important; }
+      #sl-root .adr-fld.c4, #sl-root .adr-fld.c2 { grid-column: span 1 !important; }
+      #sl-root .adr-geo-grid { grid-template-columns: 1fr !important; }
+      #sl-root .sl-sunlogo { width: 60px !important; }
+    }
 
     /* RECAP */
     #sl-root .recap-block { display: block !important; width: 716px !important; background: #f8f8f8 !important; border-radius: var(--rl) !important; padding: 14px 18px !important; margin-bottom: 10px !important; }
@@ -523,8 +662,12 @@
     #sl-root .rv { display: inline-block !important; vertical-align: top !important; width: 476px !important; font-size: 13px !important; font-weight: 600 !important; color: #1a1a1a !important; text-align: right !important; }
 
     /* BOXES */
-    #sl-root .box-info { display: block !important; width: 716px !important; background: linear-gradient(135deg, #e0f7fa, #e5f9f0) !important; border: 1.5px solid #b2ebf2 !important; border-radius: var(--r) !important; padding: 13px 15px !important; font-size: 12px !important; color: #006064 !important; line-height: 1.65 !important; margin-bottom: 12px !important; }
-    #sl-root .box-warn { display: block !important; width: 716px !important; background: linear-gradient(135deg, #fff8e1, #fffde7) !important; border: 1.5px solid #ffe082 !important; border-radius: var(--r) !important; padding: 13px 15px !important; font-size: 12px !important; color: #6d4c41 !important; line-height: 1.65 !important; }
+    /* Encadré info BLEU + bannière alerte AMBRE — fonds plats (dégradé réservé bouton/en-tête/stepper) */
+    #sl-root .box-info { display: flex !important; align-items: flex-start !important; gap: 10px !important; width: 716px !important; background: #eaf4ff !important; border: 1.5px solid #bcdcff !important; border-radius: var(--r) !important; padding: 13px 15px !important; font-size: 12px !important; color: #0b4f8a !important; line-height: 1.6 !important; margin-bottom: 12px !important; }
+    #sl-root .box-warn { display: flex !important; align-items: flex-start !important; gap: 10px !important; width: 716px !important; background: #fff7e0 !important; border: 1.5px solid #ffd97a !important; border-radius: var(--r) !important; padding: 13px 15px !important; font-size: 12px !important; color: #7a5310 !important; line-height: 1.6 !important; }
+    #sl-root .box-ico { flex: 0 0 auto !important; width: 18px !important; height: 18px !important; margin-top: 1px !important; }
+    #sl-root .box-info .box-ico { color: #1f7ae0 !important; }
+    #sl-root .box-warn .box-ico { color: #d9920a !important; }
     #sl-root .box-nf { display: none !important; width: 716px !important; background: linear-gradient(135deg, #fff8e1, #fffde7) !important; border: 1.5px solid #ffe082 !important; border-radius: var(--r) !important; padding: 12px 14px !important; font-size: 12px !important; color: #6d4c41 !important; line-height: 1.6 !important; margin-top: 10px !important; }
     #sl-root .box-nf.on { display: block !important; }
 
@@ -535,11 +678,16 @@
     #sl-root .nav { display: block !important; width: 716px !important; margin-top: 24px !important; padding-top: 16px !important; border-top: 1px solid #f0f0f0 !important; font-size: 0 !important; }
     #sl-root .btn-back { display: inline-block !important; vertical-align: middle !important; height: 42px !important; line-height: 40px !important; padding: 0 22px !important; border: 1.5px solid #ddd !important; border-radius: 30px !important; font-size: 13px !important; font-weight: 600 !important; color: #aaa !important; background: none !important; cursor: pointer !important; transition: all 0.2s !important; }
     #sl-root .btn-back:hover { border-color: #999 !important; color: #555 !important; }
-    #sl-root .btn-next { display: inline-block !important; vertical-align: middle !important; float: right !important; height: 42px !important; line-height: 42px !important; padding: 0 30px !important; border: none !important; border-radius: 30px !important; font-size: 14px !important; font-weight: 700 !important; color: #fff !important; background: var(--grad) !important; cursor: pointer !important; box-shadow: 0 4px 14px rgba(19,163,172,0.32) !important; transition: all 0.2s !important; }
+    #sl-root .btn-next { display: inline-block !important; vertical-align: middle !important; float: right !important; height: 42px !important; line-height: 42px !important; padding: 0 30px !important; border: none !important; border-radius: 30px !important; font-size: 14px !important; font-weight: 700 !important; color: #fff !important; background: var(--brand-gradient) !important; cursor: pointer !important; box-shadow: 0 4px 14px rgba(19,163,172,0.32) !important; transition: all 0.2s !important; }
+    /* Bouton principal désactivé : gris neutre, non cliquable (jamais le dégradé) */
+    #sl-root .btn-next:disabled, #sl-root .btn-next:disabled:hover { background: #e6e9ec !important; color: #aab2b8 !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
     #sl-root .btn-next:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 20px rgba(19,163,172,0.42) !important; }
     #sl-root .btn-next.g { background: var(--grad2) !important; box-shadow: 0 4px 14px rgba(96,184,48,0.32) !important; }
     #sl-root .nav::after { content: '' !important; display: block !important; clear: both !important; }
     #sl-root .hide { display: none !important; }
+
+    /* A11Y — focus clavier visible sur les contrôles personnalisés */
+    #sl-root .ic-card:focus-visible,#sl-root .prop-tag:focus-visible,#sl-root .uz:focus-visible,#sl-root .ts-btn:focus-visible,#sl-root .step:focus-visible,#sl-root .btn-rm:focus-visible,#sl-root .btn-add-abo:focus-visible,#sl-root .btn-next:focus-visible,#sl-root .btn-back:focus-visible,#sl-root .modal-confirm:focus-visible,#sl-root .modal-cancel:focus-visible{outline:2px solid var(--teal)!important;outline-offset:2px!important;}
 
     /* SIMULATEUR */
     #sl-root .sim-card { display: block !important; width: 716px !important; margin-top: 16px !important; border-radius: 14px !important; overflow: hidden !important; border: 1.5px solid rgba(19,163,172,0.25) !important; box-shadow: 0 4px 18px rgba(19,163,172,0.10) !important; }
@@ -583,7 +731,7 @@
     /* ── MODAL ── */
     #sl-root .modal-overlay{display:none!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,.45)!important;z-index:99999!important;align-items:center!important;justify-content:center!important;}
     #sl-root .modal-overlay.on{display:flex!important;}
-    #sl-root .modal-box{background:#fff!important;border-radius:20px!important;padding:32px!important;width:480px!important;box-shadow:0 20px 60px rgba(0,0,0,.2)!important;}
+    #sl-root .modal-box{background:#fff!important;border-radius:20px!important;padding:32px!important;width:480px!important;max-height:88vh!important;overflow-y:auto!important;box-shadow:0 20px 60px rgba(0,0,0,.2)!important;}
     #sl-root .modal-ico{display:block!important;font-size:40px!important;text-align:center!important;margin-bottom:12px!important;}
     #sl-root .modal-tit{display:block!important;font-size:18px!important;font-weight:700!important;color:#1a1a1a!important;text-align:center!important;margin-bottom:6px!important;}
     #sl-root .modal-sub{display:block!important;font-size:13px!important;color:#888!important;text-align:center!important;margin-bottom:20px!important;line-height:1.5!important;}
@@ -603,33 +751,104 @@
     #sl-root .rc-person-name{display:block!important;font-size:12px!important;font-weight:700!important;color:#1a1a1a!important;margin-bottom:4px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}
     #sl-root .rc-person-line{display:block!important;font-size:11px!important;color:#888!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;margin-bottom:2px!important;}
     #sl-root .rc-person-badge{display:inline-block!important;margin-top:5px!important;background:rgba(19,163,172,0.1)!important;color:var(--teal)!important;font-size:9px!important;font-weight:700!important;padding:2px 7px!important;border-radius:8px!important;}
+
+    /* ── Accessibilité : respect de prefers-reduced-motion (coupe animations ET transitions) ── */
+    @media (prefers-reduced-motion: reduce) {
+      #sl-root *, #sl-root *::before, #sl-root *::after { animation: none !important; transition: none !important; }
+    }
+
+    /* ── Responsive ≤ 620px : écran Accueil + en-tête/stepper/pied ── */
+    @media (max-width: 620px) {
+      #sl-root .wrap, #sl-root .hero, #sl-root .stepper-wrap, #sl-root .body,
+      #sl-root .box-info, #sl-root .box-warn, #sl-root .nav { width: 100% !important; }
+      #sl-root .hero { padding: 20px 18px 16px !important; }
+      #sl-root .stepper-wrap { padding: 18px 16px 14px !important; }
+      #sl-root .body { padding: 18px 16px 24px !important; }
+      /* Pied en colonne, bouton pleine largeur */
+      #sl-root #sc1 .nav { display: flex !important; flex-direction: column !important; gap: 12px !important; }
+      #sl-root #sc1 .nav .btn-next { float: none !important; width: 100% !important; text-align: center !important; }
+      #sl-root #sc1 .nav .step-counter { order: 2 !important; text-align: center !important; }
+      /* Labels du stepper masqués sauf l'étape courante */
+      #sl-root .step-label { display: none !important; }
+      #sl-root .step.current .step-label { display: block !important; }
+      /* Cartes type et récap en une colonne */
+      #sl-root .type-cards { flex-direction: column !important; }
+      #sl-root .type-recap { width: 100% !important; }
+    }
   </style>
 </head>
 <body>
   <div id="sl-root">
     <div class="wrap">
       <div class="hero">
-        <span class="hero-pill">☀ SunLib</span>
-        <span class="hero-title" id="hero-title">Nouveau dossier abonné</span>
+        <svg class="sl-sunlogo" id="sl-sunlogo" viewBox="0 0 100 100" aria-hidden="true"></svg>
+        <span class="hero-pill">
+          <svg class="sl-sun" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <g class="rays">
+              <line x1="12" y1="1.5" x2="12" y2="3.5"></line>
+              <line x1="12" y1="20.5" x2="12" y2="22.5"></line>
+              <line x1="3.5" y1="3.5" x2="4.9" y2="4.9"></line>
+              <line x1="19.1" y1="19.1" x2="20.5" y2="20.5"></line>
+              <line x1="1.5" y1="12" x2="3.5" y2="12"></line>
+              <line x1="20.5" y1="12" x2="22.5" y2="12"></line>
+              <line x1="3.5" y1="20.5" x2="4.9" y2="19.1"></line>
+              <line x1="19.1" y1="4.9" x2="20.5" y2="3.5"></line>
+            </g>
+          </svg>
+          <span>SunLib</span>
+        </span>
+        <span class="hero-title" id="hero-title">Nouveau dossier</span>
         <span class="hero-sub">Espace installateur partenaire</span>
-        <div class="type-sw">
-          <button class="ts-btn on" id="tsb-part" onclick="setClient('part')">👤 Particulier</button>
-          <button class="ts-btn" id="tsb-pro" onclick="setClient('pro')">🏢 Professionnel</button>
+        <!-- Badge type (lecture seule) — masqué à l'étape 1 (type éditable via les cartes), affiché dès l'étape 2 -->
+        <div class="type-badge hide" id="type-badge">
+          <span class="type-chip"><span class="type-chip-ico" id="type-chip-ico" aria-hidden="true"></span><span id="type-chip-label">Dossier particulier</span></span>
+          <button type="button" class="type-edit" id="type-edit" onclick="askChangeType()">Modifier</button>
         </div>
       </div>
       <div class="stepper-wrap">
-        <div class="stepper" id="stepper"></div>
-        <div class="slbls" id="slbls"></div>
+        <ol class="stepper" id="stepper" aria-label="Progression du dossier"></ol>
       </div>
       <div class="body">
 
         <!-- SC1 : ACCUEIL -->
         <div class="screen on" id="sc1">
-          <div class="box-info" id="s1-info-part"><strong>ℹ️ Abonnés</strong> — Vous pourrez ajouter autant d'abonnés que nécessaire à l'étape suivante.</div>
-          <div class="box-info hide" id="s1-info-pro"><strong>🏢 Dossier professionnel</strong> — Le SIRET permet de préremplir automatiquement les données du siège social.</div>
-          <div class="box-warn">⚠️ <strong>Avant de commencer</strong>, rassemblez tous les documents en PDF haute qualité. Vous ne pourrez pas enregistrer le dossier si l'ensemble des éléments attendus n'est pas fourni.</div>
+          <!-- Type de dossier : tronc commun, éditable inline via 2 cartes radio -->
+          <fieldset class="type-fs">
+            <legend class="type-lg">Type de dossier</legend>
+            <div class="type-cards">
+              <div class="type-card" onclick="pickType('part')">
+                <input type="radio" name="sl-type" value="part" checked aria-label="Particulier" onchange="setClient('part')">
+                <span class="tc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"></path></svg></span>
+                <span class="tc-body"><span class="tc-title">Particulier</span><span class="tc-desc">Client résidentiel — un ou plusieurs abonnés.</span></span>
+                <span class="tc-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg></span>
+              </div>
+              <div class="type-card" onclick="pickType('pro')">
+                <input type="radio" name="sl-type" value="pro" aria-label="Professionnel" onchange="setClient('pro')">
+                <span class="tc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"></path><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"></path><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"></line><line x1="7.5" y1="8" x2="11.5" y2="8"></line><line x1="7.5" y1="11.5" x2="11.5" y2="11.5"></line><line x1="7.5" y1="15" x2="11.5" y2="15"></line></svg></span>
+                <span class="tc-body"><span class="tc-title">Professionnel</span><span class="tc-desc">Entreprise — raison sociale et SIRET requis.</span></span>
+                <span class="tc-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg></span>
+              </div>
+            </div>
+          </fieldset>
+          <div class="type-recap" id="type-recap" aria-live="polite"></div>
+          <!-- Encadré info bleu (icône « i ») -->
+          <div class="box-info" id="s1-info-part">
+            <svg class="box-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.5" r="0.7" fill="currentColor" stroke="none"></circle></svg>
+            <span><strong>Abonnés</strong> — Vous pourrez ajouter autant d'abonnés que nécessaire à l'étape suivante.</span>
+          </div>
+          <div class="box-info hide" id="s1-info-pro">
+            <svg class="box-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.5" r="0.7" fill="currentColor" stroke="none"></circle></svg>
+            <span><strong>Dossier professionnel</strong> — Le SIRET permet de préremplir automatiquement les données du siège social.</span>
+          </div>
+          <!-- Bannière alerte ambre (icône triangle) -->
+          <div class="box-warn">
+            <svg class="box-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"></path><line x1="12" y1="9.5" x2="12" y2="14.5"></line><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"></circle></svg>
+            <span><strong>Avant de commencer</strong>, rassemblez tous les documents en PDF haute qualité. Le dossier ne pourra pas être enregistré si l'un des éléments attendus est manquant.</span>
+          </div>
           <div class="nav">
-            <div></div><button class="btn-next" onclick="goNext()">Commencer →</button>
+            <span class="step-counter" id="sc1-counter">Étape 1 sur 5</span>
+            <button class="btn-next" onclick="goNext()">Commencer →</button>
           </div>
         </div>
 
@@ -643,8 +862,9 @@
             <div class="sec"><span class="sec-icon">💬</span><span class="sec-txt">Motivations</span></div>
             <div class="row">
               <div class="f f100">
-                <label>Motivations pour un équipement photovoltaïque</label>
-                <textarea id="sl-motiv" placeholder="Ex : réduire ma facture, transition énergétique..."></textarea>
+                <label for="sl-motiv">Motivations pour un équipement photovoltaïque <span style="font-weight:400;color:#aaa;">(facultatif)</span></label>
+                <textarea id="sl-motiv" maxlength="600" placeholder="Ex : réduire ma facture, gagner en autonomie, transition énergétique..."></textarea>
+                <span class="char-counter" id="sl-motiv-count">0 / 600</span>
               </div>
             </div>
           </div>
@@ -653,14 +873,14 @@
             <div class="row">
               <div class="f f100"><label>N° SIREN <span class="req">*</span></label>
                 <div class="siret-wrap">
-                  <input type="text" id="sl-siren" placeholder="9 chiffres" maxlength="9" oninput="this.value=this.value.replace(/\D/g,'')"/>
+                  <input type="text" id="sl-siren" data-req aria-required="true" placeholder="9 chiffres" maxlength="9" oninput="this.value=this.value.replace(/\D/g,'')"/>
                   <button class="btn-siret" id="btn-lookup" onclick="lookupSiren()">🔍 Rechercher</button>
                 </div>
                 <span class="siret-st" id="siret-st"></span>
               </div>
             </div>
             <div class="row">
-              <div class="f f50"><label>Nom de l'entreprise <span class="req">*</span></label><input type="text" id="sl-pro-nom" placeholder="SAS MonEntreprise"/></div>
+              <div class="f f50"><label>Nom de l'entreprise <span class="req">*</span></label><input type="text" id="sl-pro-nom" data-req aria-required="true" placeholder="SAS MonEntreprise"/></div>
               <div class="f f25"><label>Forme juridique <span class="req">*</span></label><select id="sl-pro-forme"><option value="">— Choisir —</option><option>SAS</option><option>SARL</option><option>SA</option><option>EURL</option><option>SCI</option><option>EI</option><option>Autre</option></select></div>
               <div class="f f25"><label>Capital (€)</label><input type="number" id="sl-pro-capital" placeholder="10000"/></div>
             </div>
@@ -675,12 +895,12 @@
             <div class="sec"><span class="sec-icon">👔</span><span class="sec-txt">Dirigeant</span></div>
             <div class="row">
               <div class="f f15"><label>Civilité</label><select id="sl-dir-civ"><option>—</option><option>M.</option><option>Mme</option></select></div>
-              <div class="f f33"><label>Nom <span class="req">*</span></label><input type="text" id="sl-dir-nom" placeholder="Dupont"/></div>
-              <div class="f f33"><label>Prénom <span class="req">*</span></label><input type="text" id="sl-dir-prenom" placeholder="Jean"/></div>
+              <div class="f f33"><label>Nom <span class="req">*</span></label><input type="text" id="sl-dir-nom" data-req aria-required="true" placeholder="Dupont"/></div>
+              <div class="f f33"><label>Prénom <span class="req">*</span></label><input type="text" id="sl-dir-prenom" data-req aria-required="true" placeholder="Jean"/></div>
             </div>
             <div class="row">
-              <div class="f f33"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" placeholder="Gérant, PDG..."/></div>
-              <div class="f f33"><label>Email <span class="req">*</span></label><input type="email" id="sl-dir-email" placeholder="dir@entreprise.fr"/></div>
+              <div class="f f33"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" data-req aria-required="true" placeholder="Gérant, PDG..."/></div>
+              <div class="f f33"><label>Email <span class="req">*</span></label><input type="email" id="sl-dir-email" data-req data-val="email" aria-required="true" placeholder="dir@entreprise.fr"/></div>
               <div class="f f33"><label>Téléphone</label><input type="tel" id="sl-dir-tel" placeholder="06 12 34 56 78"/></div>
             </div>
             <div class="sec"><span class="sec-icon">📍</span><span class="sec-txt">Siège social</span></div>
@@ -700,9 +920,10 @@
               </div>
             </div>
           </div>
-          <div class="nav">
+          <div class="nav nav2">
+            <span class="foot-status" id="sc2-status" aria-live="polite">Renseignez les champs obligatoires pour continuer.</span>
             <button class="btn-back" onclick="goPrev()">← Retour</button>
-            <button class="btn-next" onclick="goNext()">Suivant →</button>
+            <button class="btn-next" id="btn-next-2" onclick="goNext()" disabled>Suivant →</button>
           </div>
         </div>
 
@@ -759,46 +980,80 @@
             </div>
             <div class="div"></div>
           </div>
-          <div class="sec" id="addr-sec-label">
-            <span class="sec-icon">📍</span><span class="sec-txt" id="addr-sec-txt">Adresse d'installation <span class="req">*</span></span>
+          <!-- En-tête de section -->
+          <div class="adr-head">
+            <span class="adr-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <h2 id="addr-sec-txt">Adresse d'installation</h2>
+            <span class="adr-rule"></span>
           </div>
-          <div class="row">
-            <div class="f f100"><label>Rechercher l'adresse</label>
-              <input type="text" id="sl-addr" placeholder="Ex : 4 rue de l'Église, Vouzy" autocomplete="off"/>
-              <div id="sl-pac"></div>
+          <p class="adr-legend">Les champs marqués d'un <span class="req">*</span> sont obligatoires.</p>
+
+          <!-- Recherche d'adresse (autocomplétion BAN) -->
+          <div class="adr-search">
+            <label for="sl-addr">Rechercher l'adresse</label>
+            <div class="adr-sbox">
+              <span class="adr-sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+              <input type="text" id="sl-addr" autocomplete="off" placeholder="Saisissez une adresse, un code postal, une ville…" role="combobox" aria-expanded="false" aria-controls="sl-pac" aria-autocomplete="list"/>
+              <button type="button" class="adr-clear" id="adr-clear" aria-label="Effacer la recherche" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+            <div class="adr-sg" id="sl-pac" role="listbox" hidden></div>
+          </div>
+
+          <!-- Champs adresse (éditables) -->
+          <div class="adr-grid">
+            <div class="adr-fld c4">
+              <label for="sl-rue">Rue <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="sl-rue" data-req data-val="text" aria-required="true" aria-describedby="sl-rue-err" placeholder="Nom de la voie"/>
+              <p class="adr-err" id="sl-rue-err"></p>
+            </div>
+            <div class="adr-fld c2">
+              <label for="sl-num">N°</label>
+              <input type="text" id="sl-num" inputmode="numeric" placeholder="Ex : 4"/>
+            </div>
+            <div class="adr-fld c2">
+              <label for="sl-cp">Code postal <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="sl-cp" inputmode="numeric" maxlength="5" data-req data-val="cp" aria-required="true" aria-describedby="sl-cp-err" placeholder="Ex : 13270"/>
+              <p class="adr-err" id="sl-cp-err"></p>
+            </div>
+            <div class="adr-fld c4">
+              <label for="sl-commune">Ville <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="sl-commune" data-req data-val="text" aria-required="true" aria-describedby="sl-commune-err" placeholder="Commune"/>
+              <p class="adr-err" id="sl-commune-err"></p>
             </div>
           </div>
-          <div class="row">
-            <div class="f f66"><label>Rue</label><input type="text" id="sl-rue" class="ro" readonly placeholder="Rempli automatiquement"/></div>
-            <div class="f f25"><label>N°</label><input type="text" id="sl-num" class="ro" readonly/></div>
-          </div>
-          <div class="row">
-            <div class="f f25"><label>Code postal</label><input type="text" id="sl-cp" class="ro" readonly/></div>
-            <div class="f f75"><label>Ville</label><input type="text" id="sl-commune" class="ro" readonly/></div>
-          </div>
-          <div class="map-wrap">
-            <div class="map-ph" id="map-ph">
-              <span class="map-ph-ico">🗺️</span>
-              <span class="map-ph-txt">La carte satellite apparaîtra ici</span>
-              <span class="map-ph-sub">Déplacez le marqueur pour affiner la position exacte</span>
-            </div>
+
+          <!-- Carte (Google Maps) -->
+          <div class="adr-map empty" id="adr-map">
+            <div class="adr-map-ph" id="map-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg><span>Sélectionnez une adresse pour afficher la carte</span></div>
             <div id="sl-map-div"></div>
-            <div class="map-hint" id="map-hint">📍 Déplacez le marqueur pour affiner</div>
+            <div class="adr-seg" id="adr-seg"><button type="button" data-mt="satellite" aria-pressed="true">Satellite</button><button type="button" data-mt="roadmap" aria-pressed="false">Plan</button></div>
+            <div class="adr-hint" id="map-hint">Déplacez le repère pour ajuster</div>
           </div>
-          <div class="geo-card" id="geo-card">
-            <span class="geo-tit">📍 Géocodage récupéré</span>
-            <div class="geo-grid">
-              <div class="geo-item"><label>Commune</label><span id="g-commune">—</span></div>
-              <div class="geo-item"><label>Département</label><span id="g-dept">—</span></div>
-              <div class="geo-item"><label>Région</label><span id="g-region">—</span></div>
-              <div class="geo-item"><label>Code INSEE</label><span id="g-insee">—</span></div>
-              <div class="geo-item"><label>Code postal</label><span id="g-cp">—</span></div>
+
+          <!-- Adresse localisée -->
+          <div class="adr-geo" id="geo-card">
+            <div class="adr-geo-head">
+              <span class="adr-geo-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <h3>Adresse localisée</h3>
+              <span class="adr-geo-status" id="geo-status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Position ajustée</span>
             </div>
-            <span class="geo-coords" id="g-coords"></span>
+            <div class="adr-geo-grid">
+              <div class="adr-geo-item"><div class="k">Commune</div><div class="v" id="g-commune">—</div></div>
+              <div class="adr-geo-item"><div class="k">Département</div><div class="v" id="g-dept">—</div></div>
+              <div class="adr-geo-item"><div class="k">Région</div><div class="v" id="g-region">—</div></div>
+              <div class="adr-geo-item"><div class="k">Code INSEE</div><div class="v" id="g-insee">—</div></div>
+              <div class="adr-geo-item"><div class="k">Code postal</div><div class="v" id="g-cp">—</div></div>
+            </div>
+            <div class="adr-geo-coords">
+              <span class="c" id="g-coords">—</span>
+              <button type="button" class="adr-copy" id="g-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copier</button>
+            </div>
           </div>
-          <div class="nav">
+
+          <div class="nav nav2">
+            <span class="foot-status" id="sc4-status" aria-live="polite">Recherchez et confirmez l'adresse d'installation.</span>
             <button class="btn-back" onclick="goPrev()">← Retour</button>
-            <button class="btn-next" onclick="goNext()">Suivant →</button>
+            <button class="btn-next" id="btn-next-3" onclick="goNext()" disabled>Suivant →</button>
           </div>
         </div>
 
@@ -980,7 +1235,10 @@
 
       </div>
 
-      <div class="modal-overlay" id="modal-confirm-overlay"><div class="modal-box"><span class="modal-ico">&#128203;</span><span class="modal-tit">Confirmer la création</span><span class="modal-sub">Vérifiez avant de soumettre.</span><div class="modal-recap" id="modal-recap-content"></div><div class="modal-btns"><button class="modal-cancel" onclick="closeConfirm()">← Modifier</button><button class="modal-confirm" onclick="doSubmit()">✓ Confirmer</button></div></div></div>
+      <div class="modal-overlay" id="modal-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title"><div class="modal-box"><span class="modal-ico" aria-hidden="true">&#128203;</span><span class="modal-tit" id="modal-confirm-title">Confirmer la création</span><span class="modal-sub">Vérifiez avant de soumettre.</span><div class="modal-recap" id="modal-recap-content"></div><div class="modal-btns"><button class="modal-cancel" onclick="closeConfirm()">← Modifier</button><button class="modal-confirm" onclick="doSubmit()">✓ Confirmer</button></div></div></div>
+
+      <!-- Modale : changement de type (action destructrice) -->
+      <div class="modal-overlay" id="modal-type-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-type-title" aria-describedby="modal-type-desc"><div class="modal-box"><span class="modal-ico" aria-hidden="true">&#9888;&#65039;</span><span class="modal-tit" id="modal-type-title">Changer de type de dossier ?</span><span class="modal-sub" id="modal-type-desc">Les informations déjà saisies seront effacées.</span><div class="modal-btns"><button type="button" class="modal-cancel" onclick="closeTypeModal()">Annuler</button><button type="button" class="modal-danger" onclick="confirmChangeType()">Changer de type</button></div></div></div>
     </div>
   </div>
   <script>
@@ -989,6 +1247,8 @@ var KEY='AIzaSyBvmiOuZNWsSyyzl4bSB6vacgv0_C6f1HA';
 var ct='part', iType=null, geo=null, gmap=null, gmk=null, deb=null, propT='oui';
 var abos=[], aC=0, collabs=[], cC=0;
 var simResult=null;
+var _uid=0, _lastFocus=null;
+var adr={located:false};   // étape 3 : adresse localisée ?
 
 var FLOW_PART=[1,2,4,5,6];
 var FLOW_PRO =[1,2,3,4,5,6];
@@ -1000,32 +1260,49 @@ function curSc(){ return flow()[flowPos]; }
 var LBLS_PART=['Accueil','Identité','Adresse','Installation','Documents'];
 var LBLS_PRO=['Accueil','Entreprise','Collaborateurs','Adresse','Installation','Documents'];
 
-function dotPositions(n){
-  var pos=[]; for(var i=0;i<n;i++) pos.push(Math.round(i*(700-36)/(n-1))); return pos;
-}
+/* Construit le stepper sémantique (<ol>) : un <li> par étape. Ronds en dégradé de marque ;
+   le rail et son remplissage sont gérés en CSS via --n et --progress (posés par setStep). */
 function buildStepper(){
-  var lbls=ct==='part'?LBLS_PART:LBLS_PRO, n=lbls.length, DP=dotPositions(n);
-  var st=document.getElementById('stepper'), sl=document.getElementById('slbls');
-  st.innerHTML=''; sl.innerHTML='';
+  var lbls=ct==='part'?LBLS_PART:LBLS_PRO, n=lbls.length;
+  var ol=document.getElementById('stepper');
+  ol.innerHTML='';
+  ol.style.setProperty('--n', n);
   for(var i=0;i<n;i++){
-    var step=i+1, isActive=(step===flowPos+1), isDone=(step<=maxPos&&step!==flowPos+1);
-    if(i>0){
-      var ln=document.createElement('div');
-      ln.className='stepper-line'+(isDone||isActive?' done':'');
-      ln.style.left=(DP[i-1]+36)+'px'; ln.style.width=(DP[i]-DP[i-1]-36)+'px';
-      st.appendChild(ln);
-    }
-    var dot=document.createElement('div');
-    dot.className='sdot'+(isDone?' done':isActive?' active':'');
-    dot.style.left=DP[i]+'px'; dot.innerHTML=isDone?'✓':step;
-    (function(s){dot.onclick=function(){stepClick(s);};})(step);
-    st.appendChild(dot);
+    var step=i+1;
+    var li=document.createElement('li');
+    li.className='step';
+    var dot=document.createElement('span');
+    dot.className='step-dot'; dot.setAttribute('aria-hidden','true'); dot.textContent=step;
     var lbl=document.createElement('span');
-    lbl.className='slbl'+(isActive?' active':isDone?' done':'');
-    lbl.style.left=(DP[i]-22)+'px'; lbl.textContent=lbls[i];
-    (function(s){lbl.onclick=function(){stepClick(s);};})(step);
-    sl.appendChild(lbl);
+    lbl.className='step-label'; lbl.textContent=lbls[i];
+    li.appendChild(dot); li.appendChild(lbl);
+    (function(s){
+      var go=function(){ if(s-1<=maxPos) stepClick(s); };
+      li.onclick=go;
+      li.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } });
+    })(step);
+    ol.appendChild(li);
   }
+  setStep(flowPos+1);
+}
+
+/* Pose l'étape courante : remplissage du rail (--progress), états visité/courant + compteur du pied. */
+function setStep(nStep){
+  var ol=document.getElementById('stepper'); if(!ol) return;
+  var items=ol.children, total=items.length;
+  for(var i=0;i<items.length;i++){
+    var li=items[i], step=i+1;
+    var isCurrent=(step===nStep), isDone=(step<=maxPos && !isCurrent);
+    li.className='step'+(isCurrent?' current':'')+(isDone?' done':'');
+    var dot=li.querySelector('.step-dot'); if(dot){ if(isDone) dot.innerHTML=CHECK_SVG_SM; else dot.textContent=step; }
+    if(isCurrent) li.setAttribute('aria-current','step'); else li.removeAttribute('aria-current');
+    // Étapes déjà visitées : focusables et activables au clavier
+    if(step-1<=maxPos && !isCurrent){ li.setAttribute('role','button'); li.setAttribute('tabindex','0'); li.setAttribute('aria-label','Revenir à l\'étape '+step+' : '+li.querySelector('.step-label').textContent); }
+    else { li.removeAttribute('role'); li.removeAttribute('tabindex'); li.removeAttribute('aria-label'); }
+  }
+  // Remplissage = (étape - 1) / (total - 1), borné à [0..1]
+  ol.style.setProperty('--progress', total>1 ? (nStep-1)/(total-1) : 0);
+  var c=document.getElementById('sc1-counter'); if(c) c.textContent='Étape '+nStep+' sur '+total;
 }
 
 function stepClick(step){
@@ -1040,7 +1317,10 @@ function showScreen(sc, pos){
   document.getElementById('sc'+sc).classList.add('on');
   if(pos>maxPos) maxPos=pos;
   buildStepper();
+  updateHeader();
   if(sc===2&&ct==='part') renderAbos();
+  if(sc===2) refresh();
+  if(sc===4) refreshAdr();
   if(sc===3&&ct==='pro') renderCollabs();
   if(sc===6) buildRecap();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1062,18 +1342,10 @@ function validate(sc){
   var ok=true;
   function req(id){var el=document.getElementById(id);if(!el)return;if(!el.value.trim()){el.classList.add('err');ok=false;}else el.classList.remove('err');}
   if(sc===2){
-    if(ct==='part'){
-      if(abos.length===0){alert('Ajoutez au moins un abonné.');return false;}
-      saveAbos();
-      abos.forEach(function(a){['nom','prenom','email'].forEach(function(f){req('a'+a.id+'-'+f);});});
-    } else {
-      req('sl-siren');req('sl-pro-nom');req('sl-dir-nom');req('sl-dir-prenom');req('sl-dir-email');req('sl-dir-fonction');
-    }
+    if(ct==='part') saveAbos();
+    return formValid();   // bouton déjà désactivé tant qu'invalide ; sécurité au clic
   }
-  if(sc===4){
-    if(!document.getElementById('sl-rue').value){document.getElementById('sl-addr').classList.add('err');ok=false;}
-    else document.getElementById('sl-addr').classList.remove('err');
-  }
+  if(sc===4) return formValidAdr();   // bouton déjà désactivé tant qu'invalide ; sécurité au clic
   if(sc===5){
     if(!iType){alert('Veuillez choisir un type d\'installation.');return false;}
     req('sl-pdl');
@@ -1086,44 +1358,214 @@ function validate(sc){
 
 window.setClient=function(t){
   ct=t; flowPos=0; maxPos=0;
-  document.getElementById('tsb-part').classList.toggle('on',t==='part');
-  document.getElementById('tsb-pro').classList.toggle('on',t==='pro');
-  document.getElementById('hero-title').textContent=t==='part'?'Nouveau dossier particulier':'Nouveau dossier professionnel';
+  // Synchronise la carte radio sélectionnée (source de vérité = ct)
+  var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+t+'"]');
+  if(radio) radio.checked=true;
+  // Reflet visuel robuste de la sélection (indépendant du support de :has)
+  document.querySelectorAll('#sl-root .type-card').forEach(function(c){var inp=c.querySelector('input[name="sl-type"]');c.classList.toggle('sel', !!inp && inp.value===t);});
   tog('s1-info-part',t==='part');tog('s1-info-pro',t==='pro');
   tog('s2-part',t==='part');tog('s2-pro',t==='pro');
   tog('s3-pro-collab',t==='pro');
   tog('s4-proprio',t==='pro');
   tog('docs-part',t==='part');tog('docs-pro',t==='pro');
+  resetForm();          // changer de type repart sur un dossier vierge
+  updateTypeRecap();    // aperçu réactif des documents à préparer
   [1,2,3,4,5,6].forEach(function(n){var el=document.getElementById('sc'+n);if(el)el.classList.remove('on');});
   document.getElementById('sc1').classList.add('on');
   buildStepper();
+  updateHeader();
+};
+
+/* Sélection du type via un clic n'importe où sur la carte (ne dépend pas du relais label→radio) */
+window.pickType=function(t){
+  if(ct===t) return;                 // déjà ce type : ne rien réinitialiser
+  var r=document.querySelector('#sl-root input[name="sl-type"][value="'+t+'"]');
+  if(r) r.checked=true;
+  setClient(t);
+};
+
+/* Icônes type réutilisées dans le badge d'en-tête (même famille que les cartes) */
+var SVG_PERSON='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"></path></svg>';
+var SVG_BUILDING='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"></path><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"></path><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"></line><line x1="7.5" y1="8" x2="11.5" y2="8"></line><line x1="7.5" y1="11.5" x2="11.5" y2="11.5"></line><line x1="7.5" y1="15" x2="11.5" y2="15"></line></svg>';
+
+/* Documents à préparer selon le type (aperçu réactif sur l'Accueil) */
+var RECAP_DOCS={
+  part:['pièces d\'identité des abonnés','dernier avis d\'imposition','facture d\'énergie de référence','titre de propriété','étude (calepinage + devis SunLib)'],
+  pro:['extrait Kbis','pièce d\'identité du représentant','étude (calepinage + devis SunLib)','copie satellite de la toiture']
+};
+function updateTypeRecap(){
+  var r=document.getElementById('type-recap');if(!r)return;
+  r.innerHTML='Pour un dossier <strong>'+(ct==='part'?'particulier':'professionnel')+'</strong>, préparez : '+RECAP_DOCS[ct].join(', ')+'.';
+}
+
+/* En-tête : badge masqué sur l'Accueil (type éditable inline), affiché/verrouillé dès l'étape 2 */
+function updateHeader(){
+  var badge=document.getElementById('type-badge');
+  if(badge){
+    badge.classList.toggle('hide', flowPos===0);
+    var lab=document.getElementById('type-chip-label');if(lab)lab.textContent='Dossier '+(ct==='part'?'particulier':'professionnel');
+    var ico=document.getElementById('type-chip-ico');if(ico)ico.innerHTML=(ct==='part'?SVG_PERSON:SVG_BUILDING);
+  }
+  // Soleil-logo : rayons allumés proportionnellement à la progression
+  if(sunLogo){var tot=flow().length;sunLogo.setProgress(tot>1?flowPos/(tot-1):0);}
+}
+/* Soleil-logo décoratif : rayons s'allumant selon la progression */
+var sunLogo=null;
+function createSun(svg,opts){
+  opts=opts||{};var rays=opts.rays||60,innerRatio=opts.innerRatio||0.42,stagger=opts.stagger||24;
+  var NS='http://www.w3.org/2000/svg',cx=50,cy=50,Ro=46,Ri=Ro*innerRatio,lines=[];
+  for(var i=0;i<rays;i++){var a=((i*360)/rays-90)*Math.PI/180;var l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',(cx+Ri*Math.cos(a)).toFixed(2));l.setAttribute('y1',(cy+Ri*Math.sin(a)).toFixed(2));
+    l.setAttribute('x2',(cx+Ro*Math.cos(a)).toFixed(2));l.setAttribute('y2',(cy+Ro*Math.sin(a)).toFixed(2));
+    l.setAttribute('class','ray');svg.appendChild(l);lines.push(l);}
+  var on=0;return{setProgress:function(p){p=Math.max(0,Math.min(1,p));var n=Math.round(p*rays);
+    if(n>on)for(var i=on;i<n;i++){lines[i].style.transitionDelay=((i-on)*stagger)+'ms';lines[i].classList.add('on');}
+    else if(n<on)for(var j=on-1,k=0;j>=n;j--,k++){lines[j].style.transitionDelay=(k*stagger)+'ms';lines[j].classList.remove('on');}on=n;}};
+}
+
+/* Réinitialise les données saisies — le type est conservé (géré par setClient) */
+function resetForm(){
+  abos=[{id:1,civ:'',nom:'',prenom:'',email:'',tel:''}];aC=1;
+  collabs=[];cC=0;
+  iType=null;geo=null;simResult=null;propT='oui';adr.located=false;
+  document.querySelectorAll('#sl-root input:not([name="sl-type"]),#sl-root select,#sl-root textarea').forEach(function(el){
+    if(el.type==='checkbox'||el.type==='radio')el.checked=false;else el.value='';
+  });
+  document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.classList.remove('ok');});
+  document.querySelectorAll('#sl-root .uz-fn').forEach(function(fn){fn.textContent='';});
+  // Nettoie les erreurs/champs touchés (étapes 2 et 3)
+  document.querySelectorAll('#sl-root [data-touched]').forEach(function(el){el.removeAttribute('data-touched');el.classList.remove('err');el.removeAttribute('aria-invalid');});
+  document.querySelectorAll('#sl-root .adr-err.on,#sl-root .fld-err.on').forEach(function(e){e.classList.remove('on');e.innerHTML='';});
+  // Réinitialise l'écran Adresse (carte + adresse localisée)
+  var gc=document.getElementById('geo-card');if(gc)gc.classList.remove('on');
+  var gs=document.getElementById('geo-status');if(gs)gs.classList.remove('on');
+  var am=document.getElementById('adr-map');if(am)am.classList.add('empty');
+  var mp=document.getElementById('map-ph');if(mp)mp.style.setProperty('display','flex','important');
+  var mdv=document.getElementById('sl-map-div');if(mdv)mdv.style.setProperty('display','none','important');
+  var sgc=document.getElementById('adr-seg');if(sgc)sgc.style.setProperty('display','none','important');
+  var hnt=document.getElementById('map-hint');if(hnt)hnt.style.setProperty('display','none','important');
+  var clr=document.getElementById('adr-clear');if(clr)clr.hidden=true;
+}
+
+/* ── Verrou du type : confirmation destructrice avant d'effacer ── */
+window.askChangeType=function(){
+  _lastFocus=document.activeElement;
+  var ov=document.getElementById('modal-type-overlay');ov.classList.add('on');
+  var c=ov.querySelector('.modal-cancel');if(c)c.focus();   // focus par défaut sur l'action sûre
+};
+window.closeTypeModal=function(){
+  document.getElementById('modal-type-overlay').classList.remove('on');
+  if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
+};
+window.confirmChangeType=function(){
+  document.getElementById('modal-type-overlay').classList.remove('on');
+  setClient(ct);   // efface les données, revient à l'Accueil, type déverrouillé
+  var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+ct+'"]');
+  if(radio) radio.focus();   // focus sur la carte sélectionnée
 };
 
 function renderAbos(){
   var list=document.getElementById('abo-list');list.innerHTML='';
+  var multi=abos.length>1;
   abos.forEach(function(a,i){
-    var c=document.createElement('div');c.className='abo-card';c.id='ac'+a.id;
-    c.innerHTML='<div class="abo-hd"><span class="abo-num">'+(i+1)+'</span><span class="abo-title">Abonné '+(i+1)+'</span>'+(abos.length>1?'<button type="button" class="btn-rm" onclick="rmAbo('+a.id+')">✕</button>':'')+'</div>'+
-      '<div class="row"><div class="f f15"><label>Civilité</label><select id="a'+a.id+'-civ"><option value="">—</option><option>M.</option><option>Mme</option></select></div>'+
-      '<div class="f f40"><label>Nom <span class="req">*</span></label><input type="text" id="a'+a.id+'-nom" placeholder="Dupont" value="'+esc(a.nom)+'"/></div>'+
-      '<div class="f f33"><label>Prénom <span class="req">*</span></label><input type="text" id="a'+a.id+'-prenom" placeholder="Jean" value="'+esc(a.prenom)+'"/></div></div>'+
-      '<div class="row"><div class="f f50"><label>Email <span class="req">*</span></label><input type="email" id="a'+a.id+'-email" placeholder="jean@email.com" value="'+esc(a.email)+'"/></div>'+
-      '<div class="f f50"><label>Téléphone</label><input type="tel" id="a'+a.id+'-tel" placeholder="06 12 34 56 78" value="'+esc(a.tel)+'"/></div></div>';
+    var n=i+1, id=a.id;
+    var c=document.createElement('div');c.className='abo-card';c.id='ac'+id;
+    c.innerHTML='<div class="abo-hd"><span class="abo-num">'+n+'</span><span class="abo-title">Abonné '+n+'</span>'+
+      (multi?'<button type="button" class="btn-rm" data-rm="'+id+'" aria-label="Retirer l\'abonné '+n+'"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M6 7l1 13h10l1-13"></path></svg>Retirer</button>':'')+
+      '</div>'+
+      '<div class="abo-grid">'+
+        '<div class="fld col2"><label for="a'+id+'-civ">Civilité</label><select id="a'+id+'-civ"><option value="">—</option><option>M.</option><option>Mme</option><option>Autre</option></select></div>'+
+        '<div class="fld col2"><label for="a'+id+'-nom">Nom <span class="req">*</span></label><input type="text" id="a'+id+'-nom" data-req data-val="text" aria-required="true" aria-describedby="a'+id+'-nom-err" placeholder="Dupont" value="'+esc(a.nom)+'"><p class="fld-err" id="a'+id+'-nom-err"></p></div>'+
+        '<div class="fld col2"><label for="a'+id+'-prenom">Prénom <span class="req">*</span></label><input type="text" id="a'+id+'-prenom" data-req data-val="text" aria-required="true" aria-describedby="a'+id+'-prenom-err" placeholder="Jean" value="'+esc(a.prenom)+'"><p class="fld-err" id="a'+id+'-prenom-err"></p></div>'+
+        '<div class="fld col3"><label for="a'+id+'-email">Email <span class="req">*</span></label><input type="email" id="a'+id+'-email" data-req data-val="email" aria-required="true" aria-describedby="a'+id+'-email-err" placeholder="jean@email.com" value="'+esc(a.email)+'"><p class="fld-err" id="a'+id+'-email-err"></p></div>'+
+        '<div class="fld col3"><label for="a'+id+'-tel">Téléphone</label><input type="tel" inputmode="tel" id="a'+id+'-tel" data-val="tel" aria-describedby="a'+id+'-tel-err" placeholder="06 12 34 56 78" value="'+esc(a.tel)+'"><p class="fld-err" id="a'+id+'-tel-err"></p></div>'+
+      '</div>';
     list.appendChild(c);
-    var sv=document.getElementById('a'+a.id+'-civ');if(sv&&a.civ)sv.value=a.civ;
+    var sv=document.getElementById('a'+id+'-civ');if(sv&&a.civ)sv.value=a.civ;
   });
+  refresh();
 }
 function saveAbos(){abos.forEach(function(a){['civ','nom','prenom','email','tel'].forEach(function(f){var el=document.getElementById('a'+a.id+'-'+f);if(el)a[f]=el.value;});});}
 function esc(s){return(s||'').replace(/"/g,'&quot;');}
 window.addAbo=function(){saveAbos();aC++;abos.push({id:aC,civ:'',nom:'',prenom:'',email:'',tel:''});renderAbos();var c=document.getElementById('ac'+aC);if(c)setTimeout(function(){c.scrollIntoView({behavior:'smooth',block:'center'});},80);};
 window.rmAbo=function(id){saveAbos();abos=abos.filter(function(a){return a.id!==id;});renderAbos();};
 
+/* ── MOTEUR DE VALIDATION (étape 2) — état = source de vérité, DOM = reflet ── */
+var RE_EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/, RE_TEL=/^[+0-9 ().-]{10,}$/, RE_SIRET=/^\d{14}$/;
+var ALERT_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"></path><line x1="12" y1="9.5" x2="12" y2="14.5"></line><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"></circle></svg>';
+var CHECK_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg>';
+
+// check(input) → {ok,msg} : obligatoire si vide, sinon validation de format (email/tel/siret)
+function check(el){
+  var v=(el.value||'').trim();
+  var req=el.hasAttribute('data-req'), kind=el.getAttribute('data-val')||'';
+  if(!v) return req?{ok:false,msg:'Ce champ est obligatoire.'}:{ok:true,msg:''};
+  if(kind==='email'&&!RE_EMAIL.test(v)) return {ok:false,msg:'Adresse email invalide.'};
+  if(kind==='tel'&&!RE_TEL.test(v)) return {ok:false,msg:'Numéro de téléphone invalide.'};
+  if(kind==='siret'&&!RE_SIRET.test(v.replace(/\s/g,''))) return {ok:false,msg:'Le SIRET doit comporter 14 chiffres.'};
+  if(kind==='cp'&&!/^\d{5}$/.test(v)) return {ok:false,msg:'Code postal à 5 chiffres.'};
+  return {ok:true,msg:''};
+}
+// paint(input) : affiche l'erreur SEULEMENT si le champ est « touché » ; l'efface dès qu'il redevient valide
+function paint(el){
+  var res=check(el), touched=el.hasAttribute('data-touched');
+  var errEl=document.getElementById(el.getAttribute('aria-describedby')||'');
+  if(touched&&!res.ok){
+    el.classList.add('err'); el.setAttribute('aria-invalid','true');
+    if(errEl){ errEl.innerHTML=ALERT_SVG+'<span>'+res.msg+'</span>'; errEl.classList.add('on'); }
+  } else {
+    el.classList.remove('err'); el.removeAttribute('aria-invalid');
+    if(errEl){ errEl.classList.remove('on'); errEl.innerHTML=''; }
+  }
+}
+// formValid() : toutes les cartes / tous les champs obligatoires de la variante active sont valides
+function formValid(){
+  var scope=document.getElementById(ct==='part'?'abo-list':'s2-pro');
+  if(!scope) return false;
+  var inputs=scope.querySelectorAll('[data-req],[data-val]');
+  if(ct==='part'&&inputs.length===0) return false;
+  for(var i=0;i<inputs.length;i++){ if(!check(inputs[i]).ok) return false; }
+  return true;
+}
+// refresh() : (dé)active le bouton Suivant + met à jour l'indicateur de pied
+function refresh(){
+  var valid=formValid();
+  var btn=document.getElementById('btn-next-2'); if(btn) btn.disabled=!valid;
+  var st=document.getElementById('sc2-status');
+  if(st){
+    if(valid){ st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Tout est prêt</span>'; }
+    else { st.className='foot-status'; st.textContent='Renseignez les champs obligatoires pour continuer.'; }
+  }
+}
+// Délégation sur le conteneur de l'étape 2 (gère aussi les cartes ajoutées dynamiquement)
+function setupIdentity(){
+  var sc2=document.getElementById('sc2'); if(!sc2) return;
+  sc2.addEventListener('input',function(e){
+    var t=e.target;
+    if(t.id==='sl-motiv'){ var cc=document.getElementById('sl-motiv-count'); if(cc) cc.textContent=(t.value||'').length+' / 600'; return; }
+    if(t.matches&&t.matches('input,select,textarea')){
+      if(t.hasAttribute('data-req')||t.hasAttribute('data-val')) paint(t);
+      refresh();
+    }
+  });
+  sc2.addEventListener('focusout',function(e){
+    var t=e.target;
+    if(t.matches&&t.matches('input,select,textarea')&&(t.hasAttribute('data-req')||t.hasAttribute('data-val'))){
+      t.setAttribute('data-touched','1'); paint(t);
+    }
+  });
+  sc2.addEventListener('click',function(e){
+    var rm=e.target.closest&&e.target.closest('[data-rm]');
+    if(rm) rmAbo(parseInt(rm.getAttribute('data-rm'),10));
+  });
+}
+
 var ROLES_COLLAB=['Administratif','Comptabilité / Finance','Direction'];
 function renderCollabs(){
   var list=document.getElementById('collab-list');list.innerHTML='';
   collabs.forEach(function(c,i){
     var card=document.createElement('div');card.className='abo-card';card.id='cc'+c.id;
-    card.innerHTML='<div class="abo-hd"><span class="abo-num">'+(i+1)+'</span><span class="abo-title">Collaborateur '+(i+1)+'</span><button type="button" class="btn-rm" onclick="rmCollab('+c.id+')">✕</button></div>'+
+    card.innerHTML='<div class="abo-hd"><span class="abo-num">'+(i+1)+'</span><span class="abo-title">Collaborateur '+(i+1)+'</span><button type="button" class="btn-rm" aria-label="Supprimer le collaborateur '+(i+1)+'" onclick="rmCollab('+c.id+')">✕</button></div>'+
       '<div class="row"><div class="f f15"><label>Civilité</label><select id="cc'+c.id+'-civ"><option value="">—</option><option>M.</option><option>Mme</option></select></div>'+
       '<div class="f f33"><label>Nom</label><input type="text" id="cc'+c.id+'-nom" placeholder="Dupont" value="'+esc(c.nom)+'"/></div>'+
       '<div class="f f33"><label>Prénom</label><input type="text" id="cc'+c.id+'-prenom" placeholder="Jean" value="'+esc(c.prenom)+'"/></div></div>'+
@@ -1135,10 +1577,11 @@ function renderCollabs(){
     list.appendChild(card);
     var sv=document.getElementById('cc'+c.id+'-civ');if(sv&&c.civ)sv.value=c.civ;
   });
+  wireLabels(list);
 }
 function saveCollabs(){collabs.forEach(function(c){['civ','nom','prenom','email','tel','role'].forEach(function(f){var el=document.getElementById('cc'+c.id+'-'+f);if(el)c[f]=el.value;});});}
 window.addCollab=function(){saveCollabs();cC++;collabs.push({id:cC,civ:'',nom:'',prenom:'',email:'',tel:'',role:''});renderCollabs();var card=document.getElementById('cc'+cC);if(card)setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'center'});},80);};
-window.rmCollab=function(id){saveCollabs();collabs=collabs.filter(function(c){return c.id!==id;});renderCollabs();};
+window.rmCollab=function(id){if(!confirm('Supprimer ce collaborateur ?'))return;saveCollabs();collabs=collabs.filter(function(c){return c.id!==id;});renderCollabs();};
 
 window.lookupSiren=function(){
   var siren=document.getElementById('sl-siren').value.replace(/\D/g,'');
@@ -1177,6 +1620,7 @@ function fillFromAPI(r){
   dirs.forEach(function(d){var p=d.prenoms||d.prenom||'';if(!dir&&p&&d.nom)dir=d;});
   if(!dir&&dirs.length)dir=dirs[0];
   if(dir){setV('sl-dir-nom',dir.nom||'');setV('sl-dir-prenom',dir.prenoms||dir.prenom||'');setV('sl-dir-fonction',dir.qualite||dir.fonction||'');var ce=document.getElementById('sl-dir-civ');if(ce){if(dir.sexe==='F')ce.value='Mme';else if(dir.sexe==='M')ce.value='M.';}}
+  refresh();   // le préremplissage SIRET ne déclenche pas d'évènement input → réévaluer le bouton
 }
 function setV(id,val){var el=document.getElementById(id);if(el&&val!=null)el.value=val;}
 
@@ -1218,8 +1662,7 @@ window.setProp=function(v,el){
   document.querySelectorAll('#sl-root .prop-tag').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');tog('autre-prop',v==='non');
   var st=document.getElementById('addr-sec-txt');
-  if(st){if(v==='oui')st.innerHTML='Adresse de pose des panneaux <span class="req">*</span>';
-  else st.innerHTML='Site d\'installation <span style="font-size:10px;font-weight:400;color:#aaa;">(peut différer du siège)</span> <span class="req">*</span>';}
+  if(st){st.textContent=(v==='oui')?'Adresse de pose des panneaux':"Site d'installation";}
 };
 
 window.setType=function(t){
@@ -1340,10 +1783,12 @@ function updateDocProgress(){
 }
 
 var addr=document.getElementById('sl-addr'),pac=document.getElementById('sl-pac');
-function pacShow(){pac.setAttribute('style','display:block!important;width:716px!important;background:#fff!important;border:2px solid #13A3AC!important;border-top:none!important;border-radius:0 0 10px 10px!important;overflow:hidden!important;box-shadow:0 6px 20px rgba(19,163,172,0.18)!important;margin-top:-2px!important;position:relative!important;z-index:9999!important;');}
-function pacHide(){pac.setAttribute('style','display:none!important;');}
+var ICON_PIN_SM='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+function pacShow(){pac.hidden=false;addr.setAttribute('aria-expanded','true');}
+function pacHide(){pac.hidden=true;addr.setAttribute('aria-expanded','false');}
 pacHide();
 addr.addEventListener('input',function(){
+  var clr=document.getElementById('adr-clear');if(clr)clr.hidden=!addr.value;
   clearTimeout(deb);var q=addr.value.trim();if(q.length<3){pacHide();return;}
   deb=setTimeout(function(){
     var x=new XMLHttpRequest();
@@ -1352,55 +1797,105 @@ addr.addEventListener('input',function(){
     x.send();
   },300);
 });
-document.addEventListener('click',function(e){if(e.target!==addr&&!pac.contains(e.target))pacHide();});
+document.addEventListener('click',function(e){if(!(e.target.closest&&e.target.closest('.adr-search')))pacHide();});
 function renderPac(list){
   pac.innerHTML='';if(!list.length){pacHide();return;}
   list.forEach(function(f){
     var p=f.properties,it=document.createElement('div');
-    it.setAttribute('style','display:block!important;padding:11px 14px!important;cursor:pointer!important;border-bottom:1px solid #f0f5f5!important;font-size:13px!important;color:#1a1a1a!important;background:#fff!important;');
-    it.innerHTML='<span style="display:inline-block!important;vertical-align:middle!important;width:8px!important;height:8px!important;border-radius:50%!important;background:#13A3AC!important;margin-right:10px!important;"></span>'+
-      '<span style="display:inline-block!important;vertical-align:middle!important;font-size:13px!important;font-weight:600!important;color:#1a1a1a!important;">'+p.label+'</span>'+
-      '<span style="display:block!important;font-size:11px!important;color:#999!important;padding-left:18px!important;margin-top:2px!important;">'+(p.context||'')+'</span>';
-    it.addEventListener('mouseover',function(){this.style.background='#e6f7f9';});
-    it.addEventListener('mouseout',function(){this.style.background='#fff';});
+    it.className='adr-sg-item';it.setAttribute('role','option');
+    it.innerHTML='<span class="adr-sg-ico">'+ICON_PIN_SM+'</span><span><span class="adr-sg-lbl">'+p.label+'</span> <span class="adr-sg-ctx">'+(p.context||'')+'</span></span>';
     it.addEventListener('mousedown',function(e){e.preventDefault();pickAddr(f);});
     pac.appendChild(it);
   });
   pacShow();
 }
-function pickAddr(f){
-  var p=f.properties,c=f.geometry.coordinates,lat=c[1],lng=c[0];
-  addr.value=p.label;pacHide();
-  document.getElementById('sl-num').value=p.housenumber||'';
-  document.getElementById('sl-rue').value=p.street||p.name||'';
-  document.getElementById('sl-cp').value=p.postcode||'';
-  document.getElementById('sl-commune').value=p.city||'';
-  var ctx=(p.context||'').split(',');
-  geo={lat:lat,lng:lng,commune:p.city||'',dept:ctx[1]?ctx[1].trim():'',region:ctx[2]?ctx[2].trim():'',insee:p.citycode||'',cp:p.postcode||''};
+function updateGeoCard(){
   document.getElementById('g-commune').textContent=geo.commune||'—';
   document.getElementById('g-dept').textContent=geo.dept||'—';
   document.getElementById('g-region').textContent=geo.region||'—';
   document.getElementById('g-insee').textContent=geo.insee||'—';
   document.getElementById('g-cp').textContent=geo.cp||'—';
-  document.getElementById('g-coords').textContent=fmtCoords(lat,lng)+' (ajustable via le marqueur)';
+  document.getElementById('g-coords').textContent=(geo&&geo.lat!=null)?fmtCoords(geo.lat,geo.lng):'—';
+}
+function pickAddr(f){
+  var p=f.properties,c=f.geometry.coordinates,lat=c[1],lng=c[0];
+  addr.value=p.label;pacHide();var clr=document.getElementById('adr-clear');if(clr)clr.hidden=false;
+  setV('sl-num',p.housenumber||'');setV('sl-rue',p.street||p.name||'');setV('sl-cp',p.postcode||'');setV('sl-commune',p.city||'');
+  var ctx=(p.context||'').split(',');
+  geo={lat:lat,lng:lng,commune:p.city||'',dept:ctx[1]?ctx[1].trim():'',region:ctx[2]?ctx[2].trim():'',insee:p.citycode||'',cp:p.postcode||''};
+  updateGeoCard();
+  ['sl-rue','sl-cp','sl-commune'].forEach(function(id){var el=document.getElementById(id);if(el){el.setAttribute('data-touched','1');paint(el);}});
+  adr.located=true;
   document.getElementById('geo-card').classList.add('on');
+  document.getElementById('geo-status').classList.remove('on');
   showMap(lat,lng);
+  refreshAdr();
+}
+function setMapType(t){
+  if(gmap&&window.google&&window.google.maps) gmap.setMapTypeId(t==='roadmap'?'roadmap':'satellite');
+  var seg=document.getElementById('adr-seg');
+  if(seg) seg.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed', b.getAttribute('data-mt')===t?'true':'false');});
 }
 function showMap(lat,lng){
-  document.getElementById('map-ph').setAttribute('style','display:none!important;');
-  var md=document.getElementById('sl-map-div');
-  md.setAttribute('style','width:716px!important;height:480px!important;display:block!important;');
+  document.getElementById('map-ph').style.setProperty('display','none','important');
+  var md=document.getElementById('sl-map-div');md.style.setProperty('display','block','important');
+  document.getElementById('adr-map').classList.remove('empty');
+  document.getElementById('adr-seg').style.setProperty('display','inline-flex','important');
   function initMap(){
-    gmap=new google.maps.Map(md,{center:{lat:lat,lng:lng},zoom:19,mapTypeId:'satellite',tilt:0,mapTypeControl:true,mapTypeControlOptions:{style:google.maps.MapTypeControlStyle.HORIZONTAL_BAR,position:google.maps.ControlPosition.TOP_RIGHT,mapTypeIds:['satellite','roadmap','hybrid']},zoomControl:true,streetViewControl:false,fullscreenControl:true});
-    gmk=new google.maps.Marker({position:{lat:lat,lng:lng},map:gmap,draggable:true,animation:google.maps.Animation.DROP});
-    var hint=document.getElementById('map-hint');
-    hint.setAttribute('style','position:absolute!important;bottom:12px!important;left:50%!important;transform:translateX(-50%)!important;background:rgba(19,163,172,0.85)!important;color:#fff!important;font-size:11px!important;font-weight:500!important;padding:6px 16px!important;border-radius:20px!important;pointer-events:none!important;white-space:nowrap!important;z-index:10!important;display:block!important;');
-    setTimeout(function(){hint.setAttribute('style',hint.getAttribute('style').replace('display:block','display:none'));},4000);
-    google.maps.event.addListener(gmk,'dragend',function(e){geo.lat=e.latLng.lat();geo.lng=e.latLng.lng();var co=document.getElementById('g-coords');if(co)co.textContent=fmtCoords(geo.lat,geo.lng)+' ✓ Position ajustée';});
+    gmap=new google.maps.Map(md,{center:{lat:lat,lng:lng},zoom:19,mapTypeId:'satellite',tilt:0,mapTypeControl:false,zoomControl:true,streetViewControl:false,fullscreenControl:true});
+    gmk=new google.maps.Marker({position:{lat:lat,lng:lng},map:gmap,draggable:true,animation:google.maps.Animation.DROP,icon:{path:'M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z',fillColor:'#0EA3B4',fillOpacity:1,strokeColor:'#0b8391',strokeWeight:1.2,scale:1.7,anchor:new google.maps.Point(12,22)}});
+    var hint=document.getElementById('map-hint');hint.textContent='Déplacez le repère pour ajuster';hint.style.setProperty('display','block','important');
+    google.maps.event.addListener(gmk,'dragend',function(e){onMarkerMoved(e.latLng);});
   }
   if(window.google&&window.google.maps)initMap();
   else{if(!window._slML){window._slML=true;var sc=document.createElement('script');sc.src='https://maps.googleapis.com/maps/api/js?key='+KEY+'&loading=async';sc.onload=function(){if(window.google&&window.google.maps)initMap();};document.head.appendChild(sc);}
   var at=0;var poll=setInterval(function(){at++;if(window.google&&window.google.maps){clearInterval(poll);initMap();}if(at>50)clearInterval(poll);},200);}
+}
+function onMarkerMoved(ll){
+  geo.lat=ll.lat();geo.lng=ll.lng();
+  document.getElementById('g-coords').textContent=fmtCoords(geo.lat,geo.lng);
+  document.getElementById('geo-status').classList.add('on');
+  var hint=document.getElementById('map-hint');if(hint)hint.textContent='Position ajustée';
+  try{ new google.maps.Geocoder().geocode({location:{lat:geo.lat,lng:geo.lng}},function(res,status){ if(status==='OK'&&res&&res[0])applyGeocode(res[0]); refreshAdr(); }); }
+  catch(err){ refreshAdr(); }
+}
+function applyGeocode(r){
+  var comp=r.address_components||[];
+  function get(type){for(var i=0;i<comp.length;i++){if(comp[i].types.indexOf(type)>=0)return comp[i];}return null;}
+  var route=get('route'),no=get('street_number'),cp=get('postal_code'),city=get('locality')||get('postal_town'),dep=get('administrative_area_level_2'),reg=get('administrative_area_level_1');
+  if(route)setV('sl-rue',route.long_name);
+  if(no)setV('sl-num',no.long_name);
+  if(cp){setV('sl-cp',cp.long_name);geo.cp=cp.long_name;}
+  if(city){setV('sl-commune',city.long_name);geo.commune=city.long_name;}
+  if(dep)geo.dept=dep.long_name; if(reg)geo.region=reg.long_name;
+  updateGeoCard();
+  ['sl-rue','sl-cp','sl-commune'].forEach(function(id){var el=document.getElementById(id);if(el){el.setAttribute('data-touched','1');paint(el);}});
+}
+function formValidAdr(){
+  if(!adr.located) return false;
+  return ['sl-rue','sl-cp','sl-commune'].every(function(id){var el=document.getElementById(id);return el&&check(el).ok;});
+}
+function refreshAdr(){
+  var ready=formValidAdr();
+  var btn=document.getElementById('btn-next-3'); if(btn) btn.disabled=!ready;
+  var st=document.getElementById('sc4-status');
+  if(st){ if(ready){st.className='foot-status ok';st.innerHTML=CHECK_SVG_SM+'<span>Adresse confirmée</span>';} else {st.className='foot-status';st.textContent='Recherchez et confirmez l\'adresse d\'installation.';} }
+}
+function setupAdr(){
+  var sc4=document.getElementById('sc4'); if(!sc4) return;
+  sc4.addEventListener('input',function(e){var t=e.target;if(t.matches&&t.matches('.adr-fld input')){paint(t);refreshAdr();}});
+  sc4.addEventListener('focusout',function(e){var t=e.target;if(t.matches&&t.matches('.adr-fld input')&&(t.hasAttribute('data-req')||t.hasAttribute('data-val'))){t.setAttribute('data-touched','1');paint(t);refreshAdr();}});
+  var seg=document.getElementById('adr-seg');
+  if(seg)seg.addEventListener('click',function(e){var b=e.target.closest('button[data-mt]');if(b)setMapType(b.getAttribute('data-mt'));});
+  var clr=document.getElementById('adr-clear');
+  if(clr)clr.addEventListener('click',function(){addr.value='';clr.hidden=true;pacHide();addr.focus();});
+  var cpy=document.getElementById('g-copy');
+  if(cpy)cpy.addEventListener('click',function(){
+    var txt=(geo&&geo.lat!=null)?(geo.lat.toFixed(6)+', '+geo.lng.toFixed(6)):'';
+    var b=cpy,h=b.innerHTML;
+    var done=function(){b.innerHTML=CHECK_SVG_SM+'<span>Copié</span>';setTimeout(function(){b.innerHTML=h;},1400);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,done);}else done();
+  });
 }
 
 function buildRecap(){
@@ -1486,9 +1981,28 @@ window.goToStep=function(step){var f=flow(),scIdx=f.indexOf(step);if(scIdx>=0)sh
 function v(id){var el=document.getElementById(id);return el?el.value.trim():'';}
 function rr(l,val){return '<div class="rr"><span class="rl">'+l+'</span><span class="rv">'+(val||'—')+'</span></div>';}
 function rcr(l,val){return '<div class="rc-row"><span class="rc-lbl">'+l+'</span><span class="rc-val">'+(val||'—')+'</span></div>';};
-window.closeConfirm=function(){document.getElementById('modal-confirm-overlay').classList.remove('on');};
+window.closeConfirm=function(){var ov=document.getElementById('modal-confirm-overlay');ov.classList.remove('on');if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();};
+function buildModalRecap(){
+  var tl={pv:'PV seul',pvbv:'PV + Batterie Virtuelle',pvb:'PV + Batterie physique',bat:'Batterie seule'};
+  function mrow(l,val){return '<div class="modal-row"><span class="modal-rl">'+l+'</span><span class="modal-rv">'+(val||'—')+'</span></div>';}
+  var h='';
+  if(ct==='part'){saveAbos();h+=mrow('Abonné(s)',abos.length+' personne'+(abos.length>1?'s':''));if(abos[0])h+=mrow('Principal',((abos[0].prenom||'')+' '+(abos[0].nom||'')).trim()||'—');}
+  else{h+=mrow('Entreprise',v('sl-pro-nom'));h+=mrow('SIREN',v('sl-siren'));}
+  h+=mrow('Adresse',((v('sl-num')+' '+v('sl-rue')).trim()+', '+v('sl-cp')+' '+v('sl-commune')).trim());
+  h+=mrow('Installation',tl[iType]||'—');
+  if(v('sl-duree'))h+=mrow('Durée',v('sl-duree'));
+  if(simResult){var isP=(ct==='pro');h+=mrow('Mensualité estimée',eu(isP?simResult.mHT:simResult.mTTC).replace(' ',' ')+(isP?' HT/mois':' TTC/mois'));}
+  document.getElementById('modal-recap-content').innerHTML=h;
+}
+window.slSubmit=function(){
+  buildModalRecap();
+  _lastFocus=document.activeElement;
+  var ov=document.getElementById('modal-confirm-overlay');ov.classList.add('on');
+  var cf=ov.querySelector('.modal-confirm');if(cf)cf.focus();
+};
 window.doSubmit=function(){
   document.getElementById('modal-confirm-overlay').classList.remove('on');
+  if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
   var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat'};
   var st={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat'};
   var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:v('sl-email-cr')},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
@@ -1496,11 +2010,49 @@ window.doSubmit=function(){
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});}
   console.log('SunLib payload:',JSON.stringify(p,null,2));
-  alert('Dossier cree! Payload en console F12.');
+  alert('Dossier créé ! Payload en console (F12).');
 };
+
+// ── Accessibilité ──
+function wireLabels(scope){
+  (scope||document).querySelectorAll('#sl-root label:not([for])').forEach(function(lb){
+    var f=lb.parentElement;if(!f)return;
+    var ctrl=f.querySelector('input,select,textarea');if(!ctrl)return;
+    if(!ctrl.id)ctrl.id='fld-'+(++_uid);
+    lb.setAttribute('for',ctrl.id);
+  });
+}
+function initA11y(){
+  document.querySelectorAll('#sl-root .ic-card,#sl-root .prop-tag').forEach(function(el){el.setAttribute('role','button');el.setAttribute('tabindex','0');});
+  document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.setAttribute('role','button');uz.setAttribute('tabindex','0');var lb=uz.querySelector('.uz-lbl');if(lb)uz.setAttribute('aria-label',lb.textContent.replace(/\*/g,'').trim());});
+  ['siret-st','prop-siret-st','doc-prog-lbl','sim-pv-c','sim-pvbv-c','sim-pvb-c','sim-bat-c'].forEach(function(id){var e=document.getElementById(id);if(e)e.setAttribute('aria-live','polite');});
+  // Modales : clic overlay + Échap ferment, piège à focus (Tab) sur les boutons
+  [['modal-confirm-overlay',closeConfirm],['modal-type-overlay',closeTypeModal]].forEach(function(m){
+    var ov=document.getElementById(m[0]),close=m[1];if(!ov)return;
+    ov.addEventListener('click',function(e){if(e.target===ov)close();});
+    ov.addEventListener('keydown',function(e){
+      if(e.key==='Escape'){close();return;}
+      if(e.key!=='Tab')return;
+      var f=ov.querySelectorAll('button');if(!f.length)return;
+      var first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    });
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar')return;
+    var t=e.target;if(!t||!t.classList)return;
+    if(t.classList.contains('ic-card')||t.classList.contains('prop-tag')||t.classList.contains('uz')){e.preventDefault();t.click();}
+  });
+  wireLabels(document);
+  setupIdentity();
+  setupAdr();
+  var _slg=document.getElementById('sl-sunlogo'); if(_slg&&!sunLogo){ sunLogo=createSun(_slg); updateHeader(); }
+}
 
 aC=1;abos=[{id:1,civ:'',nom:'',prenom:'',email:'',tel:''}];
 setClient('part');
+initA11y();
 
 // Resize dynamique iframe → Softr
 function sendHeight(){
