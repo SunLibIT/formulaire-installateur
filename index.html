@@ -884,8 +884,6 @@
     /* Pied de la modale destructrice : boutons alignés à droite */
     #sl-root #modal-danger-overlay .modal-btns{display:flex!important;flex-wrap:wrap!important;justify-content:flex-end!important;gap:10px!important;text-align:right!important;}
     #sl-root #modal-danger-overlay .modal-cancel{margin-right:0!important;}
-    #sl-root .modal-secondary{display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 22px!important;height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--color-teal)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(14,163,180,.28)!important;}
-    #sl-root .modal-secondary:hover{filter:brightness(.96)!important;}
 
     /* ════════════ Modale « Revenir à vos dossiers ? » (sortie du wizard) ════════════ */
     /* Overlay sombre neutre, contenu centré */
@@ -1568,7 +1566,7 @@
       <div class="modal-overlay" id="modal-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title"><div class="modal-box"><span class="modal-ico" aria-hidden="true">&#128203;</span><span class="modal-tit" id="modal-confirm-title">Confirmer la création</span><span class="modal-sub">Vérifiez avant de soumettre.</span><div class="modal-recap" id="modal-recap-content"></div><div class="modal-btns"><button class="modal-cancel" onclick="closeConfirm()">← Modifier</button><button class="modal-confirm" onclick="doSubmit()">✓ Confirmer</button></div></div></div>
 
       <!-- Modale générique d'action destructrice (confirmDanger) — réutilisable -->
-      <div class="modal-overlay" id="modal-danger-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-danger-title" aria-describedby="modal-danger-msg"><div class="modal-box"><span class="modal-dico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-danger-title"></span><span class="modal-sub" id="modal-danger-msg"></span><div class="modal-btns"><button type="button" class="modal-cancel" id="modal-danger-cancel" onclick="closeDanger()">Annuler</button><button type="button" class="modal-secondary" id="modal-danger-secondary" onclick="dangerSecondary()" style="display:none"></button><button type="button" class="modal-danger" id="modal-danger-confirm" onclick="dangerConfirm()"></button></div></div></div>
+      <div class="modal-overlay" id="modal-danger-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-danger-title" aria-describedby="modal-danger-msg"><div class="modal-box"><span class="modal-dico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-danger-title"></span><span class="modal-sub" id="modal-danger-msg"></span><div class="modal-btns"><button type="button" class="modal-cancel" id="modal-danger-cancel" onclick="closeDanger()">Annuler</button><button type="button" class="modal-danger" id="modal-danger-confirm" onclick="dangerConfirm()"></button></div></div></div>
       <div class="sl-leave-ov" id="modal-leave-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-leave-title" aria-describedby="modal-leave-msg"><div class="sl-leave-box"><span class="sl-leave-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9.5" x2="12" y2="14"/><circle cx="12" cy="17.5" r="0.6" fill="currentColor" stroke="none"/></svg></span><h2 class="sl-leave-title" id="modal-leave-title">Revenir à vos dossiers ?</h2><p class="sl-leave-msg" id="modal-leave-msg">Vous pouvez enregistrer votre progression avant de revenir. Sans enregistrement, les informations saisies depuis la dernière sauvegarde seront perdues.</p><div class="sl-leave-actions"><button type="button" class="sl-leave-cancel" id="modal-leave-cancel" onclick="leaveCancel()">Annuler</button><button type="button" class="sl-leave-save" id="modal-leave-save" onclick="leaveSave()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span>Enregistrer et revenir</span></button></div><button type="button" class="sl-leave-discard" id="modal-leave-discard" onclick="leaveDiscard()">Revenir sans enregistrer</button></div></div>
 
       <!-- Modale : alerte / champs à compléter -->
@@ -1788,7 +1786,7 @@ function resetForm(){
 /* ── Composant réutilisable : confirmation d'action destructrice ──
    confirmDanger({title, message, confirmLabel, onConfirm}) : focus piégé,
    fond inerte, Échap/overlay = Annuler, focus rendu au déclencheur. */
-var _dangerCb=null, _dangerCb2=null;
+var _dangerCb=null;
 function setBgInert(on){
   // Rend le contenu derrière la modale inerte (accueil OU wizard) — le clavier ne sort jamais de la modale
   document.querySelectorAll('#sl-root #sl-home, #sl-root .wrap > .hero, #sl-root .wrap > .stepper-wrap, #sl-root .wrap > .body').forEach(function(el){
@@ -1801,13 +1799,7 @@ window.confirmDanger=function(opts){
   document.getElementById('modal-danger-msg').textContent=opts.message||'';
   document.getElementById('modal-danger-confirm').textContent=opts.confirmLabel||'Confirmer';
   _dangerCb=(typeof opts.onConfirm==='function')?opts.onConfirm:null;
-  // Action secondaire optionnelle (ex. « Enregistrer et revenir »)
-  var sec=document.getElementById('modal-danger-secondary');
-  if(sec){
-    if(opts.secondaryLabel&&typeof opts.onSecondary==='function'){ sec.textContent=opts.secondaryLabel; sec.style.display=''; _dangerCb2=opts.onSecondary; }
-    else { sec.style.display='none'; _dangerCb2=null; }
-  }
-  _lastFocus=document.activeElement;          // déclencheur (« Modifier » / « Retirer » / « Mes dossiers »)
+  _lastFocus=document.activeElement;          // déclencheur (« Modifier » / « Retirer »)
   setBgInert(true);
   document.getElementById('modal-danger-overlay').classList.add('on');
   var cancel=document.getElementById('modal-danger-cancel');if(cancel)cancel.focus();   // focus sur l'action SÛRE
@@ -1817,9 +1809,8 @@ function _closeDanger(){
   setBgInert(false);
   if(_lastFocus&&document.body.contains(_lastFocus)&&_lastFocus.focus)_lastFocus.focus();   // focus rendu au déclencheur
 }
-window.closeDanger=function(){ _dangerCb=null; _dangerCb2=null; _closeDanger(); };   // Annuler / Échap / clic overlay
-window.dangerConfirm=function(){ var cb=_dangerCb; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action destructrice
-window.dangerSecondary=function(){ var cb=_dangerCb2; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action secondaire (ex. enregistrer puis revenir)
+window.closeDanger=function(){ _dangerCb=null; _closeDanger(); };   // Annuler / Échap / clic overlay
+window.dangerConfirm=function(){ var cb=_dangerCb; _dangerCb=null; _closeDanger(); if(cb)cb(); };   // action destructrice
 
 /* ── Composant réutilisable : confirmation de SORTIE du wizard ──
    confirmLeave({onSave, onDiscard, onCancel}) : 3 issues hiérarchisées —
