@@ -1583,6 +1583,7 @@
 var KEY='AIzaSyBvmiOuZNWsSyyzl4bSB6vacgv0_C6f1HA';
 var ct='part', iType=null, geo=null, gmap=null, gmk=null, deb=null, propT='oui';
 var abos=[], aC=0, collabs=[], cC=0;
+var docs={};   // documents uploadés : { key: {filename, id} } — fichiers stockés dans Airtable (champ « Documents »)
 var simResult=null;
 var _uid=0, _lastFocus=null;
 var adr={located:false};   // étape 3 : adresse localisée ?
@@ -1760,7 +1761,7 @@ function createSun(svg,opts){
 function resetForm(){
   abos=[{id:1,civ:'',nom:'',prenom:'',email:'',tel:''}];aC=1;
   collabs=[];cC=0;
-  iType=null;geo=null;simResult=null;propT='oui';adr.located=false;
+  iType=null;geo=null;simResult=null;propT='oui';adr.located=false;docs={};
   // Étape 4 : repartir sans type sélectionné (champs techniques masqués)
   tog('install-fields',false);['fl-pv','fl-pvbv','fl-pvb','fl-bat'].forEach(function(f){tog(f,false);});
   var nfw=document.getElementById('nf-warn');if(nfw)nfw.classList.remove('on');
@@ -2308,11 +2309,40 @@ window.updateSim=function(){
 };
 
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
-window.onF=function(inp,key){
-  var f=inp.files[0];if(!f)return;
-  inp.closest('.uz').classList.add('ok');
-  var fn=document.getElementById('fn-'+key);if(fn){fn.innerHTML=CHECK_SVG_SM;var fns=document.createElement('span');fns.textContent=' '+f.name;fn.appendChild(fns);}
+/* Marque une zone de document comme « fourni » (coche + nom de fichier) */
+function markDocUploaded(key,filename){
+  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z)z.classList.add('ok');}
+  var fn=document.getElementById('fn-'+key);
+  if(fn){ fn.innerHTML=CHECK_SVG_SM; var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s); }
   updateDocProgress();
+}
+function _docErr(key,msg){
+  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z)z.classList.remove('ok');}
+  var fn=document.getElementById('fn-'+key);
+  if(fn){ fn.innerHTML=''; var e=document.createElement('span'); e.style.setProperty('color','#dc2626','important'); e.textContent=msg; fn.appendChild(e); }
+}
+/* Sélection d'un document → upload immédiat vers Airtable (via /api/drafts), puis coche. */
+window.onF=function(inp,key){
+  var f=inp.files[0]; if(!f) return;
+  var uz=inp.closest('.uz'); var lblEl=uz?uz.querySelector('.uz-lbl'):null;
+  var label=(lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
+  if(f.size > 3*1024*1024){ inp.value=''; _docErr(key,'Fichier trop volumineux (max 3 Mo)'); toast('Fichier trop volumineux (max 3 Mo)'); return; }
+  var fn=document.getElementById('fn-'+key); if(fn) fn.textContent='Envoi en cours…';
+  var rd=new FileReader();
+  rd.onerror=function(){ _docErr(key,'Lecture du fichier impossible'); };
+  rd.onload=function(){
+    var b64=String(rd.result).split(',')[1]||'';
+    fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      action:'upload', draftId:getDraftId(), type_client:ct,
+      email_installateur:_homeEmail||v('sl-email-cr')||'',
+      key:key, label:label, filename:f.name, contentType:f.type||'application/octet-stream',
+      dataBase64:b64, prevId:(docs[key]&&docs[key].id)||null
+    })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
+      if(resp&&resp.ok){ docs[key]={filename:f.name,id:resp.id||null}; markDocUploaded(key,f.name); toast('Document enregistré'); }
+      else throw new Error('upload');
+    }).catch(function(){ inp.value=''; _docErr(key,'Échec de l\'envoi — réessayez'); toast('Échec de l\'envoi du document'); });
+  };
+  rd.readAsDataURL(f);
 };
 function updateDocProgress(){
   var allUz=document.querySelectorAll('#sl-root .uz');
@@ -2820,6 +2850,8 @@ function hydrateDraft(p){
     // Tous les champs statiques (entreprise, adresse, installation, motivations, dates, cases…)
     applyAllFields(p.fields);
     if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
+    // Documents déjà fournis (fichiers dans Airtable) → re-cocher les zones + nom de fichier
+    if(p.docs){ docs=p.docs; Object.keys(docs).forEach(function(k){ if(docs[k]) markDocUploaded(k, docs[k].filename); }); }
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
       var tags=document.querySelectorAll('#sl-root .prop-tag');
@@ -2920,6 +2952,7 @@ function buildDraftPayload(){
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});p.proprietaire=propT;}
   p.fields=collectAllFields();   // snapshot complet → restauration intégrale à la reprise
+  p.docs=docs;                   // documents déjà uploadés (métadonnées ; fichiers stockés dans Airtable)
   return p;
 }
 /* Machine à états : met à jour TOUS les boutons (un par étape, un seul visible à la fois) */

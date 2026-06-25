@@ -122,6 +122,54 @@ async function touchSession(email, device, link) {
   } catch (e) { /* journalisation best-effort */ }
 }
 
+// ── Pièces jointes (documents) → champ « Documents » de la table correspondante ──
+const CONTENT = 'https://content.airtable.com/v0';
+const DOC_FIELD = { part: 'fldPX5DUDg8WBd5cc', pro: 'fld4ESJbPobjn1Rrc' };   // ids des champs « Documents »
+
+// Trouve le record du brouillon, ou le crée a minima (pour pouvoir y attacher un fichier avant le 1er save).
+async function ensureRecord(table, p) {
+  var id = await findId(table, p.draftId);
+  if (id) return id;
+  var fields = {
+    'ID Brouillon': String(p.draftId || ''),
+    'Email Installateur': String(p.email_installateur || ''),
+    'Statut': 'En cours',
+    'Date création': new Date().toISOString(),
+    'Dernière modif': new Date().toISOString()
+  };
+  var r = await fetch(tbl(table), { method: 'POST', headers: H, body: JSON.stringify({ records: [{ fields: fields }], typecast: true }) });
+  var d = await r.json();
+  return (r.ok && d.records && d.records[0]) ? d.records[0].id : null;
+}
+
+// Upload d'UN document dans le champ « Documents » (append) ; si prevId fourni, retire d'abord l'ancien (remplacement).
+async function handleUpload(p, res) {
+  if (!p.draftId || !p.dataBase64) return res.status(400).json({ error: 'draftId + dataBase64 requis' });
+  var table = TABLES[p.type_client] || 'Particulier';
+  var fieldId = DOC_FIELD[p.type_client === 'pro' ? 'pro' : 'part'];
+  var recId = await ensureRecord(table, p);
+  if (!recId) return res.status(500).json({ error: 'record introuvable/non créé' });
+  if (p.prevId) {   // remplacement : on retire l'ancien fichier de ce document
+    try {
+      var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
+      var gd = await gr.json();
+      var cur = (gd.fields && gd.fields['Documents']) || [];
+      var kept = cur.filter(function (a) { return a.id !== p.prevId; }).map(function (a) { return { id: a.id }; });
+      await fetch(tbl(table), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: recId, fields: { 'Documents': kept } }] }) });
+    } catch (e) { /* best-effort */ }
+  }
+  var filename = (p.label ? p.label + ' — ' : '') + (p.filename || 'document');
+  var ur = await fetch(CONTENT + '/' + BASE + '/' + recId + '/' + fieldId + '/uploadAttachment', {
+    method: 'POST', headers: H,
+    body: JSON.stringify({ contentType: p.contentType || 'application/octet-stream', filename: filename, file: p.dataBase64 })
+  });
+  var ud = await ur.json();
+  if (!ur.ok) return res.status(ur.status).json({ error: ud });
+  var atts = (ud.fields && (ud.fields[fieldId] || ud.fields['Documents'])) || [];
+  var last = atts.length ? atts[atts.length - 1] : null;
+  return res.status(200).json({ ok: true, id: last && last.id, filename: filename });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -141,6 +189,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       var p = (typeof req.body === 'string') ? JSON.parse(req.body || '{}') : (req.body || {});
+      if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document (pièce jointe)
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
       var fields = fieldsFromPayload(p);
