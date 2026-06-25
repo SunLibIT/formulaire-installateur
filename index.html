@@ -880,6 +880,34 @@
     #sl-root #modal-danger-overlay .modal-cancel{margin-right:0!important;}
     #sl-root .modal-secondary{display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 22px!important;height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--color-teal)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(14,163,180,.28)!important;}
     #sl-root .modal-secondary:hover{filter:brightness(.96)!important;}
+
+    /* ════════════ Modale « Revenir à vos dossiers ? » (sortie du wizard) ════════════ */
+    /* Overlay sombre neutre, contenu centré */
+    #sl-root .sl-leave-ov{ display:none!important; position:fixed!important; inset:0!important; background:rgba(17,33,38,.45)!important; z-index:99999!important; align-items:center!important; justify-content:center!important; padding:20px!important; }
+    #sl-root .sl-leave-ov.on{ display:flex!important; }
+    /* Boîte blanche, rayon doux, ombre NEUTRE (pas de halo coloré), texte centré */
+    #sl-root .sl-leave-box{ width:100%!important; max-width:440px!important; background:#fff!important; border-radius:16px!important; padding:30px 28px 22px!important; box-shadow:0 20px 60px rgba(17,33,38,.22)!important; text-align:center!important; animation:slLeaveIn .2s ease!important; }
+    @keyframes slLeaveIn{ from{ opacity:0; transform:translateY(8px) scale(.98);} to{ opacity:1; transform:none;} }
+    /* Icône d'avertissement : pastille AMBRE douce (le rouge est réservé à l'action destructive) */
+    #sl-root .sl-leave-ico{ display:inline-flex!important; align-items:center!important; justify-content:center!important; width:52px!important; height:52px!important; border-radius:50%!important; background:#fef3c7!important; color:#d97706!important; margin-bottom:14px!important; }
+    #sl-root .sl-leave-ico svg{ width:26px!important; height:26px!important; }
+    #sl-root .sl-leave-title{ margin:0 0 8px!important; font-size:19px!important; font-weight:800!important; color:var(--ink)!important; }
+    /* Corps : gris LISIBLE (--ink-soft), contraste AA */
+    #sl-root .sl-leave-msg{ margin:0 0 22px!important; font-size:14px!important; line-height:1.55!important; color:var(--ink-soft)!important; }
+    /* Ligne principale : Annuler (neutre) | Enregistrer et revenir (primaire) */
+    #sl-root .sl-leave-actions{ display:flex!important; gap:10px!important; justify-content:center!important; flex-wrap:wrap!important; }
+    #sl-root .sl-leave-actions button{ flex:1 1 150px!important; min-width:150px!important; height:46px!important; border-radius:11px!important; font-size:14px!important; font-weight:700!important; cursor:pointer!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; gap:7px!important; }
+    /* Action sûre : bouton secondaire NEUTRE (bordure grise, fond blanc) — aucune bordure colorée */
+    #sl-root .sl-leave-cancel{ border:1.5px solid var(--line)!important; background:#fff!important; color:var(--ink)!important; transition:border-color .15s, background .15s!important; }
+    #sl-root .sl-leave-cancel:hover{ background:#f7f9fa!important; border-color:#d4dadf!important; }
+    /* Action recommandée : bouton PRIMAIRE en dégradé charte (teal→vert), pas de cyan */
+    #sl-root .sl-leave-save{ border:none!important; background:var(--brand-gradient)!important; color:#fff!important; transition:filter .15s!important; }
+    #sl-root .sl-leave-save:hover{ filter:brightness(.96)!important; }
+    #sl-root .sl-leave-save svg{ width:17px!important; height:17px!important; }
+    /* Action destructive : lien rouge SOBRE, séparé sous la ligne principale (jamais l'action la plus visible) */
+    #sl-root .sl-leave-discard{ display:inline-block!important; margin:16px auto 2px!important; padding:6px 10px!important; border:none!important; background:transparent!important; color:var(--danger)!important; font-size:13px!important; font-weight:600!important; text-decoration:underline!important; text-underline-offset:2px!important; cursor:pointer!important; border-radius:6px!important; }
+    #sl-root .sl-leave-discard:hover{ background:#fef2f2!important; }
+    #sl-root .sl-leave-box button:focus-visible{ outline:2px solid var(--color-teal)!important; outline-offset:2px!important; }
     #sl-root .modal-confirm{display:inline-block!important;vertical-align:middle!important;padding:0 30px!important;height:42px!important;line-height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--grad2)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(96,184,48,.32)!important;}
     /* Icône de la modale d'alerte : pastille teal (couleurs de l'app) */
     #sl-root .modal-ico-alert{width:60px!important;height:60px!important;margin:0 auto 14px!important;border-radius:50%!important;background:rgba(14,163,180,.12)!important;color:var(--color-teal)!important;display:flex!important;align-items:center!important;justify-content:center!important;}
@@ -1527,6 +1555,7 @@
 
       <!-- Modale générique d'action destructrice (confirmDanger) — réutilisable -->
       <div class="modal-overlay" id="modal-danger-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-danger-title" aria-describedby="modal-danger-msg"><div class="modal-box"><span class="modal-dico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-danger-title"></span><span class="modal-sub" id="modal-danger-msg"></span><div class="modal-btns"><button type="button" class="modal-cancel" id="modal-danger-cancel" onclick="closeDanger()">Annuler</button><button type="button" class="modal-secondary" id="modal-danger-secondary" onclick="dangerSecondary()" style="display:none"></button><button type="button" class="modal-danger" id="modal-danger-confirm" onclick="dangerConfirm()"></button></div></div></div>
+      <div class="sl-leave-ov" id="modal-leave-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-leave-title" aria-describedby="modal-leave-msg"><div class="sl-leave-box"><span class="sl-leave-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><line x1="12" y1="9.5" x2="12" y2="14"/><circle cx="12" cy="17.5" r="0.6" fill="currentColor" stroke="none"/></svg></span><h2 class="sl-leave-title" id="modal-leave-title">Revenir à vos dossiers ?</h2><p class="sl-leave-msg" id="modal-leave-msg">Vous pouvez enregistrer votre progression avant de revenir. Sans enregistrement, les informations saisies depuis la dernière sauvegarde seront perdues.</p><div class="sl-leave-actions"><button type="button" class="sl-leave-cancel" id="modal-leave-cancel" onclick="leaveCancel()">Annuler</button><button type="button" class="sl-leave-save" id="modal-leave-save" onclick="leaveSave()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span>Enregistrer et revenir</span></button></div><button type="button" class="sl-leave-discard" id="modal-leave-discard" onclick="leaveDiscard()">Revenir sans enregistrer</button></div></div>
 
       <!-- Modale : alerte / champs à compléter -->
       <div class="modal-overlay" id="modal-alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="modal-alert-title" aria-describedby="modal-alert-msg"><div class="modal-box"><span class="modal-ico-alert" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-alert-title">Champs à compléter</span><span class="modal-sub" id="modal-alert-msg"></span><div class="modal-btns"><button type="button" class="modal-confirm" id="modal-alert-ok" onclick="closeAlert()">J'ai compris</button></div></div></div>
@@ -1776,6 +1805,27 @@ function _closeDanger(){
 window.closeDanger=function(){ _dangerCb=null; _dangerCb2=null; _closeDanger(); };   // Annuler / Échap / clic overlay
 window.dangerConfirm=function(){ var cb=_dangerCb; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action destructrice
 window.dangerSecondary=function(){ var cb=_dangerCb2; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action secondaire (ex. enregistrer puis revenir)
+
+/* ── Composant réutilisable : confirmation de SORTIE du wizard ──
+   confirmLeave({onSave, onDiscard, onCancel}) : 3 issues hiérarchisées —
+   « Enregistrer et revenir » (primaire, focus à l'ouverture), « Annuler » (sûre),
+   « Revenir sans enregistrer » (destructive discrète). Échap/overlay = Annuler. */
+var _leaveCb={};
+window.confirmLeave=function(opts){
+  _leaveCb=opts||{};
+  _lastFocus=document.activeElement;          // déclencheur (« Mes dossiers »)
+  setBgInert(true);
+  document.getElementById('modal-leave-overlay').classList.add('on');
+  var save=document.getElementById('modal-leave-save'); if(save) save.focus();   // focus sur l'action RECOMMANDÉE
+};
+function _closeLeave(){
+  document.getElementById('modal-leave-overlay').classList.remove('on');
+  setBgInert(false);
+  if(_lastFocus&&document.body.contains(_lastFocus)&&_lastFocus.focus)_lastFocus.focus();
+}
+window.leaveCancel=function(){ var cb=_leaveCb.onCancel; _leaveCb={}; _closeLeave(); if(cb)cb(); };       // Annuler / Échap / clic overlay
+window.leaveSave=function(){ var cb=_leaveCb.onSave; _leaveCb={}; _closeLeave(); if(cb)cb(); };           // Enregistrer et revenir
+window.leaveDiscard=function(){ var cb=_leaveCb.onDiscard; _leaveCb={}; _closeLeave(); if(cb)cb(); };     // Revenir sans enregistrer (destructive)
 
 /* « Modifier » le type de dossier = action destructrice (retour Accueil + reset) */
 window.askChangeType=function(){
@@ -2349,16 +2399,38 @@ function showMap(lat,lng){
   document.getElementById('map-ph').style.setProperty('display','none','important');
   var md=document.getElementById('sl-map-div');md.style.setProperty('display','block','important');
   document.getElementById('adr-map').classList.remove('empty');
-  function initMap(){
-    var lab=document.getElementById('adr-labels');
-    gmap=new google.maps.Map(md,{center:{lat:lat,lng:lng},zoom:19,mapTypeId:(lab&&lab.checked)?'hybrid':'satellite',tilt:0,disableDefaultUI:true,mapTypeControl:false,zoomControl:false,fullscreenControl:false,streetViewControl:false});
-    gmk=new google.maps.Marker({position:{lat:lat,lng:lng},map:gmap,draggable:true,animation:google.maps.Animation.DROP,icon:{path:'M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z',fillColor:'#0EA3B4',fillOpacity:1,strokeColor:'#0b8391',strokeWeight:1.2,scale:1.7,anchor:new google.maps.Point(12,22)}});
-    var hint=document.getElementById('map-hint');hint.textContent='Déplacez le repère pour ajuster';
-    google.maps.event.addListener(gmk,'dragend',function(e){onMarkerMoved(e.latLng);});
+  // Le constructeur Map n'est dispo qu'une fois l'API VRAIMENT chargée (avec loading=async,
+  // window.google.maps peut exister AVANT que google.maps.Map soit défini → on teste le constructeur).
+  function ready(){ return !!(window.google && window.google.maps && typeof window.google.maps.Map==='function'); }
+  // Carte déjà créée → on recentre/déplace le repère au lieu d'en recréer une (re-sélection d'adresse).
+  if(gmap && ready()){
+    gmap.setCenter({lat:lat,lng:lng});
+    if(gmk) gmk.setPosition({lat:lat,lng:lng});
+    google.maps.event.trigger(gmap,'resize');
+    return;
   }
-  if(window.google&&window.google.maps)initMap();
-  else{if(!window._slML){window._slML=true;var sc=document.createElement('script');sc.src='https://maps.googleapis.com/maps/api/js?key='+KEY+'&loading=async';sc.onload=function(){if(window.google&&window.google.maps)initMap();};document.head.appendChild(sc);}
-  var at=0;var poll=setInterval(function(){at++;if(window.google&&window.google.maps){clearInterval(poll);initMap();}if(at>50)clearInterval(poll);},200);}
+  function initMap(){
+    if(!ready()) return false;
+    try{
+      var lab=document.getElementById('adr-labels');
+      gmap=new google.maps.Map(md,{center:{lat:lat,lng:lng},zoom:19,mapTypeId:(lab&&lab.checked)?'hybrid':'satellite',tilt:0,disableDefaultUI:true,mapTypeControl:false,zoomControl:false,fullscreenControl:false,streetViewControl:false});
+      gmk=new google.maps.Marker({position:{lat:lat,lng:lng},map:gmap,draggable:true,animation:google.maps.Animation.DROP,icon:{path:'M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z',fillColor:'#0EA3B4',fillOpacity:1,strokeColor:'#0b8391',strokeWeight:1.2,scale:1.7,anchor:new google.maps.Point(12,22)}});
+      var hint=document.getElementById('map-hint');if(hint)hint.textContent='Déplacez le repère pour ajuster';
+      google.maps.event.addListener(gmk,'dragend',function(e){onMarkerMoved(e.latLng);});
+      return true;
+    }catch(e){ return false; }
+  }
+  // Charge l'API une seule fois si besoin ; si le script échoue (réseau/clé), on rétablit le placeholder.
+  if(!ready() && !window._slML){
+    window._slML=true;
+    var sc=document.createElement('script');
+    sc.src='https://maps.googleapis.com/maps/api/js?key='+KEY+'&loading=async';
+    sc.onerror=function(){ window._slML=false; var ph=document.getElementById('map-ph'); if(ph)ph.style.setProperty('display','flex','important'); };
+    document.head.appendChild(sc);
+  }
+  if(initMap()) return;
+  // Sinon on attend que le constructeur soit prêt (jusqu'à ~15 s), puis on initialise.
+  var at=0; var poll=setInterval(function(){ at++; if(initMap()||at>75) clearInterval(poll); },200);
 }
 function onMarkerMoved(ll){
   geo.lat=ll.lat();geo.lng=ll.lng();
@@ -2603,7 +2675,7 @@ function initA11y(){
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.setAttribute('role','button');uz.setAttribute('tabindex','0');var lb=uz.querySelector('.uz-lbl');if(lb)uz.setAttribute('aria-label',lb.textContent.replace(/\*/g,'').trim());});
   ['siret-st','prop-siret-st','doc-prog-lbl','sim-pv-c','sim-pvbv-c','sim-pvb-c','sim-bat-c'].forEach(function(id){var e=document.getElementById(id);if(e)e.setAttribute('aria-live','polite');});
   // Modales : clic overlay + Échap ferment, piège à focus (Tab) sur les boutons
-  [['modal-confirm-overlay',closeConfirm],['modal-danger-overlay',closeDanger],['modal-alert-overlay',closeAlert]].forEach(function(m){
+  [['modal-confirm-overlay',closeConfirm],['modal-danger-overlay',closeDanger],['modal-alert-overlay',closeAlert],['modal-leave-overlay',leaveCancel]].forEach(function(m){
     var ov=document.getElementById(m[0]),close=m[1];if(!ov)return;
     ov.addEventListener('click',function(e){if(e.target===ov)close();});
     ov.addEventListener('keydown',function(e){
@@ -2741,17 +2813,14 @@ window.askDeleteDossier=function(id){
 window.slNewDossier=function(){ enterWizard(); setClient('part'); var f=flow(); showScreen(f[0],0); toast('Nouveau dossier'); };
 /* « Mes dossiers » : retour à l'accueil — action destructrice (la progression non enregistrée est perdue) */
 window.askGoHome=function(){
-  confirmDanger({
-    title:'Revenir à vos dossiers ?',
-    message:'Souhaitez-vous enregistrer votre progression avant de revenir ? Sans enregistrement, les informations saisies depuis la dernière sauvegarde seront perdues.',
-    confirmLabel:'Revenir sans enregistrer',
-    onConfirm:function(){ goHome(); renderHome(); },
-    secondaryLabel:'Enregistrer et revenir',
-    onSecondary:function(){
+  confirmLeave({
+    onSave:function(){
       toast('Enregistrement…');
       saveDraft(buildDraftPayload()).then(function(){ goHome(); renderHome(); toast('Brouillon enregistré'); },
                                           function(){ toast('Échec de l\'enregistrement'); });
-    }
+    },
+    onDiscard:function(){ goHome(); renderHome(); },
+    onCancel:function(){}
   });
 };
 /* Toast bas-centre (role=status), disparition ~2s */
