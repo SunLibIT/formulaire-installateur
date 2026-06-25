@@ -1,0 +1,133 @@
+// /api/drafts.js — Proxy Airtable des brouillons SunLib (le token reste côté serveur).
+// Base par défaut : appmroXyuCrYwDbM7. Tables "Particulier" et "Pro" selon le type.
+// Variables d'environnement Vercel :
+//   AIRTABLE_TOKEN    = Personal Access Token (scopes data.records:read + data.records:write, accès à la base)
+//   AIRTABLE_BASE_ID  = (optionnel) def. appmroXyuCrYwDbM7
+//   ALLOW_ORIGIN      = (optionnel) origine Softr autorisée (CORS) ; sinon "*"
+//
+//   GET    /api/drafts?email=...        → dossiers « En cours » de cet email (Particulier + Pro)
+//   POST   /api/drafts   (body = payload) → upsert sur « ID Brouillon » dans la bonne table
+//   DELETE /api/drafts?id=rec...&type=part|pro → supprime le brouillon
+
+const AT = 'https://api.airtable.com/v0';
+const BASE = process.env.AIRTABLE_BASE_ID || 'appmroXyuCrYwDbM7';
+const TOKEN = process.env.AIRTABLE_TOKEN;
+const ORIGIN = process.env.ALLOW_ORIGIN || '*';
+const H = { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
+
+const TABLES = { part: 'Particulier', pro: 'Pro' };
+const STATUT = { draft: 'En cours', submitted: 'Soumis' };
+const TYPE_LABEL = { pv: 'PV seul', pvbv: 'PV + Batterie Virtuelle', pvb: 'PV + Batterie physique', bat: 'Batterie seule' };
+
+function tbl(name) { return AT + '/' + BASE + '/' + encodeURIComponent(name); }
+function fmtDM(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function num(x) { var n = parseFloat(x); return isFinite(n) ? n : null; }
+function esc(s) { return String(s == null ? '' : s).replace(/'/g, "\\'"); }
+
+// payload (état du dossier) -> champs Airtable de la bonne table
+function fieldsFromPayload(p) {
+  var ins = p.installation || {}, adr = p.adresse || {}, m = p.mensualite_estimee || {};
+  var f = {
+    'ID Brouillon': String(p.draftId || ''),
+    'Email Installateur': String(p.email_installateur || ''),
+    'Statut': STATUT[p.status] || 'En cours',
+    'Étape atteinte': Number(p.step || 1),
+    'Adresse Installation': [adr.numero, adr.rue].filter(Boolean).join(' '),
+    'Commune': adr.commune || '',
+    'Type Installation': TYPE_LABEL[ins.type] || '',
+    'Durée Abonnement': ins.duree || '',
+    'Mensualité estimée HT': num(m.ht),
+    'Données JSON': JSON.stringify(p),
+    'Dernière modif': p.updatedAt || new Date().toISOString()
+  };
+  if (p.type_client === 'pro') {
+    var e = p.entreprise || {};
+    f['Raison Sociale'] = e.nom || '';
+    f['SIREN'] = e.siret || '';
+    f['Dirigeant'] = e.dirigeant || '';
+  } else {
+    var a = (p.abonnes && p.abonnes[0]) || {};
+    var full = [a.prenom, a.nom].filter(Boolean).join(' ').trim();
+    f['Nom Abonné 1'] = full;
+    f['Email Abonné 1'] = a.email || '';
+    f['Nom dossier'] = full || 'Dossier particulier';
+    f['Mensualité estimée TTC'] = num(m.ttc);
+  }
+  return f;
+}
+
+async function findId(table, draftId) {
+  var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
+  var r = await fetch(tbl(table) + '?maxRecords=1&filterByFormula=' + formula, { headers: H });
+  var d = await r.json();
+  return (r.ok && d.records && d.records[0]) ? d.records[0].id : null;
+}
+
+async function listByEmail(table, type, email) {
+  var formula = encodeURIComponent("AND(LOWER({Email Installateur})='" + esc(email) + "',{Statut}='En cours')");
+  var r = await fetch(tbl(table) + '?pageSize=50&filterByFormula=' + formula, { headers: H });
+  var d = await r.json();
+  if (!r.ok) return [];
+  return (d.records || []).map(function (rec) {
+    var f = rec.fields || {};
+    return {
+      id: rec.id, draftId: f['ID Brouillon'] || '', type: type, status: 'draft',
+      name: (type === 'pro' ? f['Raison Sociale'] : (f['Nom dossier'] || f['Nom Abonné 1'])) || 'Dossier',
+      ville: f['Commune'] || '', cp: '',
+      instType: f['Type Installation'] || '', duree: f['Durée Abonnement'] || '',
+      step: f['Étape atteinte'] || 1, modif: fmtDM(f['Dernière modif'])
+    };
+  });
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (!TOKEN) return res.status(500).json({ error: 'AIRTABLE_TOKEN manquant (variable d\'environnement Vercel)' });
+
+  try {
+    if (req.method === 'GET') {
+      var email = String(req.query.email || '').trim().toLowerCase();
+      if (!email) return res.status(200).json({ dossiers: [] });
+      var parts = await listByEmail('Particulier', 'part', email);
+      var pros = await listByEmail('Pro', 'pro', email);
+      return res.status(200).json({ dossiers: parts.concat(pros) });
+    }
+
+    if (req.method === 'POST') {
+      var p = (typeof req.body === 'string') ? JSON.parse(req.body || '{}') : (req.body || {});
+      if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
+      var table = TABLES[p.type_client] || 'Particulier';
+      var fields = fieldsFromPayload(p);
+      var existing = await findId(table, p.draftId);
+      var r;
+      if (existing) {
+        r = await fetch(tbl(table), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: existing, fields: fields }], typecast: true }) });
+      } else {
+        fields['Date création'] = p.updatedAt || new Date().toISOString();
+        r = await fetch(tbl(table), { method: 'POST', headers: H, body: JSON.stringify({ records: [{ fields: fields }], typecast: true }) });
+      }
+      var dd = await r.json();
+      if (!r.ok) return res.status(r.status).json({ error: dd });
+      return res.status(200).json({ ok: true, id: dd.records && dd.records[0] && dd.records[0].id });
+    }
+
+    if (req.method === 'DELETE') {
+      var id = String(req.query.id || '');
+      if (!id) return res.status(400).json({ error: 'id requis' });
+      var only = TABLES[String(req.query.type || '')];
+      var candidates = only ? [only] : ['Particulier', 'Pro'];
+      for (var i = 0; i < candidates.length; i++) {
+        var rr = await fetch(tbl(candidates[i]) + '/' + encodeURIComponent(id), { method: 'DELETE', headers: H });
+        if (rr.ok) return res.status(200).json({ ok: true });
+      }
+      return res.status(404).json({ error: 'introuvable' });
+    }
+
+    return res.status(405).json({ error: 'method not allowed' });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+}
