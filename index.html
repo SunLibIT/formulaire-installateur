@@ -876,7 +876,10 @@
     #sl-root .modal-dico{width:60px!important;height:60px!important;margin:0 auto 14px!important;border-radius:50%!important;background:rgba(220,38,38,.10)!important;color:var(--danger)!important;display:flex!important;align-items:center!important;justify-content:center!important;}
     #sl-root .modal-dico svg{width:30px!important;height:30px!important;}
     /* Pied de la modale destructrice : boutons alignés à droite */
-    #sl-root #modal-danger-overlay .modal-btns{text-align:right!important;}
+    #sl-root #modal-danger-overlay .modal-btns{display:flex!important;flex-wrap:wrap!important;justify-content:flex-end!important;gap:10px!important;text-align:right!important;}
+    #sl-root #modal-danger-overlay .modal-cancel{margin-right:0!important;}
+    #sl-root .modal-secondary{display:inline-flex!important;align-items:center!important;justify-content:center!important;padding:0 22px!important;height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--color-teal)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(14,163,180,.28)!important;}
+    #sl-root .modal-secondary:hover{filter:brightness(.96)!important;}
     #sl-root .modal-confirm{display:inline-block!important;vertical-align:middle!important;padding:0 30px!important;height:42px!important;line-height:42px!important;border:none!important;border-radius:30px!important;font-size:14px!important;font-weight:700!important;color:#fff!important;background:var(--grad2)!important;cursor:pointer!important;box-shadow:0 4px 14px rgba(96,184,48,.32)!important;}
     /* Icône de la modale d'alerte : pastille teal (couleurs de l'app) */
     #sl-root .modal-ico-alert{width:60px!important;height:60px!important;margin:0 auto 14px!important;border-radius:50%!important;background:rgba(14,163,180,.12)!important;color:var(--color-teal)!important;display:flex!important;align-items:center!important;justify-content:center!important;}
@@ -1523,7 +1526,7 @@
       <div class="modal-overlay" id="modal-confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title"><div class="modal-box"><span class="modal-ico" aria-hidden="true">&#128203;</span><span class="modal-tit" id="modal-confirm-title">Confirmer la création</span><span class="modal-sub">Vérifiez avant de soumettre.</span><div class="modal-recap" id="modal-recap-content"></div><div class="modal-btns"><button class="modal-cancel" onclick="closeConfirm()">← Modifier</button><button class="modal-confirm" onclick="doSubmit()">✓ Confirmer</button></div></div></div>
 
       <!-- Modale générique d'action destructrice (confirmDanger) — réutilisable -->
-      <div class="modal-overlay" id="modal-danger-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-danger-title" aria-describedby="modal-danger-msg"><div class="modal-box"><span class="modal-dico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-danger-title"></span><span class="modal-sub" id="modal-danger-msg"></span><div class="modal-btns"><button type="button" class="modal-cancel" id="modal-danger-cancel" onclick="closeDanger()">Annuler</button><button type="button" class="modal-danger" id="modal-danger-confirm" onclick="dangerConfirm()"></button></div></div></div>
+      <div class="modal-overlay" id="modal-danger-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-danger-title" aria-describedby="modal-danger-msg"><div class="modal-box"><span class="modal-dico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-danger-title"></span><span class="modal-sub" id="modal-danger-msg"></span><div class="modal-btns"><button type="button" class="modal-cancel" id="modal-danger-cancel" onclick="closeDanger()">Annuler</button><button type="button" class="modal-secondary" id="modal-danger-secondary" onclick="dangerSecondary()" style="display:none"></button><button type="button" class="modal-danger" id="modal-danger-confirm" onclick="dangerConfirm()"></button></div></div></div>
 
       <!-- Modale : alerte / champs à compléter -->
       <div class="modal-overlay" id="modal-alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="modal-alert-title" aria-describedby="modal-alert-msg"><div class="modal-box"><span class="modal-ico-alert" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-alert-title">Champs à compléter</span><span class="modal-sub" id="modal-alert-msg"></span><div class="modal-btns"><button type="button" class="modal-confirm" id="modal-alert-ok" onclick="closeAlert()">J'ai compris</button></div></div></div>
@@ -1617,7 +1620,7 @@ function showScreen(sc, pos){
   updateHeader();
   if(sc===2&&ct==='part') renderAbos();
   if(sc===2) refresh();
-  if(sc===4) refreshAdr();
+  if(sc===4){ refreshAdr(); ensureMapShown(); }
   if(sc===5) refreshInstall();
   if(sc===3&&ct==='pro') renderCollabs();
   if(sc===6) buildRecap();
@@ -1741,7 +1744,7 @@ function resetForm(){
 /* ── Composant réutilisable : confirmation d'action destructrice ──
    confirmDanger({title, message, confirmLabel, onConfirm}) : focus piégé,
    fond inerte, Échap/overlay = Annuler, focus rendu au déclencheur. */
-var _dangerCb=null;
+var _dangerCb=null, _dangerCb2=null;
 function setBgInert(on){
   // Rend le contenu derrière la modale inerte (accueil OU wizard) — le clavier ne sort jamais de la modale
   document.querySelectorAll('#sl-root #sl-home, #sl-root .wrap > .hero, #sl-root .wrap > .stepper-wrap, #sl-root .wrap > .body').forEach(function(el){
@@ -1754,7 +1757,13 @@ window.confirmDanger=function(opts){
   document.getElementById('modal-danger-msg').textContent=opts.message||'';
   document.getElementById('modal-danger-confirm').textContent=opts.confirmLabel||'Confirmer';
   _dangerCb=(typeof opts.onConfirm==='function')?opts.onConfirm:null;
-  _lastFocus=document.activeElement;          // déclencheur (« Modifier » / « Retirer »)
+  // Action secondaire optionnelle (ex. « Enregistrer et revenir »)
+  var sec=document.getElementById('modal-danger-secondary');
+  if(sec){
+    if(opts.secondaryLabel&&typeof opts.onSecondary==='function'){ sec.textContent=opts.secondaryLabel; sec.style.display=''; _dangerCb2=opts.onSecondary; }
+    else { sec.style.display='none'; _dangerCb2=null; }
+  }
+  _lastFocus=document.activeElement;          // déclencheur (« Modifier » / « Retirer » / « Mes dossiers »)
   setBgInert(true);
   document.getElementById('modal-danger-overlay').classList.add('on');
   var cancel=document.getElementById('modal-danger-cancel');if(cancel)cancel.focus();   // focus sur l'action SÛRE
@@ -1764,8 +1773,9 @@ function _closeDanger(){
   setBgInert(false);
   if(_lastFocus&&document.body.contains(_lastFocus)&&_lastFocus.focus)_lastFocus.focus();   // focus rendu au déclencheur
 }
-window.closeDanger=function(){ _dangerCb=null; _closeDanger(); };   // Annuler / Échap / clic overlay
-window.dangerConfirm=function(){ var cb=_dangerCb; _dangerCb=null; _closeDanger(); if(cb)cb(); };   // action destructrice
+window.closeDanger=function(){ _dangerCb=null; _dangerCb2=null; _closeDanger(); };   // Annuler / Échap / clic overlay
+window.dangerConfirm=function(){ var cb=_dangerCb; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action destructrice
+window.dangerSecondary=function(){ var cb=_dangerCb2; _dangerCb=null; _dangerCb2=null; _closeDanger(); if(cb)cb(); };   // action secondaire (ex. enregistrer puis revenir)
 
 /* « Modifier » le type de dossier = action destructrice (retour Accueil + reset) */
 window.askChangeType=function(){
@@ -2284,6 +2294,20 @@ function renderPac(list){
   });
   pacShow();
 }
+/* Affiche/rafraîchit la carte à partir de `geo` (reprise d'un dossier, ou retour sur l'étape Adresse).
+   La carte Google ne se rend correctement que dans un conteneur VISIBLE → appelée quand sc4 s'affiche. */
+function ensureMapShown(){
+  if(!(geo&&geo.lat!=null)) return;
+  var am=document.getElementById('adr-map');
+  if(am&&am.classList.contains('empty')){
+    updateGeoCard(); adr.located=true;
+    var gc=document.getElementById('geo-card'); if(gc) gc.classList.add('on');
+    var clr=document.getElementById('adr-clear'); if(clr) clr.hidden=false;
+    showMap(geo.lat,geo.lng);
+  } else if(gmap&&window.google&&window.google.maps){
+    google.maps.event.trigger(gmap,'resize'); gmap.setCenter({lat:geo.lat,lng:geo.lng});
+  }
+}
 function updateGeoCard(){
   document.getElementById('g-commune').textContent=geo.commune||'—';
   document.getElementById('g-dept').textContent=geo.dept||'—';
@@ -2691,7 +2715,7 @@ function hydrateDraft(p){
     }
     // Tous les champs statiques (entreprise, adresse, installation, motivations, dates, cases…)
     applyAllFields(p.fields);
-    if(p.geocoding) geo=p.geocoding;
+    if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
       var tags=document.querySelectorAll('#sl-root .prop-tag');
@@ -2719,9 +2743,15 @@ window.slNewDossier=function(){ enterWizard(); setClient('part'); var f=flow(); 
 window.askGoHome=function(){
   confirmDanger({
     title:'Revenir à vos dossiers ?',
-    message:'La progression non enregistrée de ce dossier sera perdue. Si vous souhaitez la conserver, cliquez d\'abord sur « Enregistrer ».',
+    message:'Souhaitez-vous enregistrer votre progression avant de revenir ? Sans enregistrement, les informations saisies depuis la dernière sauvegarde seront perdues.',
     confirmLabel:'Revenir sans enregistrer',
-    onConfirm:function(){ goHome(); renderHome(); }
+    onConfirm:function(){ goHome(); renderHome(); },
+    secondaryLabel:'Enregistrer et revenir',
+    onSecondary:function(){
+      toast('Enregistrement…');
+      saveDraft(buildDraftPayload()).then(function(){ goHome(); renderHome(); toast('Brouillon enregistré'); },
+                                          function(){ toast('Échec de l\'enregistrement'); });
+    }
   });
 };
 /* Toast bas-centre (role=status), disparition ~2s */
