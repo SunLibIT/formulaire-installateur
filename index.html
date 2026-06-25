@@ -324,6 +324,17 @@
       animation: slFade 0.28s ease !important;
     }
 
+    /* Bouton « Mes dossiers » : retour à l'accueil (au-dessus du contenu, toutes étapes) */
+    #sl-root .btn-body-back {
+      display: inline-flex !important; align-items: center !important; gap: 6px !important;
+      margin: 0 0 16px !important; padding: 7px 13px 7px 10px !important;
+      border: 1px solid var(--line) !important; background: #fff !important; border-radius: 9px !important;
+      font-size: 13px !important; font-weight: 600 !important; color: var(--ink-soft) !important;
+      cursor: pointer !important; transition: border-color .15s, color .15s, background .15s !important;
+    }
+    #sl-root .btn-body-back:hover { border-color: var(--color-teal) !important; color: var(--color-teal) !important; background: #f3fbfb !important; }
+    #sl-root .btn-body-back svg { width: 16px !important; height: 16px !important; flex: none !important; }
+
     @keyframes slFade {
       from {
         opacity: 0;
@@ -2659,12 +2670,41 @@ function enterWizard(){ var w=document.querySelector('#sl-root .wrap'); if(w)w.c
 function goHome(){ var w=document.querySelector('#sl-root .wrap'); if(w)w.classList.add('home-mode'); }
 window.slResume=function(id){
   var d=findDossier(id); if(!d)return;
-  enterWizard(); setClient(d.type);
+  enterWizard(); setClient(d.type);    // setClient réinitialise → on hydrate ENSUITE
+  if(d.data) hydrateDraft(d.data);
   var tot=totalSteps(d.type), step=Math.max(1,Math.min(d.step||1,tot)), f=flow();
   maxPos=step-1;                       // débloque jusqu'à l'étape enregistrée
   showScreen(f[step-1], step-1);
   toast('Reprise du dossier « '+(d.name||'')+' »');
 };
+/* Restaure l'INTÉGRALITÉ d'un dossier à partir du payload sauvegardé (champ « Données JSON »). */
+function hydrateDraft(p){
+  try{
+    // Listes dynamiques : reconstruire les tableaux puis re-rendre (les valeurs viennent du tableau)
+    if(p.type_client==='part' && p.abonnes && p.abonnes.length){
+      abos=p.abonnes.map(function(a,i){return{id:i+1,civ:a.civ||'',nom:a.nom||'',prenom:a.prenom||'',email:a.email||'',tel:a.tel||''};});
+      aC=abos.length; renderAbos();
+    }
+    if(p.type_client==='pro' && p.collaborateurs && p.collaborateurs.length){
+      collabs=p.collaborateurs.map(function(c,i){return{id:i+1,civ:c.civ||'',nom:c.nom||'',prenom:c.prenom||'',email:c.email||'',tel:c.tel||'',role:c.role||''};});
+      cC=collabs.length; renderCollabs();
+    }
+    // Tous les champs statiques (entreprise, adresse, installation, motivations, dates, cases…)
+    applyAllFields(p.fields);
+    if(p.geocoding) geo=p.geocoding;
+    // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
+    if(p.type_client==='pro' && p.proprietaire){
+      var tags=document.querySelectorAll('#sl-root .prop-tag');
+      for(var i=0;i<tags.length;i++){ if((tags[i].getAttribute('onclick')||'').indexOf("'"+p.proprietaire+"'")>-1){ tags[i].click(); break; } }
+    }
+    // Type d'installation : affiche le bon panneau, fixe iType, recalcule la simulation
+    if(p.installation && p.installation.type) setType(p.installation.type);
+    // Recalculs d'état (boutons Suivant, simulation…)
+    if(typeof refresh==='function') refresh();
+    if(typeof refreshInstall==='function') refreshInstall();
+    if(typeof updateSim==='function') updateSim();
+  }catch(e){ /* hydratation best-effort : ne bloque jamais la reprise */ }
+}
 window.askDeleteDossier=function(id){
   var d=findDossier(id); if(!d)return;
   confirmDanger({
@@ -2675,6 +2715,15 @@ window.askDeleteDossier=function(id){
   });
 };
 window.slNewDossier=function(){ enterWizard(); setClient('part'); var f=flow(); showScreen(f[0],0); toast('Nouveau dossier'); };
+/* « Mes dossiers » : retour à l'accueil — action destructrice (la progression non enregistrée est perdue) */
+window.askGoHome=function(){
+  confirmDanger({
+    title:'Revenir à vos dossiers ?',
+    message:'La progression non enregistrée de ce dossier sera perdue. Si vous souhaitez la conserver, cliquez d\'abord sur « Enregistrer ».',
+    confirmLabel:'Revenir sans enregistrer',
+    onConfirm:function(){ goHome(); renderHome(); }
+  });
+};
 /* Toast bas-centre (role=status), disparition ~2s */
 var _toastT=null;
 function toast(msg){
@@ -2697,6 +2746,32 @@ function saveDraft(payload){
   return fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(function(r){ if(!r.ok) throw new Error('save failed'); return r.json(); });
 }
+/* Snapshot COMPLET de tous les champs du formulaire (par id) → rien n'est perdu, même
+   les champs non mappés en colonnes Airtable (capital, RCS, activité, motivations, dates, cases…). */
+function collectAllFields(){
+  var out={};
+  var els=document.querySelectorAll('#sl-root input, #sl-root select, #sl-root textarea');
+  for(var i=0;i<els.length;i++){
+    var el=els[i], t=el.type;
+    if(t==='radio'||t==='button'||t==='submit'||t==='file') continue;   // radios gérés via type/proprio ; fichiers non sérialisables
+    var id=el.id; if(!id) continue;
+    out[id]=(t==='checkbox')?!!el.checked:el.value;
+  }
+  return out;
+}
+/* Réapplique un snapshot (par id). Ne touche pas aux listes dynamiques (abonnés/collaborateurs),
+   reconstruites séparément. Resynchronise l'affichage des selects custom via l'événement change. */
+function applyAllFields(map){
+  if(!map) return;
+  Object.keys(map).forEach(function(id){
+    var el=document.getElementById(id); if(!el) return;
+    if(el.closest && el.closest('#abo-list,#collab-list')) return;   // gérés par renderAbos/renderCollabs
+    var val=map[id];
+    if(el.type==='checkbox'){ el.checked=!!val; el.dispatchEvent(new Event('change',{bubbles:true})); }
+    else if(el.tagName==='SELECT'){ el.value=(val==null?'':val); el.dispatchEvent(new Event('change',{bubbles:true})); }
+    else { el.value=(val==null?'':val); }
+  });
+}
 /* État COMPLET du dossier (toutes étapes), pas seulement l'étape courante */
 function buildDraftPayload(){
   saveAbos(); if(ct==='pro') saveCollabs();
@@ -2712,7 +2787,8 @@ function buildDraftPayload(){
   };
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
-  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});}
+  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});p.proprietaire=propT;}
+  p.fields=collectAllFields();   // snapshot complet → restauration intégrale à la reprise
   return p;
 }
 /* Machine à états : met à jour TOUS les boutons (un par étape, un seul visible à la fois) */
@@ -2755,11 +2831,23 @@ function injectSave(){
   z.appendChild(s); z.appendChild(b);   // indicateur à gauche, bouton à droite
   hero.appendChild(z);
 }
+/* Injecte « Mes dossiers » (retour accueil) en haut du corps, au-dessus du contenu — visible à chaque étape */
+function injectBack(){
+  var body=document.querySelector('#sl-root .wrap > .body');
+  if(!body || body.querySelector('.btn-body-back')) return;
+  var b=document.createElement('button');
+  b.type='button'; b.className='btn-body-back';
+  b.setAttribute('aria-label','Revenir à mes dossiers (la progression non enregistrée sera perdue)');
+  b.onclick=askGoHome;
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>Mes dossiers</span>';
+  body.insertBefore(b, body.firstChild);
+}
 
 aC=1;abos=[{id:1,civ:'',nom:'',prenom:'',email:'',tel:''}];
 setClient('part');
 initA11y();
 injectSave();
+injectBack();
 /* L'accueil est le point d'entrée : soleil plein/statique + dossiers de l'utilisateur connecté */
 (function(){
   var hs=document.getElementById('home-sunlogo'); if(hs)createSun(hs,{stagger:0}).setProgress(1);

@@ -70,12 +70,15 @@ async function listByEmail(table, type, email) {
   if (!r.ok) return [];
   return (d.records || []).map(function (rec) {
     var f = rec.fields || {};
+    var data = null;
+    try { if (f['Données JSON']) data = JSON.parse(f['Données JSON']); } catch (e) { data = null; }
     return {
       id: rec.id, draftId: f['ID Brouillon'] || '', type: type, status: 'draft',
       name: (type === 'pro' ? f['Raison Sociale'] : (f['Nom dossier'] || f['Nom Abonné 1'])) || 'Dossier',
       ville: f['Commune'] || '', cp: '',
       instType: f['Type Installation'] || '', duree: f['Durée Abonnement'] || '',
-      step: f['Étape atteinte'] || 1, modif: fmtDM(f['Dernière modif'])
+      step: f['Étape atteinte'] || 1, modif: fmtDM(f['Dernière modif']),
+      data: data   // payload complet → restauration intégrale du dossier à la reprise
     };
   });
 }
