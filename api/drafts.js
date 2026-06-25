@@ -80,6 +80,45 @@ async function listByEmail(table, type, email) {
   });
 }
 
+// ── Table Sessions : 1 enregistrement par email installateur, qui agrège ses brouillons ──
+function simplifyUA(ua) {
+  ua = String(ua || '');
+  var os = /Windows/.test(ua) ? 'Windows' : /iPhone|iPad|iPod/.test(ua) ? 'iOS' : /Mac OS X|Macintosh/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /Linux/.test(ua) ? 'Linux' : '';
+  var br = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
+  return [br, os].filter(Boolean).join(' · ') || (ua ? ua.slice(0, 60) : '');
+}
+
+async function findSession(email) {
+  var formula = encodeURIComponent("LOWER({Email})='" + esc(email) + "'");
+  var r = await fetch(tbl('Sessions') + '?maxRecords=1&filterByFormula=' + formula, { headers: H });
+  var d = await r.json();
+  return (r.ok && d.records && d.records[0]) ? d.records[0] : null;
+}
+
+// Upsert d'une session (clé = Email) ; journalise Date accès + Device.
+// Si link={type,draftRecId} fourni, ajoute le brouillon au champ de liens correspondant (sans écraser les autres).
+// Best-effort : toute erreur est avalée pour ne jamais casser la requête principale.
+async function touchSession(email, device, link) {
+  if (!email) return;
+  try {
+    var existing = await findSession(email);
+    var fields = { 'Email': email, 'Date accès': new Date().toISOString() };
+    if (device) fields['Device'] = device;
+    if (link && link.draftRecId) {
+      var linkField = link.type === 'pro' ? 'ID Brouillon Pro' : 'ID Brouillon Particulier';
+      var cur = (existing && existing.fields && existing.fields[linkField]) || [];
+      var ids = cur.map(function (x) { return (x && x.id) ? x.id : x; });
+      if (ids.indexOf(link.draftRecId) === -1) ids.push(link.draftRecId);
+      fields[linkField] = ids;
+    }
+    if (existing) {
+      await fetch(tbl('Sessions'), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: existing.id, fields: fields }] }) });
+    } else {
+      await fetch(tbl('Sessions'), { method: 'POST', headers: H, body: JSON.stringify({ records: [{ fields: fields }] }) });
+    }
+  } catch (e) { /* journalisation best-effort */ }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -93,6 +132,7 @@ export default async function handler(req, res) {
       if (!email) return res.status(200).json({ dossiers: [] });
       var parts = await listByEmail('Particulier', 'part', email);
       var pros = await listByEmail('Pro', 'pro', email);
+      await touchSession(email, simplifyUA(req.headers['user-agent']));   // journal d'accès (best-effort)
       return res.status(200).json({ dossiers: parts.concat(pros) });
     }
 
@@ -111,7 +151,10 @@ export default async function handler(req, res) {
       }
       var dd = await r.json();
       if (!r.ok) return res.status(r.status).json({ error: dd });
-      return res.status(200).json({ ok: true, id: dd.records && dd.records[0] && dd.records[0].id });
+      var recId = dd.records && dd.records[0] && dd.records[0].id;
+      // Relier le brouillon a la session de l'installateur + journaliser l'acces (best-effort).
+      await touchSession(String(p.email_installateur || '').trim().toLowerCase(), simplifyUA(req.headers['user-agent']), { type: p.type_client, draftRecId: recId });
+      return res.status(200).json({ ok: true, id: recId });
     }
 
     if (req.method === 'DELETE') {
