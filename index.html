@@ -2770,13 +2770,25 @@ injectSave();
   goHome();
 })();
 
-// Resize dynamique iframe → Softr
+// Resize dynamique iframe → Softr (anti-boucle).
+// 1) On mesure la hauteur du CONTENU (#sl-root), jamais documentElement/body : dans une iframe le
+//    <html> s'étire à la hauteur imposée par le parent → le mesurer crée une boucle infinie.
+// 2) On ne poste QUE si la hauteur change réellement (> 1px) → si le parent renvoie la même taille,
+//    on ne ré-émet rien et toute boucle de rétroaction s'éteint d'elle-même.
+var _lastH=0, _rafH=0;
 function sendHeight(){
-  // Mesurer la hauteur du CONTENU (#sl-root), jamais documentElement : dans une iframe le <html>
-  // s'étire à la hauteur imposée par le parent → mesurer documentElement crée une boucle infinie.
   var root=document.getElementById('sl-root');
-  var h=root?Math.ceil(root.getBoundingClientRect().height):(document.body?document.body.scrollHeight:0);
-  if(h>0) window.parent.postMessage({iframeHeight:h},'*');
+  if(!root) return;
+  var h=Math.ceil(root.getBoundingClientRect().height);
+  if(h<=0 || Math.abs(h-_lastH)<=1) return;
+  _lastH=h;
+  window.parent.postMessage({iframeHeight:h},'*');
+}
+function queueHeight(){
+  if(_rafH) return;
+  _rafH=1;
+  var run=function(){ _rafH=0; sendHeight(); };
+  if(window.requestAnimationFrame) window.requestAnimationFrame(run); else setTimeout(run,16);
 }
 var _origShowScreen=showScreen;
 showScreen=function(sc,pos){
@@ -2785,10 +2797,12 @@ showScreen=function(sc,pos){
   setTimeout(sendHeight,600);
   setTimeout(sendHeight,1500);
 };
-window.addEventListener('resize',sendHeight);
-// Observer les changements de taille du DOM (carte Maps async)
+window.addEventListener('resize',queueHeight);
+// Observer les changements de taille du CONTENU (carte Maps async, ajout d'abonnés…).
+// On observe #sl-root — jamais document.body — et le filtre « > 1px » empêche toute boucle.
 if(window.ResizeObserver){
-  new ResizeObserver(function(){sendHeight();}).observe(document.body);
+  var _slRoot=document.getElementById('sl-root');
+  if(_slRoot) new ResizeObserver(queueHeight).observe(_slRoot);
 }
 sendHeight();
 })();
