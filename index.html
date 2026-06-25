@@ -644,6 +644,12 @@
     #sl-root .adr-clear { position: absolute !important; right: 7px !important; top: 50% !important; transform: translateY(-50%) !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; width: 26px !important; height: 26px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; }
     #sl-root .adr-clear:hover { background: #f1f4f6 !important; color: var(--ink) !important; }
     #sl-root .adr-clear svg { width: 15px !important; height: 15px !important; }
+    /* Bouton « Vider l'adresse » : réinitialise champs + recherche + carte */
+    #sl-root .adr-clearall-row { display: flex !important; justify-content: flex-end !important; margin: -2px 0 12px !important; }
+    #sl-root .adr-clearall { display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 7px 12px !important; border: 1px solid var(--line) !important; background: #fff !important; border-radius: 9px !important; font-size: 13px !important; font-weight: 600 !important; color: var(--ink-soft) !important; cursor: pointer !important; transition: border-color .15s, color .15s, background .15s !important; }
+    #sl-root .adr-clearall:hover { border-color: var(--danger) !important; color: var(--danger) !important; background: #fef2f2 !important; }
+    #sl-root .adr-clearall:focus-visible { outline: 2px solid var(--color-teal) !important; outline-offset: 2px !important; }
+    #sl-root .adr-clearall svg { width: 15px !important; height: 15px !important; flex: none !important; }
     /* Liste de suggestions */
     #sl-root .adr-sg { position: absolute !important; left: 0 !important; right: 0 !important; top: calc(100% + 6px) !important; background: #fff !important; border: 1px solid var(--line) !important; border-radius: 12px !important; box-shadow: 0 14px 36px rgba(15,40,50,.14) !important; overflow: hidden !important; z-index: 9999 !important; }
     #sl-root .adr-sg[hidden] { display: none !important; }
@@ -1294,6 +1300,14 @@
               <input type="text" id="sl-commune" data-req data-val="text" aria-required="true" aria-describedby="sl-commune-err" placeholder="Commune"/>
               <p class="adr-err" id="sl-commune-err"></p>
             </div>
+          </div>
+
+          <!-- Vider toute l'adresse (champs + recherche + carte) -->
+          <div class="adr-clearall-row">
+            <button type="button" class="adr-clearall" id="adr-clearall" onclick="clearAddress()" aria-label="Vider l'adresse et réinitialiser la carte">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg>
+              <span>Vider l'adresse</span>
+            </button>
           </div>
 
           <!-- Carte (Google Maps) -->
@@ -2462,6 +2476,24 @@ function refreshAdr(){
   var st=document.getElementById('sc4-status');
   if(st){ if(ready){st.className='foot-status ok';st.innerHTML=CHECK_SVG_SM+'<span>Adresse confirmée</span>';} else {st.className='foot-status';st.textContent='Recherchez et confirmez l\'adresse d\'installation.';} }
 }
+/* Vide l'intégralité de l'adresse (recherche + champs) et réinitialise la carte à vide. */
+window.clearAddress=function(){
+  setV('sl-num','');setV('sl-rue','');setV('sl-cp','');setV('sl-commune','');
+  if(addr) addr.value=''; pacHide();
+  geo=null; adr.located=false;
+  // Carte → état vide (placeholder visible, div masquée). gmap est conservé et sera recentré à la prochaine sélection.
+  var am=document.getElementById('adr-map');if(am)am.classList.add('empty');
+  var mp=document.getElementById('map-ph');if(mp)mp.style.setProperty('display','flex','important');
+  var mdv=document.getElementById('sl-map-div');if(mdv)mdv.style.setProperty('display','none','important');
+  var gc=document.getElementById('geo-card');if(gc)gc.classList.remove('on');
+  var gs=document.getElementById('geo-status');if(gs)gs.classList.remove('on');
+  // Nettoie erreurs / état "touché" des champs adresse
+  ['sl-num','sl-rue','sl-cp','sl-commune'].forEach(function(id){var el=document.getElementById(id);if(el){el.removeAttribute('data-touched');el.classList.remove('err');el.removeAttribute('aria-invalid');}});
+  document.querySelectorAll('#sc4 .adr-err.on').forEach(function(e){e.classList.remove('on');e.innerHTML='';});
+  var clr=document.getElementById('adr-clear');if(clr)clr.hidden=true;
+  refreshAdr();
+  if(addr) addr.focus();
+};
 function setupAdr(){
   var sc4=document.getElementById('sc4'); if(!sc4) return;
   sc4.addEventListener('input',function(e){var t=e.target;if(t.matches&&t.matches('.adr-fld input')){paint(t);refreshAdr();}});
