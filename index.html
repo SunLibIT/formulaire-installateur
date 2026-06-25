@@ -2858,6 +2858,14 @@ injectBack();
   var email=(new URLSearchParams(location.search).get('email')||'').trim().toLowerCase() || 'romain@sunlib.fr';
   renderHome(email);
   goHome();
+  // …ou transmis par le parent (embed Softr) via postMessage, sans rechargement :
+  // l'iframe se charge tout de suite (l'aperçu Softr fonctionne) et reçoit l'email ensuite.
+  window.addEventListener('message',function(e){
+    var d=e&&e.data; if(!d||typeof d.slEmail!=='string') return;
+    var em=d.slEmail.trim().toLowerCase();
+    if(em && em!==_homeEmail) renderHome(em);   // met à jour _homeEmail + la liste (et donc l'email des sauvegardes)
+  });
+  try{ window.parent.postMessage({slReady:true},'*'); }catch(e){}   // signale au parent qu'on peut recevoir l'email
 })();
 
 // Resize dynamique iframe → Softr (anti-boucle).
