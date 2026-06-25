@@ -8,6 +8,10 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+    /* Reset du document (page chargée en iframe) : pas de marge body → la hauteur mesurée
+       de #sl-root == hauteur réelle du document, sans décalage de 8px ni contenu rogné. */
+    html, body { margin: 0 !important; padding: 0 !important; background: transparent !important; }
+
     #sl-root,
     #sl-root *,
     #sl-root *::before,
@@ -29,7 +33,6 @@
       --red: #e53935;
       --grad: linear-gradient(135deg, #13A3AC 0%, #3CAE68 100%);
       --grad2: linear-gradient(135deg, #3CAE68 0%, #60B830 100%);
-      --shadow-lg: 0 6px 28px rgba(0, 0, 0, 0.12);
       --r: 10px;
       --rl: 14px;
       /* Charte SunLib — réutiliser ces variables, jamais de couleur en dur */
@@ -52,7 +55,6 @@
       background: #fff !important;
       border-radius: 20px !important;
       overflow: hidden !important;
-      box-shadow: var(--shadow-lg) !important;
       font-size: 0 !important;
     }
 
