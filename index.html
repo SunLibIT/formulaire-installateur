@@ -929,6 +929,11 @@
     #sl-root .cb-certify{display:flex!important;width:100%!important;margin:8px 0 4px!important;}
     #sl-root .btn-spin{display:inline-block!important;width:15px!important;height:15px!important;margin-right:8px!important;border:2px solid rgba(255,255,255,.45)!important;border-top-color:#fff!important;border-radius:50%!important;vertical-align:-2px!important;animation:sl-rot .7s linear infinite!important;}
     @keyframes sl-rot{to{transform:rotate(360deg);}}
+    /* Loader plein écran BLOQUANT (enregistrement avant sortie) — capte tous les clics */
+    #sl-root .sl-busy-ov{ display:none!important; position:fixed!important; inset:0!important; background:rgba(17,33,38,.55)!important; z-index:100002!important; align-items:center!important; justify-content:center!important; padding:20px!important; cursor:progress!important; }
+    #sl-root .sl-busy-ov.on{ display:flex!important; }
+    #sl-root .sl-busy-box{ display:flex!important; align-items:center!important; gap:12px!important; background:#fff!important; border-radius:14px!important; padding:18px 22px!important; box-shadow:0 12px 40px rgba(0,0,0,.25)!important; font-size:14px!important; font-weight:700!important; color:var(--ink)!important; }
+    #sl-root .sl-busy-spin{ display:inline-block!important; width:20px!important; height:20px!important; border:2.5px solid rgba(14,163,180,.25)!important; border-top-color:var(--color-teal)!important; border-radius:50%!important; flex:none!important; animation:sl-rot .7s linear infinite!important; }
 
     /* ── Accessibilité : respect de prefers-reduced-motion (coupe animations ET transitions) ── */
     @media (prefers-reduced-motion: reduce) {
@@ -1012,6 +1017,14 @@
     #sl-root .btn-ghost:hover { border-color:var(--danger)!important; color:var(--danger)!important; background:rgba(220,38,38,.05)!important; }
     #sl-root .btn-ghost:focus-visible, #sl-root .btn-outline:focus-visible { outline:2px solid var(--color-teal)!important; outline-offset:2px!important; }
     #sl-root .dcard-actions .btn-teal-flat { height:36px!important; padding:0 16px!important; font-size:13px!important; }
+    /* État vide : note + dossiers d'EXEMPLE (illustratifs, non interactifs) */
+    #sl-root .home-demo-note { width:100%!important; max-width:100%!important; box-sizing:border-box!important; display:flex!important; align-items:flex-start!important; gap:10px!important; border:1.5px dashed var(--line)!important; border-radius:14px!important; padding:14px 16px!important; margin-bottom:14px!important; color:var(--ink-soft)!important; font-size:13px!important; line-height:1.55!important; }
+    #sl-root .home-demo-note svg { flex:none!important; width:18px!important; height:18px!important; margin-top:1px!important; color:var(--color-teal)!important; }
+    #sl-root .home-demo-note strong { color:var(--ink)!important; }
+    #sl-root .dcard-demo { cursor:default!important; opacity:.68!important; border-style:dashed!important; }
+    #sl-root .dcard-demo:hover { border-color:var(--line)!important; box-shadow:none!important; }   /* aucun effet survol : non cliquable */
+    #sl-root .chip-demo { background:rgba(100,116,139,.12)!important; color:var(--ink-soft)!important; }
+    #sl-root .dcard-demo .btn-demo { display:inline-flex!important; align-items:center!important; justify-content:center!important; gap:6px!important; height:36px!important; padding:0 16px!important; border-radius:9px!important; font-size:13px!important; font-weight:600!important; border:1px solid var(--line)!important; background:#f1f5f9!important; color:var(--ink-soft)!important; cursor:not-allowed!important; white-space:nowrap!important; }
     /* Pied : CTA « Nouveau dossier » (seul dégradé de la page) */
     #sl-root .home-foot { width:100%!important; max-width:100%!important; margin-top:18px!important; }
     #sl-root .home-foot-div { height:1px!important; background:var(--line)!important; margin-bottom:16px!important; }
@@ -1572,6 +1585,9 @@
       <!-- Modale : alerte / champs à compléter -->
       <div class="modal-overlay" id="modal-alert-overlay" role="alertdialog" aria-modal="true" aria-labelledby="modal-alert-title" aria-describedby="modal-alert-msg"><div class="modal-box"><span class="modal-ico-alert" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span class="modal-tit" id="modal-alert-title">Champs à compléter</span><span class="modal-sub" id="modal-alert-msg"></span><div class="modal-btns"><button type="button" class="modal-confirm" id="modal-alert-ok" onclick="closeAlert()">J'ai compris</button></div></div></div>
 
+      <!-- Loader plein écran bloquant : affiché pendant l'enregistrement avant sortie (aucune interaction possible) -->
+      <div class="sl-busy-ov" id="sl-busy-overlay" role="alert" aria-live="assertive" aria-busy="true"><div class="sl-busy-box"><span class="sl-busy-spin" aria-hidden="true"></span><span id="sl-busy-txt">Enregistrement…</span></div></div>
+
       <!-- Toast de feedback (bas-centre) -->
       <div class="sl-toast" id="sl-toast" role="status" aria-live="polite"></div>
     </div>
@@ -1665,7 +1681,7 @@ function showScreen(sc, pos){
   if(sc===4){ refreshAdr(); ensureMapShown(); }
   if(sc===5) refreshInstall();
   if(sc===3&&ct==='pro') renderCollabs();
-  if(sc===6) buildRecap();
+  if(sc===6){ syncDocZones(); buildRecap(); }
   window.scrollTo({top:0,behavior:'smooth'});
   window.parent.postMessage({scrollToIframe:true},'*');
 }
@@ -1832,6 +1848,18 @@ function _closeLeave(){
 window.leaveCancel=function(){ var cb=_leaveCb.onCancel; _leaveCb={}; _closeLeave(); if(cb)cb(); };       // Annuler / Échap / clic overlay
 window.leaveSave=function(){ var cb=_leaveCb.onSave; _leaveCb={}; _closeLeave(); if(cb)cb(); };           // Enregistrer et revenir
 window.leaveDiscard=function(){ var cb=_leaveCb.onDiscard; _leaveCb={}; _closeLeave(); if(cb)cb(); };     // Revenir sans enregistrer (destructive)
+
+/* Loader plein écran BLOQUANT : rend le fond inerte ET capte les clics le temps d'une
+   opération asynchrone (ex. enregistrement avant sortie). À refermer avec hideBusy(). */
+function showBusy(msg){
+  var t=document.getElementById('sl-busy-txt'); if(t)t.textContent=msg||'Enregistrement…';
+  setBgInert(true);
+  var ov=document.getElementById('sl-busy-overlay'); if(ov)ov.classList.add('on');
+}
+function hideBusy(){
+  var ov=document.getElementById('sl-busy-overlay'); if(ov)ov.classList.remove('on');
+  setBgInert(false);
+}
 
 /* « Modifier » le type de dossier = action destructrice (retour Accueil + reset) */
 window.askChangeType=function(){
@@ -2300,11 +2328,30 @@ window.updateSim=function(){
 };
 
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
+/* Applique l'état visuel « fourni » (coche verte + nom de fichier) à une zone .uz donnée. */
+function _paintDocZone(uz,filename){
+  if(!uz)return;
+  uz.classList.add('ok');
+  var fn=uz.querySelector('.uz-fn');
+  if(fn){ fn.innerHTML=CHECK_SVG_SM; var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s); }
+}
 /* Marque une zone de document comme « fourni » (coche + nom de fichier) */
 function markDocUploaded(key,filename){
-  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z)z.classList.add('ok');}
-  var fn=document.getElementById('fn-'+key);
-  if(fn){ fn.innerHTML=CHECK_SVG_SM; var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s); }
+  var inp=document.getElementById('f-'+key);
+  _paintDocZone(inp?inp.closest('.uz'):null, filename);
+  updateDocProgress();
+}
+/* Resynchronise l'état visuel de TOUTES les zones d'upload à partir de l'objet `docs`.
+   Idempotent : appelé à chaque affichage de l'étape Documents pour que les pièces déjà
+   fournies (reprise de brouillon) apparaissent toujours cochées/vertes — et pas seulement
+   « comptées » dans la barre de progression. */
+function syncDocZones(){
+  document.querySelectorAll('#sl-root .uz').forEach(function(uz){
+    var inp=uz.querySelector('input[type=file]'); if(!inp)return;
+    var key=(inp.id||'').replace(/^f-/,'');
+    if(docs&&docs[key]){ _paintDocZone(uz, docs[key]&&docs[key].filename); }
+    else{ uz.classList.remove('ok'); var fn=uz.querySelector('.uz-fn'); if(fn)fn.textContent=''; }
+  });
   updateDocProgress();
 }
 function _docErr(key,msg){
@@ -2689,15 +2736,18 @@ window.slCreate=function(){
   var cert=document.getElementById('sl-certify');
   if(!cert||!cert.checked||_creating) return;   // sécurité : case requise + un seul envoi
   _creating=true;
+  showBusy('Création du dossier…');   // bloque toute interaction pendant l'envoi
   var btn=document.getElementById('btn-create');
   if(btn){ btn.disabled=true; btn.setAttribute('aria-busy','true'); btn.innerHTML='<span class="btn-spin" aria-hidden="true"></span>Création…'; }
   var st=document.getElementById('sc6-status'); if(st){ st.className='foot-status'; st.textContent='Création du dossier en cours…'; }
   var p=buildDraftPayload(); p.status='submitted';   // même enregistrement que le brouillon, passé en « Soumis »
   saveDraft(p).then(function(){
+    hideBusy();
     if(btn){ btn.removeAttribute('aria-busy'); btn.innerHTML=CHECK_SVG_SM+'Dossier créé'; }
     var s2=document.getElementById('sc6-status'); if(s2){ s2.className='foot-status ok'; s2.innerHTML=CHECK_SVG_SM+'<span>Dossier créé</span>'; }
     slAlert('Votre dossier a bien été créé et enregistré.','Dossier créé');
   },function(){
+    hideBusy();
     _creating=false;
     if(btn){ btn.disabled=false; btn.removeAttribute('aria-busy'); btn.innerHTML=CHECK_SVG_SM+'Réessayer'; }
     var s3=document.getElementById('sc6-status'); if(s3){ s3.className='foot-status'; s3.textContent='Échec de l\'enregistrement — réessayez.'; }
@@ -2773,6 +2823,7 @@ var HI_CAL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 var HI_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg>';
 /* Durée = sablier (distinct du calendrier de la date de modif) */
 var HI_HOURGLASS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M7 21h10M8 3v3l4 4 4-4V3M8 21v-3l4-4 4 4v3"/></svg>';
+var HI_INFO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="8" r=".6" fill="currentColor"/></svg>';
 function homeMeta(d){
   var b=[];
   if(d.ville||d.cp)b.push('<span>'+HI_PIN+esc((d.ville||'')+(d.cp?' '+d.cp:''))+'</span>');
@@ -2796,6 +2847,26 @@ function dossierCard(d){
   h+='</div></article>';
   return h;
 }
+/* Dossiers d'EXEMPLE affichés quand l'installateur n'a encore aucun dossier — purement illustratifs. */
+var DEMO_DOSSIERS=[
+  {type:'part', name:'Martin Dupont',            ville:'Bordeaux', cp:'33000', instType:'PV + Batterie virtuelle', duree:'20 ans', step:3, modif:'24/06'},
+  {type:'pro',  name:'Boulangerie Lemoine SAS',  ville:'Lyon',     cp:'69003', instType:'PV seul',                 duree:'25 ans', step:2, modif:'21/06'}
+];
+/* Carte « exemple » : même mise en forme qu'un vrai dossier mais NON cliquable (aucun onclick, boutons désactivés). */
+function demoCard(d){
+  var nm=esc(d.name||'Dossier');
+  var tot=totalSteps(d.type), step=Math.max(1,Math.min(d.step||1,tot)), pct=Math.round(step/tot*100);
+  var h='<article class="dcard dcard-demo" aria-hidden="true">';
+  h+='<span class="dcard-av" aria-hidden="true">'+(d.type==='pro'?HI_BUILD:HI_PERSON)+'</span>';
+  h+='<div class="dcard-mid"><div class="dcard-top"><span class="dcard-name">'+nm+'</span><span class="chip chip-demo">Exemple</span></div>';
+  h+='<div class="dcard-meta">'+homeMeta(d)+'</div>';
+  h+='<div class="dprog"><div class="dprog-bar"><span class="dprog-fill" style="width:'+pct+'%"></span></div><span class="dprog-lbl">Étape '+step+' / '+tot+'</span></div>';
+  h+='</div><div class="dcard-actions">';
+  h+='<button type="button" class="btn-demo" disabled tabindex="-1">Reprendre →</button>';
+  h+='<button type="button" class="btn-demo" disabled tabindex="-1">Supprimer</button>';
+  h+='</div></article>';
+  return h;
+}
 /* Point d'entrée unique : (re)génère compteur + liste + état vide à partir de l'état du back */
 window.renderHome=function(email){
   if(email!=null)_homeEmail=email;
@@ -2810,7 +2881,10 @@ window.renderHome=function(email){
       _dossiers=list;
       list.sort(function(a,b){ return _dk(b.modif)-_dk(a.modif); });   // plus récent en haut
       if(cnt)cnt.innerHTML='<strong>'+list.length+'</strong> dossier'+(list.length>1?'s':'')+' en cours pour '+esc(_homeEmail);
-      if(box) box.innerHTML=list.length?list.map(dossierCard).join(''):'<div class="home-empty">Aucun dossier en cours pour cet email.<br>Lancez un nouveau dossier ci-dessous.</div>';
+      if(box) box.innerHTML=list.length
+        ? list.map(dossierCard).join('')
+        : '<div class="home-demo-note">'+HI_INFO+'<div><strong>Aucun dossier en cours pour le moment.</strong><br>Les dossiers ci-dessous ne sont que des exemples (non modifiables). Cliquez sur « Nouveau dossier » plus bas pour en créer un vrai.</div></div>'
+          + DEMO_DOSSIERS.map(demoCard).join('');
       if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,400); }   // resize iframe (embed Softr)
     });
 };
@@ -2870,9 +2944,9 @@ window.slNewDossier=function(){ enterWizard(); setClient('part'); var f=flow(); 
 window.askGoHome=function(){
   confirmLeave({
     onSave:function(){
-      toast('Enregistrement…');
-      saveDraft(buildDraftPayload()).then(function(){ goHome(); renderHome(); toast('Brouillon enregistré'); },
-                                          function(){ toast('Échec de l\'enregistrement'); });
+      showBusy('Enregistrement…');   // bloque toute interaction jusqu'au retour à l'accueil
+      saveDraft(buildDraftPayload()).then(function(){ hideBusy(); goHome(); renderHome(); toast('Brouillon enregistré'); },
+                                          function(){ hideBusy(); toast('Échec de l\'enregistrement'); });
     },
     onDiscard:function(){ goHome(); renderHome(); },
     onCancel:function(){}
