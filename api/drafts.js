@@ -56,18 +56,42 @@ function fieldsFromPayload(p) {
   return f;
 }
 
+function sleep(ms) { return new Promise(function (res) { setTimeout(res, ms); }); }
+
+// GET Airtable robuste : retente sur erreurs TRANSITOIRES (429 rate-limit, 5xx, réseau)
+// et PROPAGE l'erreur si tout échoue — pour ne jamais confondre « échec » et « liste vide ».
+async function atGet(url, tries) {
+  tries = tries || 3;
+  var lastErr;
+  for (var i = 0; i < tries; i++) {
+    var r;
+    try {
+      r = await fetch(url, { headers: H });
+    } catch (netErr) {                       // erreur réseau → transitoire
+      lastErr = netErr;
+      if (i < tries - 1) await sleep(350 * (i + 1));
+      continue;
+    }
+    if (r.ok) return await r.json();
+    var body = ''; try { body = await r.text(); } catch (e) {}
+    if (r.status !== 429 && r.status < 500) {  // 4xx (hors 429) = définitif : on arrête
+      throw new Error('Airtable ' + r.status + ': ' + body);
+    }
+    lastErr = new Error('Airtable ' + r.status + ': ' + body);   // 429 / 5xx → on retente
+    if (i < tries - 1) await sleep(350 * (i + 1));
+  }
+  throw lastErr || new Error('Airtable: échec après ' + tries + ' tentatives');
+}
+
 async function findId(table, draftId) {
   var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
-  var r = await fetch(tbl(table) + '?maxRecords=1&filterByFormula=' + formula, { headers: H });
-  var d = await r.json();
-  return (r.ok && d.records && d.records[0]) ? d.records[0].id : null;
+  var d = await atGet(tbl(table) + '?maxRecords=1&filterByFormula=' + formula);   // throw → upsert ne crée pas de doublon par erreur
+  return (d.records && d.records[0]) ? d.records[0].id : null;
 }
 
 async function listByEmail(table, type, email) {
   var formula = encodeURIComponent("AND(LOWER({Email Installateur})='" + esc(email) + "',{Statut}='En cours')");
-  var r = await fetch(tbl(table) + '?pageSize=50&filterByFormula=' + formula, { headers: H });
-  var d = await r.json();
-  if (!r.ok) return [];
+  var d = await atGet(tbl(table) + '?pageSize=50&filterByFormula=' + formula);   // throw sur échec persistant (≠ [])
   return (d.records || []).map(function (rec) {
     var f = rec.fields || {};
     var data = null;

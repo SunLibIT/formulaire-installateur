@@ -984,6 +984,9 @@
     #sl-root .home-count { width:100%!important; max-width:100%!important; font-size:13px!important; color:var(--ink-soft)!important; margin:18px 0 8px!important; }
     #sl-root .home-count strong { color:var(--ink)!important; }
     #sl-root .home-empty { width:100%!important; max-width:100%!important; box-sizing:border-box!important; border:1.5px dashed var(--line)!important; border-radius:14px!important; padding:26px 20px!important; text-align:center!important; color:var(--ink-soft)!important; font-size:13px!important; line-height:1.6!important; }
+    #sl-root .home-error { border-color:rgba(220,38,38,.45)!important; border-style:solid!important; background:rgba(220,38,38,.04)!important; }
+    #sl-root .home-error strong { color:var(--danger)!important; }
+    #sl-root .home-error-act { margin-top:14px!important; display:flex!important; justify-content:center!important; }
     /* Carte dossier */
     #sl-root .dcard { display:flex!important; align-items:flex-start!important; gap:14px!important; width:100%!important; max-width:100%!important; box-sizing:border-box!important; background:var(--card)!important; border:1px solid var(--line)!important; border-radius:12px!important; padding:16px 18px!important; margin-bottom:10px!important; cursor:pointer!important; transition:border-color .15s, box-shadow .15s!important; }
     #sl-root .dcard:hover { border-color:var(--color-teal)!important; box-shadow:0 2px 10px rgba(14,163,180,.10)!important; }
@@ -2813,6 +2816,20 @@ function deleteDossierBack(id,type){
 function totalSteps(type){ return type==='pro'?6:5; }
 function _dk(s){ var m=/(\d{1,2})\/(\d{1,2})/.exec(s||''); return m?(parseInt(m[2],10)*100+parseInt(m[1],10)):0; }
 var _homeEmail='';
+var _homeReq=0;   // jeton anti-course : seule la demande la plus récente met à jour l'affichage
+/* Charge les dossiers « En cours » de l'email, avec retries sur erreur transitoire.
+   RÉSOUT avec un tableau (éventuellement vide) ; REJETTE si tout échoue — on ne confond
+   jamais « échec réseau/serveur » avec « aucun dossier ». */
+function _loadDossiers(email,tries){
+  tries=tries||1;
+  return fetch(SL_API+'?email='+encodeURIComponent(email))
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){ if(!data||!Array.isArray(data.dossiers)) throw new Error('réponse invalide'); return data.dossiers; })
+    .catch(function(err){
+      if(tries>1) return new Promise(function(res){ setTimeout(res,600); }).then(function(){ return _loadDossiers(email,tries-1); });
+      throw err;
+    });
+}
 /* Icônes outline (une seule famille) */
 var HI_PERSON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
 var HI_BUILD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"/><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"/><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"/><line x1="7.5" y1="8" x2="11.5" y2="8"/><line x1="7.5" y1="12" x2="11.5" y2="12"/></svg>';
@@ -2873,20 +2890,26 @@ window.renderHome=function(email){
   var cnt=document.getElementById('home-count'), box=document.getElementById('home-list');
   if(!_homeEmail){ if(cnt)cnt.textContent=''; if(box)box.innerHTML=''; return; }
   if(box)box.innerHTML='<div class="home-empty">Chargement de vos dossiers…</div>';
-  fetch(SL_API+'?email='+encodeURIComponent(_homeEmail))
-    .then(function(r){ return r.ok?r.json():{dossiers:[]}; })
-    .catch(function(){ return {dossiers:[]}; })
-    .then(function(data){
-      var list=(data&&data.dossiers)||[];
-      _dossiers=list;
-      list.sort(function(a,b){ return _dk(b.modif)-_dk(a.modif); });   // plus récent en haut
-      if(cnt)cnt.innerHTML='<strong>'+list.length+'</strong> dossier'+(list.length>1?'s':'')+' en cours pour '+esc(_homeEmail);
-      if(box) box.innerHTML=list.length
-        ? list.map(dossierCard).join('')
-        : '<div class="home-demo-note">'+HI_INFO+'<div><strong>Aucun dossier en cours pour le moment.</strong><br>Les dossiers ci-dessous ne sont que des exemples (non modifiables). Cliquez sur « Nouveau dossier » plus bas pour en créer un vrai.</div></div>'
-          + DEMO_DOSSIERS.map(demoCard).join('');
-      if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,400); }   // resize iframe (embed Softr)
-    });
+  var token=++_homeReq, who=_homeEmail;   // capture : seule cette demande (si encore la dernière) rendra
+  _loadDossiers(who,3).then(function(list){
+    if(token!==_homeReq) return;          // une demande plus récente (nouvel email) a pris la main
+    _dossiers=list;
+    list.sort(function(a,b){ return _dk(b.modif)-_dk(a.modif); });   // plus récent en haut
+    if(cnt)cnt.innerHTML='<strong>'+list.length+'</strong> dossier'+(list.length>1?'s':'')+' en cours pour '+esc(who);
+    if(box) box.innerHTML=list.length
+      ? list.map(dossierCard).join('')
+      : '<div class="home-demo-note">'+HI_INFO+'<div><strong>Aucun dossier en cours pour le moment.</strong><br>Les dossiers ci-dessous ne sont que des exemples (non modifiables). Cliquez sur « Nouveau dossier » plus bas pour en créer un vrai.</div></div>'
+        + DEMO_DOSSIERS.map(demoCard).join('');
+    if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,400); }   // resize iframe (embed Softr)
+  }).catch(function(){
+    if(token!==_homeReq) return;
+    _dossiers=[];
+    if(cnt)cnt.textContent='';
+    // ÉCHEC réel (réseau/serveur) ≠ liste vide : on n'affiche PAS « aucun dossier » ni les exemples,
+    // mais une erreur explicite avec « Réessayer ».
+    if(box) box.innerHTML='<div class="home-empty home-error"><strong>Impossible de charger vos dossiers.</strong><br>Vérifiez votre connexion, puis réessayez.<div class="home-error-act"><button type="button" class="btn-teal-flat" onclick="renderHome()">Réessayer</button></div></div>';
+    if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,400); }
+  });
 };
 function findDossier(id){ return _dossiers.filter(function(d){return d.id===id;})[0]; }
 function enterWizard(){ var w=document.querySelector('#sl-root .wrap'); if(w)w.classList.remove('home-mode'); }
