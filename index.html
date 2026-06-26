@@ -988,8 +988,10 @@
     #sl-root .home-error strong { color:var(--danger)!important; }
     #sl-root .home-error-act { margin-top:14px!important; display:flex!important; justify-content:center!important; }
     /* Carte dossier */
-    #sl-root .dcard { display:flex!important; align-items:flex-start!important; gap:14px!important; width:100%!important; max-width:100%!important; box-sizing:border-box!important; background:var(--card)!important; border:1px solid var(--line)!important; border-radius:12px!important; padding:16px 18px!important; margin-bottom:10px!important; cursor:pointer!important; transition:border-color .15s, box-shadow .15s!important; }
+    #sl-root .dcard { display:flex!important; align-items:flex-start!important; gap:14px!important; width:100%!important; max-width:100%!important; box-sizing:border-box!important; background:var(--card)!important; border:1px solid var(--line)!important; border-radius:12px!important; padding:16px 18px!important; margin-bottom:10px!important; cursor:pointer!important; transition:border-color .15s, box-shadow .15s, opacity .26s ease, transform .26s ease, max-height .3s ease, margin .3s ease, padding .3s ease!important; }
     #sl-root .dcard:hover { border-color:var(--color-teal)!important; box-shadow:0 2px 10px rgba(14,163,180,.10)!important; }
+    /* Sortie animée à la suppression (optimiste) : glisse + s'efface + se replie */
+    #sl-root .dcard.dcard-removing { overflow:hidden!important; opacity:0!important; transform:translateX(26px)!important; box-shadow:none!important; border-color:var(--line)!important; pointer-events:none!important; }
     #sl-root .dcard:focus-visible { outline:2px solid var(--color-teal)!important; outline-offset:2px!important; }
     #sl-root .dcard-av { flex:0 0 auto!important; width:44px!important; height:44px!important; border-radius:50%!important; background:rgba(14,163,180,.10)!important; color:var(--color-teal)!important; display:flex!important; align-items:center!important; justify-content:center!important; }
     #sl-root .dcard-av.ok { background:var(--ok-bg)!important; color:var(--color-green)!important; }   /* dossier soumis = avatar vert succès */
@@ -2855,7 +2857,7 @@ function dossierCard(d){
   var nm=esc(d.name||'Dossier');
   var tot=totalSteps(d.type), step=Math.max(1,Math.min(d.step||1,tot)), pct=Math.round(step/tot*100);
   var aria=nm+', brouillon en cours, étape '+step+' sur '+tot;
-  var h='<article class="dcard" tabindex="0" aria-label="'+aria+'" onclick="slResume(\''+d.id+'\')">';
+  var h='<article class="dcard" data-id="'+d.id+'" tabindex="0" aria-label="'+aria+'" onclick="slResume(\''+d.id+'\')">';
   h+='<span class="dcard-av" aria-hidden="true">'+(d.type==='pro'?HI_BUILD:HI_PERSON)+'</span>';
   h+='<div class="dcard-mid"><div class="dcard-top"><span class="dcard-name">'+nm+'</span><span class="chip chip-teal">En cours</span></div>';
   h+='<div class="dcard-meta">'+homeMeta(d)+'</div>';
@@ -2886,6 +2888,10 @@ function demoCard(d){
   h+='</div></article>';
   return h;
 }
+/* Ligne compteur + bloc « état vide » (note + exemples) — réutilisés par renderHome et la suppression optimiste */
+function _homeCountHTML(n){ return '<strong>'+n+'</strong> dossier'+(n>1?'s':'')+' en cours pour '+esc(_homeEmail); }
+function _updateHomeCount(){ var cnt=document.getElementById('home-count'); if(cnt)cnt.innerHTML=_homeCountHTML(_dossiers.length); }
+function _emptyHomeHTML(){ return '<div class="home-demo-note">'+HI_INFO+'<div><strong>Aucun dossier en cours pour le moment.</strong><br>Les dossiers ci-dessous ne sont que des exemples (non modifiables). Cliquez sur « Nouveau dossier » plus bas pour en créer un vrai.</div></div>'+DEMO_DOSSIERS.map(demoCard).join(''); }
 /* Point d'entrée unique : (re)génère compteur + liste + état vide à partir de l'état du back */
 window.renderHome=function(email){
   if(email!=null)_homeEmail=email;
@@ -2897,11 +2903,8 @@ window.renderHome=function(email){
     if(token!==_homeReq) return;          // une demande plus récente (nouvel email) a pris la main
     _dossiers=list;
     list.sort(function(a,b){ return _dk(b.modif)-_dk(a.modif); });   // plus récent en haut
-    if(cnt)cnt.innerHTML='<strong>'+list.length+'</strong> dossier'+(list.length>1?'s':'')+' en cours pour '+esc(who);
-    if(box) box.innerHTML=list.length
-      ? list.map(dossierCard).join('')
-      : '<div class="home-demo-note">'+HI_INFO+'<div><strong>Aucun dossier en cours pour le moment.</strong><br>Les dossiers ci-dessous ne sont que des exemples (non modifiables). Cliquez sur « Nouveau dossier » plus bas pour en créer un vrai.</div></div>'
-        + DEMO_DOSSIERS.map(demoCard).join('');
+    if(cnt)cnt.innerHTML=_homeCountHTML(list.length);
+    if(box) box.innerHTML=list.length ? list.map(dossierCard).join('') : _emptyHomeHTML();
     if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,400); }   // resize iframe (embed Softr)
   }).catch(function(){
     if(token!==_homeReq) return;
@@ -2961,9 +2964,36 @@ window.askDeleteDossier=function(id){
     title:'Supprimer ce dossier ?',
     message:'Le brouillon « '+(d.name||'')+' » et toutes les informations saisies seront définitivement supprimés.',
     confirmLabel:'Supprimer',
-    onConfirm:function(){ deleteDossierBack(id,d.type).then(function(){ renderHome(); toast('Dossier supprimé'); },function(){ toast('Échec de la suppression'); }); }
+    onConfirm:function(){ optimisticDelete(id,d); }
   });
 };
+/* Suppression OPTIMISTE : la carte disparaît immédiatement (animation de sortie + collapse),
+   le compteur se met à jour, puis l'appel réseau part en arrière-plan. En cas d'échec, on
+   re-synchronise avec le serveur (renderHome) pour restaurer la carte + toast d'erreur. */
+function optimisticDelete(id,d){
+  _dossiers=_dossiers.filter(function(x){ return x.id!==id; });   // cache à jour tout de suite
+  _updateHomeCount();
+  var card=document.querySelector('#sl-root #home-list .dcard[data-id="'+id+'"]');
+  var box=document.getElementById('home-list'), done=false;
+  function finalize(){
+    if(done) return; done=true;
+    if(card&&card.parentNode) card.parentNode.removeChild(card);
+    if(!_dossiers.length && box) box.innerHTML=_emptyHomeHTML();   // plus aucun dossier → exemples
+    if(typeof sendHeight==='function'){ setTimeout(sendHeight,60); setTimeout(sendHeight,360); }
+  }
+  if(card){
+    card.style.maxHeight=card.offsetHeight+'px';   // fige la hauteur courante pour pouvoir l'animer vers 0
+    void card.offsetHeight;                        // force un reflow avant la transition
+    card.classList.add('dcard-removing');
+    card.style.maxHeight='0px'; card.style.marginBottom='0px'; card.style.paddingTop='0px'; card.style.paddingBottom='0px';
+    card.addEventListener('transitionend',finalize);
+    setTimeout(finalize,460);                      // filet de sécurité (transitionend non garanti)
+  } else { finalize(); }
+  deleteDossierBack(id,d.type).then(function(){ toast('Dossier supprimé'); },function(){
+    toast('Échec de la suppression — restauration du dossier');
+    renderHome();   // re-fetch : remet la carte et l'état réel
+  });
+}
 window.slNewDossier=function(){ enterWizard(); setClient('part'); var f=flow(); showScreen(f[0],0); toast('Nouveau dossier'); };
 /* « Mes dossiers » : retour à l'accueil — action destructrice (la progression non enregistrée est perdue) */
 window.askGoHome=function(){
