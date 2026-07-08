@@ -701,6 +701,15 @@
     #sl-root .cnu-add { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: 1px solid var(--line) !important; background: #fff !important; color: var(--teal-ink) !important; font-size: 13px !important; font-weight: 600 !important; padding: 8px 12px !important; border-radius: var(--r) !important; cursor: pointer !important; transition: border-color .15s, background .15s !important; }
     #sl-root .cnu-add:hover { border-color: var(--teal) !important; background: var(--teal-soft) !important; }
     #sl-root .cnu-add svg { width: 15px !important; height: 15px !important; }
+    /* Carte document mono-fichier (même chrome que la CNI) */
+    #sl-root .uz.uz-card { cursor: default !important; padding: 16px !important; border-style: solid !important; border-color: var(--line) !important; background: var(--surface, #fff) !important; transition: border-color .18s !important; }
+    #sl-root .uz.uz-card:hover { border-color: var(--line) !important; background: var(--surface, #fff) !important; }
+    #sl-root .uz.uz-card.ok, #sl-root .uz-card[data-state="ok"] { border-color: var(--green) !important; background: var(--surface, #fff) !important; }
+    #sl-root .uz-card[data-state="uploading"] { border-color: var(--amber-border) !important; }
+    #sl-root .uz-card[data-state="err"] { border-color: var(--red-border) !important; }
+    #sl-root .uz-card[data-state="ok"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
+    #sl-root .uz-card[data-state="uploading"] .cnu-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
+    #sl-root .uz-card[data-state="err"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
 
     /* ── ÉTAPE 3 : ADRESSE ── */
     /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
@@ -2440,66 +2449,122 @@ window.updateSim=function(){
 
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
 /* Applique l'état visuel « fourni » (coche verte + nom de fichier) à une zone .uz donnée. */
-function _paintDocZone(uz,filename){
-  if(!uz)return;
-  uz.classList.remove('pending','err');
-  uz.classList.add('ok');
-  var fn=uz.querySelector('.uz-fn');
-  if(fn){
-    fn.innerHTML=CHECK_SVG_SM;
-    var s=document.createElement('span'); s.textContent=(filename||'document enregistré'); fn.appendChild(s);
-    var inp=uz.querySelector('input[type=file]');
-    var key=inp?(inp.id||'').replace(/^f-/,''):'';
-    if(key){
-      var del=document.createElement('button'); del.type='button'; del.className='uz-del';
-      del.innerHTML=ICO_X; var dl=document.createElement('span'); dl.textContent='Supprimer'; del.appendChild(dl);
-      del.setAttribute('aria-label','Supprimer ce document');
-      del.onclick=function(e){
-        e.stopPropagation();
-        if(del.getAttribute('data-confirm')==='1'){ removeDoc(key); return; }
-        del.setAttribute('data-confirm','1'); dl.textContent='Confirmer le retrait'; del.classList.add('uz-del-confirm');
-        clearTimeout(del._t); del._t=setTimeout(function(){ del.setAttribute('data-confirm','0'); dl.textContent='Supprimer'; del.classList.remove('uz-del-confirm'); },3500);
-      };
-      fn.appendChild(del);
+/* ── Zones de documents = cartes uploader mono-fichier (même design que la CNI) ── */
+var _docPending = {}, _docErrState = {};
+var DOC_PILL = {
+  empty:     { t:'En attente',     tone:'neutral', ico:UPLOAD_SVG,   spin:false },
+  uploading: { t:'Téléversement…', tone:'teal',    ico:SPIN_SVG_SM,  spin:true },
+  ok:        { t:'Enregistré',     tone:'green',   ico:CHECK_SVG_SM, spin:false },
+  err:       { t:'Erreur',         tone:'red',     ico:ALERT_SVG,    spin:false }
+};
+/* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
+   en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
+function upgradeDocZones(){
+  document.querySelectorAll('#sl-root .uz:not(.uz-multi):not(.uz-card)').forEach(function(uz){
+    var inp=uz.querySelector('input[type=file]'); if(!inp) return;
+    var key=(inp.id||'').replace(/^f-/,''); if(!key) return;
+    var ico=uz.querySelector('.uz-ico'), lbl=uz.querySelector('.uz-lbl'), sub=uz.querySelector('.uz-sub');
+    var icoHtml=ico?ico.innerHTML:'', lblHtml=lbl?lbl.innerHTML:key, subTxt=sub?sub.textContent:'';
+    uz.innerHTML='';
+    uz.id='uz-'+key; uz.classList.add('uz-card'); uz.removeAttribute('onclick');
+    var head=_cnuEl('div','cnu-head');
+    var icoS=_cnuEl('span','cnu-ico'); icoS.setAttribute('aria-hidden','true'); icoS.innerHTML=icoHtml; head.appendChild(icoS);
+    var ht=_cnuEl('div','cnu-htext');
+    var tr=_cnuEl('div','cnu-titrow');
+    var ti=_cnuEl('span','cnu-title'); ti.innerHTML=lblHtml; tr.appendChild(ti);
+    var pill=_cnuEl('span','cnu-pill'); pill.setAttribute('data-pill',''); tr.appendChild(pill);
+    ht.appendChild(tr);
+    if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
+    head.appendChild(ht); uz.appendChild(head);
+    uz.appendChild(inp);
+    var body=_cnuEl('div','cnu-body'); body.setAttribute('data-body',''); uz.appendChild(body);
+    var foot=_cnuEl('div','cnu-foot'); foot.setAttribute('data-foot',''); uz.appendChild(foot);
+    renderDoc(key);
+  });
+}
+/* Rendu d'une carte document mono-fichier selon son état (vide / envoi / enregistré / erreur). */
+function renderDoc(key){
+  var card=document.getElementById('uz-'+key); if(!card) return;
+  var item=docs?docs[key]:null, pend=_docPending[key], err=_docErrState[key];
+  var st = err ? 'err' : (pend ? 'uploading' : (item ? 'ok' : 'empty'));
+  card.setAttribute('data-state',st);
+  if(item) card.classList.add('ok'); else card.classList.remove('ok');
+
+  var pill=card.querySelector('[data-pill]');
+  if(pill){ var pc=DOC_PILL[st]; pill.className='cnu-pill t-'+pc.tone;
+    pill.innerHTML=(pc.spin?'<span class="sl-spin">'+pc.ico+'</span>':pc.ico);
+    pill.appendChild(_cnuEl('span',null,pc.t)); }
+
+  var body=card.querySelector('[data-body]');
+  if(body){ body.innerHTML='';
+    if(st==='empty' || st==='err'){
+      var dz=_cnuEl('button','cnu-drop'); dz.type='button';
+      dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
+      dz.appendChild(_cnuEl('span','cnu-drop-t','Cliquez ou déposez un fichier'));
+      dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG — 3 Mo max'));
+      dz.onclick=function(){ trig('f-'+key); };
+      dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
+      dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
+      dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
+        var fs=(e.dataTransfer&&e.dataTransfer.files)?e.dataTransfer.files:null; if(fs&&fs[0]) uploadDoc(key,fs[0]); });
+      body.appendChild(dz);
+      if(st==='err') body.appendChild(_cnuCallout('red',ALERT_SVG,err));
+    } else {
+      var name=(item&&item.filename)||(pend&&pend.filename)||'document';
+      var chip=_cnuEl('div','cnu-chip');
+      chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
+      var meta=_cnuEl('div','cnu-fmeta');
+      meta.appendChild(_cnuEl('div','cnu-fname',name));
+      meta.appendChild(_cnuEl('div','cnu-fsub', pend?'Envoi…':((item&&item.size)?_cnuSize(item.size):'Enregistré')));
+      chip.appendChild(meta);
+      var stt=_cnuEl('span','cnu-fstate');
+      stt.innerHTML=pend?('<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'):('<span style="color:var(--green)">'+CHECK_SVG_SM+'</span>');
+      chip.appendChild(stt);
+      if(!pend){
+        var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer le document');
+        rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
+        rm.onclick=(function(k,btn,lbl){ return function(e){ e.stopPropagation();
+          if(btn.getAttribute('data-confirm')==='1'){ removeDoc(k); return; }
+          btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
+          clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
+        }; })(key,rm,rl);
+        chip.appendChild(rm);
+      }
+      body.appendChild(chip);
     }
   }
-}
-/* Marque une zone de document comme « fourni » (coche + nom de fichier) */
-function markDocUploaded(key,filename){
-  var inp=document.getElementById('f-'+key);
-  _paintDocZone(inp?inp.closest('.uz'):null, filename);
+
+  var foot=card.querySelector('[data-foot]');
+  if(foot){ foot.innerHTML='';
+    if(st==='ok'){
+      var rep=_cnuEl('button','cnu-add'); rep.type='button'; rep.onclick=function(){ trig('f-'+key); };
+      rep.innerHTML=REFRESH_SVG; rep.appendChild(_cnuEl('span',null,'Remplacer le document'));
+      foot.appendChild(rep);
+    }
+  }
   updateDocProgress();
 }
-/* Resynchronise l'état visuel de TOUTES les zones d'upload à partir de l'objet `docs`.
-   Idempotent : appelé à chaque affichage de l'étape Documents pour que les pièces déjà
-   fournies (reprise de brouillon) apparaissent toujours cochées/vertes — et pas seulement
-   « comptées » dans la barre de progression. */
+/* Conservé pour compat (reprise de brouillon) : redirige vers le rendu carte. */
+function markDocUploaded(key){ renderDoc(key); }
+/* Resynchronise toutes les zones à partir de `docs` (reprise de brouillon incluse). */
 function syncDocZones(){
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){
     var inp=uz.querySelector('input[type=file]'); if(!inp)return;
     var key=(inp.id||'').replace(/^f-/,'');
-    if(key==='cni'){ if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni]; renderCniList(); return; }   // CNI = multi-fichiers (géré séparément)
-    if(docs&&docs[key]){ _paintDocZone(uz, docs[key]&&docs[key].filename); }
-    else{ uz.classList.remove('ok'); var fn=uz.querySelector('.uz-fn'); if(fn)fn.textContent=''; }
+    if(key==='cni'){ if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni]; renderCniList(); return; }
+    renderDoc(key);
   });
   updateDocProgress();
 }
-function _docErr(key,msg){
-  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z){ z.classList.remove('ok','pending'); z.classList.add('err'); }}
-  var fn=document.getElementById('fn-'+key);
-  if(fn){ fn.innerHTML=ALERT_SVG; var e=document.createElement('span'); e.textContent=msg; fn.appendChild(e); }
-}
-/* Sélection d'un document → upload immédiat vers Airtable (via /api/drafts), puis coche. */
-window.onF=function(inp,key){
-  var f=inp.files[0]; if(!f) return;
-  var uz=inp.closest('.uz'); var lblEl=uz?uz.querySelector('.uz-lbl'):null;
+/* Sélection/dépôt d'un document → upload immédiat vers Airtable, puis chip. */
+window.onF=function(inp,key){ var f=inp.files[0]; if(f) uploadDoc(key,f); inp.value=''; };
+function uploadDoc(key,f){
+  if(f.size > 3*1024*1024){ _docErrState[key]='Fichier trop volumineux (max 3 Mo). Choisissez un fichier plus léger.'; renderDoc(key); toast('Fichier trop volumineux (max 3 Mo)'); return; }
+  var card=document.getElementById('uz-'+key), lblEl=card?card.querySelector('.cnu-title'):null;
   var label=(lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
-  if(f.size > 3*1024*1024){ inp.value=''; _docErr(key,'Fichier trop volumineux (max 3 Mo)'); toast('Fichier trop volumineux (max 3 Mo)'); return; }
-  if(uz){ uz.classList.remove('ok','err'); uz.classList.add('pending'); }
-  var fn=document.getElementById('fn-'+key);
-  if(fn){ fn.innerHTML='<span class="sl-spin">'+SPIN_SVG_SM+'</span>'; var _es=document.createElement('span'); _es.textContent='Envoi en cours…'; fn.appendChild(_es); }
+  delete _docErrState[key]; _docPending[key]={filename:f.name,size:f.size}; renderDoc(key);
   var rd=new FileReader();
-  rd.onerror=function(){ _docErr(key,'Lecture du fichier impossible'); };
+  rd.onerror=function(){ delete _docPending[key]; _docErrState[key]='Lecture du fichier impossible.'; renderDoc(key); };
   rd.onload=function(){
     var b64=String(rd.result).split(',')[1]||'';
     fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -2508,24 +2573,22 @@ window.onF=function(inp,key){
       key:key, label:label, filename:f.name, contentType:f.type||'application/octet-stream',
       dataBase64:b64, prevId:(docs[key]&&docs[key].id)||null
     })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
-      if(resp&&resp.ok){ docs[key]={filename:f.name,id:resp.id||null}; markDocUploaded(key,f.name); toast('Document enregistré'); }
+      if(resp&&resp.ok){ docs[key]={filename:f.name,size:f.size,id:resp.id||null}; delete _docPending[key]; renderDoc(key); toast('Document enregistré'); }
       else throw new Error('upload');
-    }).catch(function(){ inp.value=''; _docErr(key,'Échec de l\'envoi — réessayez'); toast('Échec de l\'envoi du document'); });
+    }).catch(function(){ delete _docPending[key]; _docErrState[key]='Échec de l\'envoi — réessayez.'; renderDoc(key); toast('Échec de l\'envoi du document'); });
   };
   rd.readAsDataURL(f);
-};
-/* Supprime un document déjà envoyé (retire la pièce jointe Airtable + réinitialise la zone),
-   pour permettre de changer de fichier en cas d'erreur. */
+}
+/* Supprime un document envoyé (retire la pièce jointe Airtable + réinitialise la carte). */
 function removeDoc(key){
   var item=docs&&docs[key];
   if(item&&item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
   })}).catch(function(){}); }
   if(docs) delete docs[key];
+  delete _docPending[key]; delete _docErrState[key];
   var inp=document.getElementById('f-'+key); if(inp) inp.value='';
-  var uz=inp?inp.closest('.uz'):null;
-  if(uz){ uz.classList.remove('ok','pending','err'); var fn=uz.querySelector('.uz-fn'); if(fn) fn.textContent=''; }
-  updateDocProgress();
+  renderDoc(key);
   toast('Document supprimé');
 }
 function updateDocProgress(){
@@ -3109,7 +3172,7 @@ function initA11y(){
   // Étape 6 : la case de certification débloque « Créer le dossier »
   var cert=document.getElementById('sl-certify');
   if(cert)cert.addEventListener('change',refreshCreate);
-  document.querySelectorAll('#sl-root .uz:not(.uz-multi)').forEach(function(uz){uz.setAttribute('role','button');uz.setAttribute('tabindex','0');var lb=uz.querySelector('.uz-lbl');if(lb)uz.setAttribute('aria-label',lb.textContent.replace(/\*/g,'').trim());});
+  upgradeDocZones();   // transforme les zones de documents en cartes uploader (design unifié)
   ['siret-st','prop-siret-st','doc-prog-lbl','sim-pv-c','sim-pvbv-c','sim-pvb-c','sim-bat-c'].forEach(function(id){var e=document.getElementById(id);if(e)e.setAttribute('aria-live','polite');});
   // Modales : clic overlay + Échap ferment, piège à focus (Tab) sur les boutons
   [['modal-confirm-overlay',closeConfirm],['modal-danger-overlay',closeDanger],['modal-alert-overlay',closeAlert],['modal-leave-overlay',leaveCancel]].forEach(function(m){
