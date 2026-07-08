@@ -2562,7 +2562,7 @@ function cniState(){
   if(_cniChecking) return 'analyzing';
   var v=idCheckResult;
   if(!v || v.ok!==true) return 'unverified';   // dégradé, non bloquant
-  if(v.estPieceIdentite===false || v.estFrancaise===false || v.lisible===false) return 'nonconform';
+  if(v.estPieceIdentite===false || v.estFrancaise===false || v.lisible===false || v.ageMax75Respecte===false) return 'nonconform';
   if(v.rectoVersoPresents===false || v.correspondAbonne===false) return 'incomplete';
   return 'conform';
 }
@@ -2645,7 +2645,9 @@ function renderCniList(){
       var msg;
       if(v.estPieceIdentite===false) msg='Un document fourni ne semble pas être une pièce d\'identité. Vérifiez les fichiers, puis remplacez le document.';
       else if(v.estFrancaise===false) msg='Pièce d\'identité non française détectée'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+'. Une pièce française est requise.';
-      else msg='Une pièce d\'identité est illisible ou trop floue. Reprenez la photo à plat, bien éclairée et sans reflet, puis remplacez le document.';
+      else if(v.lisible===false) msg='Une pièce d\'identité est illisible ou trop floue. Reprenez la photo à plat, bien éclairée et sans reflet, puis remplacez le document.';
+      else if(v.ageMax75Respecte===false) msg='Âge maximum dépassé : le client a '+(v.age!=null?(v.age+' ans'):'plus de 75 ans')+' (limite : 75 ans).';
+      else msg='La pièce d\'identité ne remplit pas les conditions requises.';
       ex.appendChild(_cnuCallout('red',ALERT_SVG,msg));
     } else if(st==='unverified' && list.length){
       var c=_cnuCallout('info',INFO_SVG,'Documents enregistrés. La vérification automatique est momentanément indisponible — vous pouvez continuer.');
@@ -2723,6 +2725,7 @@ function cniBlockReason(){
   if(r.estPieceIdentite===false) return 'Un document fourni comme CNI ne semble pas être une pièce d\'identité. Vérifiez les fichiers avant de créer le dossier.';
   if(r.estFrancaise===false) return 'Une pièce d\'identité fournie ne semble pas française'+(r.pays&&r.pays!=='inconnu'?(' (pays détecté : '+r.pays+')'):'')+'. Vérifiez les documents.';
   if(r.lisible===false) return 'Une pièce d\'identité fournie est illisible ou trop floue. Fournissez un scan net avant de créer le dossier.';
+  if(r.ageMax75Respecte===false) return 'Le client dépasse l\'âge maximum autorisé (75 ans)'+(r.age!=null?(' — âge détecté : '+r.age+' ans'):'')+'. Vérifiez la pièce d\'identité.';
   return null;
 }
 
