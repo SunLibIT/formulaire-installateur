@@ -15,6 +15,14 @@ const TOKEN = process.env.AIRTABLE_TOKEN;
 const ORIGIN = process.env.ALLOW_ORIGIN || '*';
 const H = { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' };
 
+// Vérification IA de la pièce d'identité (CNI) — webhook n8n (Claude vision). Secrets côté serveur.
+const N8N_ID_URL = process.env.N8N_ID_WEBHOOK_URL || '';
+const N8N_ID_HEADER = process.env.N8N_ID_WEBHOOK_HEADER || 'x-sl-secret';
+const N8N_ID_SECRET = process.env.N8N_ID_WEBHOOK_SECRET || '';
+
+// La vérification IA (upload + appel Claude via n8n) peut dépasser 10 s → on relève la limite Vercel.
+export const maxDuration = 60;
+
 const TABLES = { part: 'Particulier', pro: 'Pro' };
 const STATUT = { draft: 'En cours', submitted: 'Soumis' };
 const TYPE_LABEL = { pv: 'PV seul', pvbv: 'PV + Batterie Virtuelle', pvb: 'PV + Batterie physique', bat: 'Batterie seule' };
@@ -194,6 +202,86 @@ async function handleUpload(p, res) {
   return res.status(200).json({ ok: true, id: last && last.id, filename: filename });
 }
 
+// Récupère les pièces jointes Airtable (par ids) et les renvoie en base64. Les URLs d'attachement
+// Airtable sont signées et lues juste-à-temps (fraîches). Client → proxy ne transporte que des ids
+// (léger) ; le proxy télécharge et envoie les base64 à n8n (Vercel n'a pas de limite de 4,5 Mo en sortie).
+async function filesFromIds(table, draftId, ids) {
+  var out = [];
+  var recId = await findId(table, draftId);
+  if (!recId) return out;
+  var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
+  var gd = await gr.json();
+  var atts = (gd.fields && gd.fields['Documents']) || [];
+  var byId = {}; atts.forEach(function (a) { byId[a.id] = a; });
+  for (var i = 0; i < ids.length; i++) {
+    var a = byId[ids[i]]; if (!a || !a.url) continue;
+    var fr = await fetch(a.url); if (!fr.ok) continue;
+    var buf = Buffer.from(await fr.arrayBuffer());
+    out.push({ dataBase64: buf.toString('base64'), contentType: a.type || 'application/octet-stream', filename: a.filename || '' });
+  }
+  return out;
+}
+
+// ── Vérification IA des pièces d'identité (CNI) via un workflow n8n (Claude vision) ──
+// Proxy : l'URL du webhook et le secret restent côté serveur (variables d'env Vercel).
+// Reçoit soit { ids:[...] } (multi, résolus depuis Airtable), soit { dataBase64,... } (fallback 1 fichier).
+// Renvoie TOUJOURS 200 avec un verdict JSON. En cas d'indisponibilité, { ok:false, ... } → le front
+// NE bloque PAS la création (dégradé).
+async function handleVerifyId(p, res) {
+  if (!N8N_ID_URL) return res.status(200).json({ ok: false, erreur: 'non_configure', raison: 'Vérification IA non configurée.' });
+  var table = TABLES[p.type_client] || 'Particulier';
+  var files = [];
+  try {
+    if (Array.isArray(p.ids) && p.ids.length && p.draftId) {
+      files = await filesFromIds(table, p.draftId, p.ids);
+    } else if (p.dataBase64) {
+      files = [{ dataBase64: p.dataBase64, contentType: p.contentType || 'application/octet-stream', filename: p.filename || '' }];
+    }
+  } catch (e) {
+    return res.status(200).json({ ok: false, erreur: 'lecture', raison: 'Lecture des documents impossible.' });
+  }
+  if (!files.length) return res.status(200).json({ ok: false, erreur: 'aucun_fichier', raison: 'Aucun document à vérifier.' });
+  var headers = { 'Content-Type': 'application/json' };
+  if (N8N_ID_SECRET) headers[N8N_ID_HEADER] = N8N_ID_SECRET;
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, 50000);
+  try {
+    var r = await fetch(N8N_ID_URL, {
+      method: 'POST', headers: headers, signal: ctrl.signal,
+      body: JSON.stringify({ files: files, abonnes: Array.isArray(p.abonnes) ? p.abonnes : [] })
+    });
+    if (!r.ok) {
+      var t = ''; try { t = await r.text(); } catch (e) {}
+      return res.status(200).json({ ok: false, erreur: 'n8n_' + r.status, raison: 'Service de vérification indisponible.', detail: String(t).slice(0, 200) });
+    }
+    var d = await r.json();
+    return res.status(200).json(d && typeof d === 'object' ? d : { ok: false, erreur: 'reponse', raison: 'Réponse inattendue du service.' });
+  } catch (e) {
+    return res.status(200).json({ ok: false, erreur: 'reseau', raison: 'Vérification indisponible (réseau ou délai dépassé).' });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Retire UNE pièce jointe (par id) du champ « Documents » — utilisé par le bouton « Retirer » (CNI multi).
+async function handleRemoveDoc(p, res) {
+  if (!p.draftId || !p.id) return res.status(400).json({ error: 'draftId + id requis' });
+  var table = TABLES[p.type_client] || 'Particulier';
+  try {
+    var recId = await findId(table, p.draftId);
+    if (!recId) return res.status(200).json({ ok: true });   // rien à retirer
+    var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
+    var gd = await gr.json();
+    var cur = (gd.fields && gd.fields['Documents']) || [];
+    var kept = cur.filter(function (a) { return a.id !== p.id; }).map(function (a) { return { id: a.id }; });
+    var pr = await fetch(tbl(table), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: recId, fields: { 'Documents': kept } }] }) });
+    if (!pr.ok) { var t = ''; try { t = await pr.text(); } catch (e) {} return res.status(pr.status).json({ error: t }); }
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -213,6 +301,8 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       var p = (typeof req.body === 'string') ? JSON.parse(req.body || '{}') : (req.body || {});
+      if (p.action === 'verifyid') return handleVerifyId(p, res);   // vérification IA de la CNI (n8n + Claude)
+      if (p.action === 'removedoc') return handleRemoveDoc(p, res);   // retrait d'une pièce jointe (CNI multi)
       if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document (pièce jointe)
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';

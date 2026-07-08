@@ -1526,9 +1526,12 @@
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span><span class="uz-info"><span class="uz-lbl">Devis d'abonnement — Modèle SunLib <span class="req">*</span></span><span class="uz-sub">Document PDF signé</span></span></div>
               <span class="uz-fn" id="fn-devis"></span><span class="uz-chk" id="uz-devis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
-            <div class="uz" onclick="trig('f-cni')"><input type="file" id="f-cni" accept=".pdf,.jpg,.jpeg,.png" onchange="onF(this,'cni')"/>
-              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="uz-info"><span class="uz-lbl">CNI des abonnés — recto/verso <span class="req">*</span></span><span class="uz-sub">Toutes personnes déclarant des revenus sur le foyer</span></span></div>
-              <span class="uz-fn" id="fn-cni"></span><span class="uz-chk" id="uz-cni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+            <div class="uz uz-multi" id="uz-cni-wrap">
+              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="uz-info"><span class="uz-lbl">CNI des abonnés — recto/verso <span class="req">*</span></span><span class="uz-sub">Toutes personnes déclarant des revenus sur le foyer — ajoutez recto/verso et une pièce par déclarant</span></span></div>
+              <input type="file" id="f-cni" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none!important" onchange="onCni(this)"/>
+              <div id="cni-list" style="margin-top:8px;"></div>
+              <button type="button" id="cni-add" class="cni-add" onclick="trig('f-cni')" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed rgba(255,255,255,.28);background:transparent;color:inherit;border-radius:8px;cursor:pointer;font-size:13px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter un document</button>
+              <span class="uz-fn" id="cni-check"></span>
             </div>
             <div class="uz" onclick="trig('f-impots')"><input type="file" id="f-impots" accept=".pdf" onchange="onF(this,'impots')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg></span><span class="uz-info"><span class="uz-lbl">Avis d'imposition — 4 pages <span class="req">*</span></span><span class="uz-sub">Dernier avis complet</span></span></div>
@@ -1603,6 +1606,7 @@ var KEY='AIzaSyBvmiOuZNWsSyyzl4bSB6vacgv0_C6f1HA';
 var ct='part', iType=null, geo=null, gmap=null, gmk=null, deb=null, propT='oui';
 var abos=[], aC=0, collabs=[], cC=0;
 var docs={};   // documents uploadés : { key: {filename, id} } — fichiers stockés dans Airtable (champ « Documents »)
+var idCheckResult=null;   // verdict de la vérification IA de la CNI (n8n + Claude) : null = non vérifié / indisponible
 var simResult=null;
 var _uid=0, _lastFocus=null;
 var adr={located:false};   // étape 3 : adresse localisée ?
@@ -2355,6 +2359,7 @@ function syncDocZones(){
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){
     var inp=uz.querySelector('input[type=file]'); if(!inp)return;
     var key=(inp.id||'').replace(/^f-/,'');
+    if(key==='cni'){ if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni]; renderCniList(); return; }   // CNI = multi-fichiers (géré séparément)
     if(docs&&docs[key]){ _paintDocZone(uz, docs[key]&&docs[key].filename); }
     else{ uz.classList.remove('ok'); var fn=uz.querySelector('.uz-fn'); if(fn)fn.textContent=''; }
   });
@@ -2403,6 +2408,123 @@ function updateDocProgress(){
   var lbl=document.getElementById('doc-prog-lbl');
   if(fill)fill.style.setProperty('width',pct+'%','important');
   if(lbl)lbl.textContent=done+' document'+(done>1?'s':'')+' fourni'+(done>1?'s':'')+' sur '+total;
+}
+
+/* ── CNI multi-fichiers + vérification IA (via /api/drafts → workflow n8n / Claude vision) ── */
+/* docs.cni est un TABLEAU [{filename,id}] (recto, verso, une pièce par déclarant). Compat ancien format (objet). */
+var _cniTimer=null, _cniSeq=0, _cniTmp=0;
+function getCniList(){ var v=docs.cni; if(!v) return []; return Array.isArray(v)?v:[v]; }
+function setCniList(a){ docs.cni=a; }
+
+/* Badge d'état sous la zone CNI. state: pending | ok | warn | bad | skip */
+function setCniBadge(state,msg){
+  var el=document.getElementById('cni-check'); if(!el) return;
+  if(state==='skip'||!state){ el.textContent=''; return; }
+  var colors={pending:'#9aa0a6',ok:'#16a34a',warn:'#d97706',bad:'#dc2626'};
+  var icons={pending:'⏳ ',ok:'✓ ',warn:'⚠ ',bad:'✗ '};
+  el.style.setProperty('display','block','important'); el.style.setProperty('margin-top','8px','important');
+  el.style.setProperty('font-size','12px','important'); el.style.setProperty('line-height','1.4','important');
+  el.style.setProperty('color',colors[state]||'#9aa0a6','important');
+  el.textContent=(icons[state]||'')+(msg||'');
+}
+/* Rendu de la liste des fichiers CNI (coche + nom + bouton Retirer) + état « ok » de la zone. */
+function renderCniList(){
+  var wrap=document.getElementById('uz-cni-wrap'), box=document.getElementById('cni-list');
+  if(!box) return;
+  var list=getCniList(); box.innerHTML='';
+  list.forEach(function(item,idx){
+    var row=document.createElement('div');
+    row.style.setProperty('display','flex','important'); row.style.setProperty('align-items','center','important');
+    row.style.setProperty('gap','8px','important'); row.style.setProperty('padding','6px 0','important');
+    if(idx>0) row.style.setProperty('border-top','1px solid rgba(255,255,255,.08)','important');
+    var chk=document.createElement('span'); chk.style.setProperty('flex','0 0 auto','important');
+    chk.style.setProperty('color', item._pending?'#9aa0a6':'#16a34a','important');
+    chk.innerHTML=item._pending?'⏳':CHECK_SVG_SM;
+    var nm=document.createElement('span'); nm.textContent=item.filename||'document';
+    nm.style.setProperty('flex','1 1 auto','important'); nm.style.setProperty('overflow','hidden','important');
+    nm.style.setProperty('text-overflow','ellipsis','important'); nm.style.setProperty('white-space','nowrap','important'); nm.style.setProperty('font-size','13px','important');
+    var btn=document.createElement('button'); btn.type='button'; btn.textContent='Retirer';
+    btn.style.setProperty('flex','0 0 auto','important'); btn.style.setProperty('background','transparent','important');
+    btn.style.setProperty('border','0','important'); btn.style.setProperty('color','#dc2626','important');
+    btn.style.setProperty('cursor','pointer','important'); btn.style.setProperty('font-size','12px','important'); btn.style.setProperty('padding','2px 4px','important');
+    btn.onclick=function(e){ e.stopPropagation(); removeCniFile(idx); };
+    row.appendChild(chk); row.appendChild(nm); row.appendChild(btn); box.appendChild(row);
+  });
+  if(wrap){ if(list.length) wrap.classList.add('ok'); else wrap.classList.remove('ok'); }
+  updateDocProgress();
+}
+/* Sélection d'un ou plusieurs fichiers CNI → upload de chacun (append dans Airtable). */
+window.onCni=function(inp){
+  var files=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value='';
+  files.forEach(function(f){ uploadCniFile(f); });
+};
+function _removeCniTmp(tmp){ setCniList(getCniList().filter(function(x){return x._tmp!==tmp;})); renderCniList(); }
+function uploadCniFile(f){
+  if(f.size>3*1024*1024){ toast('Fichier trop volumineux (max 3 Mo) : '+f.name); return; }
+  var tmp='t'+(++_cniTmp);
+  var list=getCniList(); list.push({filename:f.name,id:null,_tmp:tmp,_pending:true}); setCniList(list); renderCniList();
+  var rd=new FileReader();
+  rd.onerror=function(){ _removeCniTmp(tmp); toast('Lecture impossible : '+f.name); };
+  rd.onload=function(){
+    var b64=String(rd.result).split(',')[1]||'';
+    fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||v('sl-email-cr')||'',
+      key:'cni', label:'CNI', filename:f.name, contentType:f.type||'application/octet-stream', dataBase64:b64, prevId:null
+    })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
+      if(resp&&resp.ok){
+        var l=getCniList();
+        for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
+        setCniList(l); renderCniList(); toast('Document enregistré'); scheduleCniCheck();
+      } else throw new Error('upload');
+    }).catch(function(){ _removeCniTmp(tmp); toast('Échec de l\'envoi : '+f.name); });
+  };
+  rd.readAsDataURL(f);
+}
+/* Retrait d'un fichier CNI : suppression côté Airtable (best-effort) + local, puis re-vérification. */
+function removeCniFile(idx){
+  var list=getCniList(), item=list[idx]; if(!item) return;
+  if(item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
+  })}).catch(function(){}); }
+  list.splice(idx,1); setCniList(list); renderCniList(); scheduleCniCheck();
+}
+/* Vérification IA sur l'ENSEMBLE des CNI en un seul appel (débounce). */
+function scheduleCniCheck(){ clearTimeout(_cniTimer); _cniTimer=setTimeout(doCniCheck,600); }
+function doCniCheck(){
+  var ids=getCniList().map(function(x){return x.id;}).filter(Boolean);
+  if(!ids.length){ idCheckResult=null; setCniBadge('skip'); return; }
+  idCheckResult=null; setCniBadge('pending','Vérification de la ou des pièces d\'identité…');
+  try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
+  var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
+  var seq=++_cniSeq;
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'verifyid', draftId:getDraftId(), type_client:ct, ids:ids, abonnes:abonnes
+  })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
+    if(seq!==_cniSeq) return; idCheckResult=v; applyCniVerdict(v);
+  }).catch(function(){ if(seq!==_cniSeq) return; idCheckResult=null; setCniBadge('skip'); });
+}
+/* Verdict → badge. Rouge (bloquant) : pas une pièce / pas française / illisible.
+   Orange (avertissement, non bloquant) : recto-verso incomplet ou nom ne correspondant pas. */
+function applyCniVerdict(v){
+  if(!v || v.ok!==true){ setCniBadge('skip'); return; }
+  if(v.estPieceIdentite===false){ setCniBadge('bad','Un document fourni ne semble pas être une pièce d\'identité.'); return; }
+  if(v.estFrancaise===false){ setCniBadge('bad','Pièce d\'identité non française détectée'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+'.'); return; }
+  if(v.lisible===false){ setCniBadge('bad','Une pièce d\'identité est illisible ou trop floue.'); return; }
+  var warns=[];
+  if(v.rectoVersoPresents===false) warns.push('recto/verso incomplet');
+  if(v.correspondAbonne===false) warns.push('un nom ne correspond pas aux abonnés saisis');
+  if(warns.length){ setCniBadge('warn','Pièce(s) française(s) détectée(s), mais : '+warns.join(' ; ')+'.'); return; }
+  setCniBadge('ok','Pièce(s) d\'identité française(s) vérifiée(s).');
+}
+/* Motif de blocage (string) si verdict négatif clair, sinon null. Dégradé : ok!==true → non bloquant. */
+function cniBlockReason(){
+  if(ct!=='part') return null;
+  var r=idCheckResult;
+  if(!r || r.ok!==true) return null;
+  if(r.estPieceIdentite===false) return 'Un document fourni comme CNI ne semble pas être une pièce d\'identité. Vérifiez les fichiers avant de créer le dossier.';
+  if(r.estFrancaise===false) return 'Une pièce d\'identité fournie ne semble pas française'+(r.pays&&r.pays!=='inconnu'?(' (pays détecté : '+r.pays+')'):'')+'. Vérifiez les documents.';
+  if(r.lisible===false) return 'Une pièce d\'identité fournie est illisible ou trop floue. Fournissez un scan net avant de créer le dossier.';
+  return null;
 }
 
 var addr=document.getElementById('sl-addr'),pac=document.getElementById('sl-pac');
@@ -2742,6 +2864,8 @@ function refreshCreate(){
 window.slCreate=function(){
   var cert=document.getElementById('sl-certify');
   if(!cert||!cert.checked||_creating) return;   // sécurité : case requise + un seul envoi
+  var _cniReason=cniBlockReason();               // blocage si la vérif IA a un verdict négatif clair
+  if(_cniReason){ slAlert(_cniReason,'Pièce d\'identité à vérifier'); return; }
   _creating=true;
   showBusy('Création du dossier…');   // bloque toute interaction pendant l'envoi
   var btn=document.getElementById('btn-create');
@@ -2944,7 +3068,12 @@ function hydrateDraft(p){
     applyAllFields(p.fields);
     if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
     // Documents déjà fournis (fichiers dans Airtable) → re-cocher les zones + nom de fichier
-    if(p.docs){ docs=p.docs; Object.keys(docs).forEach(function(k){ if(docs[k]) markDocUploaded(k, docs[k].filename); }); }
+    if(p.docs){ docs=p.docs;
+      Object.keys(docs).forEach(function(k){ if(k!=='cni' && docs[k]) markDocUploaded(k, docs[k].filename); });
+      if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni];   // compat ancien format (objet unique)
+      renderCniList();
+      if(getCniList().length) scheduleCniCheck();   // re-vérifie le lot à la reprise (dégradé si indispo)
+    }
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
       var tags=document.querySelectorAll('#sl-root .prop-tag');
@@ -3072,7 +3201,9 @@ function buildDraftPayload(){
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:(v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville')).trim(),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});p.proprietaire=propT;}
   p.fields=collectAllFields();   // snapshot complet → restauration intégrale à la reprise
-  p.docs=docs;                   // documents déjà uploadés (métadonnées ; fichiers stockés dans Airtable)
+  p.docs=Object.assign({},docs); // documents déjà uploadés (métadonnées ; fichiers stockés dans Airtable)
+  if(Array.isArray(p.docs.cni))  // CNI multi : ne garder que les fichiers réellement uploadés, sans champs transitoires
+    p.docs.cni=p.docs.cni.filter(function(x){return x&&x.id;}).map(function(x){return {filename:x.filename,id:x.id};});
   return p;
 }
 /* Machine à états : met à jour TOUS les boutons (un par étape, un seul visible à la fois) */
