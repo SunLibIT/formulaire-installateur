@@ -506,7 +506,8 @@
     }
     #sl-root .btn-siret svg { width: 14px !important; height: 14px !important; flex: none !important; }
     /* Icônes inline dans les messages d'état (couleur sémantique héritée via currentColor) */
-    #sl-root .ok svg, #sl-root .ko svg, #sl-root .sim-err svg, #sl-root .uz-fn svg { width: 14px !important; height: 14px !important; vertical-align: -2px !important; margin-right: 4px !important; flex: none !important; }
+    #sl-root .ok svg, #sl-root .ko svg, #sl-root .sim-err svg, #sl-root .uz-fn svg { width: 14px !important; height: 14px !important; vertical-align: -2px !important; flex: none !important; }
+    #sl-root span.ok, #sl-root span.ko { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
 
     #sl-root .btn-siret:hover { opacity: 0.87 !important; }
     #sl-root .siret-st { font-size: 11px !important; margin-top: 5px !important; min-height: 16px !important; display: block !important; }
@@ -892,12 +893,12 @@
     }
     #sl-root .btn-back { display: inline-flex !important; align-items: center !important; height: 42px !important; padding: 0 22px !important; border: 1.5px solid #ddd !important; border-radius: 30px !important; font-size: 13px !important; font-weight: 600 !important; color: #aaa !important; background: none !important; cursor: pointer !important; transition: all 0.2s !important; }
     #sl-root .btn-back:hover { border-color: #999 !important; color: #555 !important; }
-    #sl-root .btn-next { display: inline-flex !important; align-items: center !important; height: 42px !important; padding: 0 30px !important; border: none !important; border-radius: 30px !important; font-size: 14px !important; font-weight: 700 !important; color: #fff !important; background: var(--brand-gradient) !important; cursor: pointer !important; box-shadow: 0 4px 14px rgba(19,163,172,0.32) !important; transition: all 0.2s !important; }
+    #sl-root .btn-next { display: inline-flex !important; align-items: center !important; gap: 7px !important; height: 42px !important; padding: 0 30px !important; border: none !important; border-radius: 30px !important; font-size: 14px !important; font-weight: 700 !important; color: #fff !important; background: var(--brand-gradient) !important; cursor: pointer !important; box-shadow: 0 4px 14px rgba(19,163,172,0.32) !important; transition: all 0.2s !important; }
     /* Bouton principal désactivé : gris neutre, non cliquable (jamais le dégradé) */
     #sl-root .btn-next:disabled, #sl-root .btn-next:disabled:hover { background: #e6e9ec !important; color: #aab2b8 !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important; }
     #sl-root .btn-next:hover { transform: translateY(-1px) !important; box-shadow: 0 6px 20px rgba(19,163,172,0.42) !important; }
     #sl-root .btn-next.g { background: var(--grad2) !important; box-shadow: 0 4px 14px rgba(96,184,48,0.32) !important; }
-    #sl-root .btn-next svg { width: 16px !important; height: 16px !important; margin-right: 7px !important; flex: none !important; }
+    #sl-root .btn-next svg { width: 16px !important; height: 16px !important; flex: none !important; }
     #sl-root .hide { display: none !important; }
 
     /* A11Y — focus clavier visible sur les contrôles personnalisés */
@@ -916,7 +917,7 @@
     #sl-root .sim-amount { display: block !important; font-size: 40px !important; font-weight: 800 !important; color: #13A3AC !important; line-height: 1 !important; letter-spacing: -1px !important; }
     #sl-root .sim-amount em { font-size: 20px !important; font-weight: 600 !important; color: #3CAE68 !important; font-style: normal !important; letter-spacing: 0 !important; }
     #sl-root .sim-ph { display: block !important; background: linear-gradient(135deg, #f0fbfc, #f0fff6) !important; padding: 20px !important; text-align: center !important; font-size: 13px !important; color: #bbb !important; font-style: italic !important; }
-    #sl-root .sim-err { display: block !important; background: linear-gradient(135deg, #fff8e1, #fffde7) !important; padding: 16px 20px !important; text-align: center !important; font-size: 13px !important; color: #b45309 !important; font-weight: 600 !important; }
+    #sl-root .sim-err { display: flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; background: linear-gradient(135deg, #fff8e1, #fffde7) !important; padding: 16px 20px !important; text-align: center !important; font-size: 13px !important; color: #b45309 !important; font-weight: 600 !important; }
 
     /* RECAP SIM */
     #sl-root .recap-sim { display: block !important; width: 100% !important; border-radius: var(--rl) !important; overflow: hidden !important; margin-bottom: 10px !important; border: 1.5px solid rgba(19,163,172,0.2) !important; }
