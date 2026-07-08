@@ -611,6 +611,7 @@
     #sl-root .uz-lbl { display: block !important; font-size: 12px !important; font-weight: 600 !important; color: #333 !important; }
     #sl-root .uz-sub { display: block !important; font-size: 11px !important; color: #aaa !important; margin-top: 1px !important; }
     #sl-root .uz-fn { display: block !important; font-size: 11px !important; color: var(--green) !important; font-weight: 600 !important; margin-top: 6px !important; padding-left: 50px !important; }
+    #sl-root .uz-del { display: inline-block !important; margin-left: 10px !important; background: transparent !important; border: 0 !important; color: #dc2626 !important; cursor: pointer !important; font-size: 11px !important; font-weight: 600 !important; padding: 0 !important; text-decoration: underline !important; vertical-align: baseline !important; }
     #sl-root .uz-chk { position: absolute !important; top: 12px !important; right: 14px !important; width: 22px !important; height: 22px !important; border-radius: 50% !important; background: var(--green) !important; color: #fff !important; align-items: center !important; justify-content: center !important; display: none !important; }
     #sl-root .uz-chk svg { width: 13px !important; height: 13px !important; }
     #sl-root .uz.ok .uz-chk { display: flex !important; }
@@ -2343,7 +2344,18 @@ function _paintDocZone(uz,filename){
   if(!uz)return;
   uz.classList.add('ok');
   var fn=uz.querySelector('.uz-fn');
-  if(fn){ fn.innerHTML=CHECK_SVG_SM; var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s); }
+  if(fn){
+    fn.innerHTML=CHECK_SVG_SM;
+    var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s);
+    var inp=uz.querySelector('input[type=file]');
+    var key=inp?(inp.id||'').replace(/^f-/,''):'';
+    if(key){
+      var del=document.createElement('button'); del.type='button'; del.className='uz-del'; del.textContent='Supprimer';
+      del.setAttribute('aria-label','Supprimer ce document');
+      del.onclick=function(e){ e.stopPropagation(); removeDoc(key); };
+      fn.appendChild(del);
+    }
+  }
 }
 /* Marque une zone de document comme « fourni » (coche + nom de fichier) */
 function markDocUploaded(key,filename){
@@ -2393,6 +2405,20 @@ window.onF=function(inp,key){
   };
   rd.readAsDataURL(f);
 };
+/* Supprime un document déjà envoyé (retire la pièce jointe Airtable + réinitialise la zone),
+   pour permettre de changer de fichier en cas d'erreur. */
+function removeDoc(key){
+  var item=docs&&docs[key];
+  if(item&&item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
+  })}).catch(function(){}); }
+  if(docs) delete docs[key];
+  var inp=document.getElementById('f-'+key); if(inp) inp.value='';
+  var uz=inp?inp.closest('.uz'):null;
+  if(uz){ uz.classList.remove('ok'); var fn=uz.querySelector('.uz-fn'); if(fn) fn.textContent=''; }
+  updateDocProgress();
+  toast('Document supprimé');
+}
 function updateDocProgress(){
   var allUz=document.querySelectorAll('#sl-root .uz');
   var visible=[],done=0;
