@@ -2454,14 +2454,87 @@ window.updateSim=function(){
 
 window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
 /* Applique l'état visuel « fourni » (coche verte + nom de fichier) à une zone .uz donnée. */
-/* ── Zones de documents = cartes uploader mono-fichier (même design que la CNI) ── */
-var _docPending = {}, _docErrState = {};
-var DOC_PILL = {
-  empty:     { t:'En attente',     tone:'neutral', ico:UPLOAD_SVG,   spin:false },
-  uploading: { t:'Téléversement…', tone:'teal',    ico:SPIN_SVG_SM,  spin:true },
-  ok:        { t:'Enregistré',     tone:'green',   ico:CHECK_SVG_SM, spin:false },
-  err:       { t:'Erreur',         tone:'red',     ico:ALERT_SVG,    spin:false }
-};
+/* ── Documents = cartes uploader MULTI-fichiers (design CNI généralisé). docs[key] = tableau. ── */
+var _upTmp = 0;
+function getDocList(key){ var v=docs?docs[key]:null; if(!v) return []; return Array.isArray(v)?v:[v]; }
+function setDocList(key,a){ docs[key]=a; }
+function renderDocZone(key){ if(key==='cni') renderCniList(); else renderDoc(key); }
+/* Zone de dépôt (état vide) — clic + glisser-déposer, multi-fichiers. */
+function _docDropzone(key){
+  var dz=_cnuEl('button','cnu-drop'); dz.type='button';
+  dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
+  dz.appendChild(_cnuEl('span','cnu-drop-t','Cliquez ou déposez un ou plusieurs fichiers'));
+  dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG — 3 Mo max par fichier'));
+  dz.onclick=function(){ trig('f-'+key); };
+  dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
+  dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
+  dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
+    var fs=(e.dataTransfer&&e.dataTransfer.files)?Array.prototype.slice.call(e.dataTransfer.files):[];
+    fs.forEach(function(f){ uploadFileFor(key,f); }); });
+  return dz;
+}
+/* Chip d'un fichier. isCni : applique la coloration/verdict par fichier. */
+function _docChip(key,item,idx,isCni){
+  var chip=_cnuEl('div','cnu-chip');
+  var vf=isCni?item._verdict:null;
+  var badFile = isCni && !item._pending && vf && (vf.lisible===false || vf.estPiece===false);
+  var okFile  = isCni && !item._pending && vf && !badFile;
+  if(badFile) chip.classList.add('is-bad'); else if(okFile) chip.classList.add('is-ok');
+  chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
+  var meta=_cnuEl('div','cnu-fmeta');
+  meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
+  meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
+  if(badFile) meta.appendChild(_cnuEl('div','cnu-fprob', vf.probleme || (vf.lisible===false?'Document illisible.':'Ce n\'est pas une pièce d\'identité.')));
+  chip.appendChild(meta);
+  if(item._pending){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
+  else if(badFile){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
+  if(!item._pending){
+    var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
+    rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
+    rm.onclick=(function(k,i,btn,lbl){ return function(e){ e.stopPropagation();
+      if(btn.getAttribute('data-confirm')==='1'){ removeFileFor(k,i); return; }
+      btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
+      clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
+    }; })(key,idx,rm,rl);
+    chip.appendChild(rm);
+  }
+  return chip;
+}
+/* Upload (append) d'un fichier pour n'importe quelle pièce. */
+function uploadFileFor(key,f){
+  if(f.size>3*1024*1024){ toast('Fichier trop volumineux (max 3 Mo) : '+f.name); return; }
+  var tmp='t'+(++_upTmp);
+  var list=getDocList(key); list.push({filename:f.name,size:f.size,id:null,_tmp:tmp,_pending:true}); setDocList(key,list); renderDocZone(key);
+  var card=document.getElementById('uz-'+(key==='cni'?'cni-wrap':key));
+  var lblEl=card?card.querySelector('.cnu-title'):null;
+  var label=key==='cni'?'CNI':(lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
+  var rd=new FileReader();
+  rd.onerror=function(){ setDocList(key,getDocList(key).filter(function(x){return x._tmp!==tmp;})); renderDocZone(key); toast('Lecture impossible : '+f.name); };
+  rd.onload=function(){
+    var b64=String(rd.result).split(',')[1]||'';
+    fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||v('sl-email-cr')||'',
+      key:key, label:label, filename:f.name, contentType:f.type||'application/octet-stream', dataBase64:b64, prevId:null
+    })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
+      if(resp&&resp.ok){
+        var l=getDocList(key);
+        for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
+        setDocList(key,l); renderDocZone(key); toast('Document enregistré');
+        if(key==='cni') scheduleCniCheck();
+      } else throw new Error('upload');
+    }).catch(function(){ setDocList(key,getDocList(key).filter(function(x){return x._tmp!==tmp;})); renderDocZone(key); toast('Échec de l\'envoi : '+f.name); });
+  };
+  rd.readAsDataURL(f);
+}
+/* Retrait d'un fichier d'une pièce (retire la pièce jointe Airtable + local). */
+function removeFileFor(key,idx){
+  var list=getDocList(key), item=list[idx]; if(!item) return;
+  if(item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
+  })}).catch(function(){}); }
+  list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
+  if(key==='cni') scheduleCniCheck();
+}
 /* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
    en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
 function upgradeDocZones(){
@@ -2481,119 +2554,59 @@ function upgradeDocZones(){
     ht.appendChild(tr);
     if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
     head.appendChild(ht); uz.appendChild(head);
+    try{ inp.multiple=true; }catch(e){}
     uz.appendChild(inp);
     var body=_cnuEl('div','cnu-body'); body.setAttribute('data-body',''); uz.appendChild(body);
     var foot=_cnuEl('div','cnu-foot'); foot.setAttribute('data-foot',''); uz.appendChild(foot);
     renderDoc(key);
   });
 }
-/* Rendu d'une carte document mono-fichier selon son état (vide / envoi / enregistré / erreur). */
+/* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »). */
 function renderDoc(key){
   var card=document.getElementById('uz-'+key); if(!card) return;
-  var item=docs?docs[key]:null, pend=_docPending[key], err=_docErrState[key];
-  var st = err ? 'err' : (pend ? 'uploading' : (item ? 'ok' : 'empty'));
+  var list=getDocList(key);
+  var anyPending=list.some(function(x){return x._pending;});
+  var st = anyPending ? 'uploading' : (list.length ? 'ok' : 'empty');
   card.setAttribute('data-state',st);
-  if(item) card.classList.add('ok'); else card.classList.remove('ok');
+  if(list.length) card.classList.add('ok'); else card.classList.remove('ok');
 
   var pill=card.querySelector('[data-pill]');
-  if(pill){ var pc=DOC_PILL[st]; pill.className='cnu-pill t-'+pc.tone;
-    pill.innerHTML=(pc.spin?'<span class="sl-spin">'+pc.ico+'</span>':pc.ico);
-    pill.appendChild(_cnuEl('span',null,pc.t)); }
+  if(pill){
+    var P;
+    if(st==='uploading') P={t:'Téléversement…',tone:'teal',ico:SPIN_SVG_SM,spin:true};
+    else if(st==='ok') P={t:(list.length>1?(list.length+' documents'):'Enregistré'),tone:'green',ico:CHECK_SVG_SM,spin:false};
+    else P={t:'En attente',tone:'neutral',ico:UPLOAD_SVG,spin:false};
+    pill.className='cnu-pill t-'+P.tone;
+    pill.innerHTML=(P.spin?'<span class="sl-spin">'+P.ico+'</span>':P.ico);
+    pill.appendChild(_cnuEl('span',null,P.t));
+  }
 
   var body=card.querySelector('[data-body]');
   if(body){ body.innerHTML='';
-    if(st==='empty' || st==='err'){
-      var dz=_cnuEl('button','cnu-drop'); dz.type='button';
-      dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
-      dz.appendChild(_cnuEl('span','cnu-drop-t','Cliquez ou déposez un fichier'));
-      dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG — 3 Mo max'));
-      dz.onclick=function(){ trig('f-'+key); };
-      dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
-      dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
-      dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
-        var fs=(e.dataTransfer&&e.dataTransfer.files)?e.dataTransfer.files:null; if(fs&&fs[0]) uploadDoc(key,fs[0]); });
-      body.appendChild(dz);
-      if(st==='err') body.appendChild(_cnuCallout('red',ALERT_SVG,err));
-    } else {
-      var name=(item&&item.filename)||(pend&&pend.filename)||'document';
-      var chip=_cnuEl('div','cnu-chip');
-      chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
-      var meta=_cnuEl('div','cnu-fmeta');
-      meta.appendChild(_cnuEl('div','cnu-fname',name));
-      meta.appendChild(_cnuEl('div','cnu-fsub', pend?'Envoi…':((item&&item.size)?_cnuSize(item.size):'Enregistré')));
-      chip.appendChild(meta);
-      if(pend){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
-      if(!pend){
-        var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer le document');
-        rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
-        rm.onclick=(function(k,btn,lbl){ return function(e){ e.stopPropagation();
-          if(btn.getAttribute('data-confirm')==='1'){ removeDoc(k); return; }
-          btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
-          clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
-        }; })(key,rm,rl);
-        chip.appendChild(rm);
-      }
-      body.appendChild(chip);
-    }
+    if(!list.length) body.appendChild(_docDropzone(key));
+    else list.forEach(function(item,idx){ body.appendChild(_docChip(key,item,idx,false)); });
   }
 
   var foot=card.querySelector('[data-foot]');
   if(foot){ foot.innerHTML='';
-    if(st==='ok'){
-      var rep=_cnuEl('button','cnu-add'); rep.type='button'; rep.onclick=function(){ trig('f-'+key); };
-      rep.innerHTML=REFRESH_SVG; rep.appendChild(_cnuEl('span',null,'Remplacer le document'));
-      foot.appendChild(rep);
-    }
+    if(list.length){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-'+key); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }
   }
   updateDocProgress();
 }
 /* Conservé pour compat (reprise de brouillon) : redirige vers le rendu carte. */
-function markDocUploaded(key){ renderDoc(key); }
+function markDocUploaded(key){ renderDocZone(key); }
 /* Resynchronise toutes les zones à partir de `docs` (reprise de brouillon incluse). */
 function syncDocZones(){
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){
     var inp=uz.querySelector('input[type=file]'); if(!inp)return;
     var key=(inp.id||'').replace(/^f-/,'');
-    if(key==='cni'){ if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni]; renderCniList(); return; }
-    renderDoc(key);
+    if(docs[key] && !Array.isArray(docs[key])) docs[key]=[docs[key]];   // compat ancien format (objet unique)
+    renderDocZone(key);
   });
   updateDocProgress();
 }
-/* Sélection/dépôt d'un document → upload immédiat vers Airtable, puis chip. */
-window.onF=function(inp,key){ var f=inp.files[0]; if(f) uploadDoc(key,f); inp.value=''; };
-function uploadDoc(key,f){
-  if(f.size > 3*1024*1024){ _docErrState[key]='Fichier trop volumineux (max 3 Mo). Choisissez un fichier plus léger.'; renderDoc(key); toast('Fichier trop volumineux (max 3 Mo)'); return; }
-  var card=document.getElementById('uz-'+key), lblEl=card?card.querySelector('.cnu-title'):null;
-  var label=(lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
-  delete _docErrState[key]; _docPending[key]={filename:f.name,size:f.size}; renderDoc(key);
-  var rd=new FileReader();
-  rd.onerror=function(){ delete _docPending[key]; _docErrState[key]='Lecture du fichier impossible.'; renderDoc(key); };
-  rd.onload=function(){
-    var b64=String(rd.result).split(',')[1]||'';
-    fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      action:'upload', draftId:getDraftId(), type_client:ct,
-      email_installateur:_homeEmail||v('sl-email-cr')||'',
-      key:key, label:label, filename:f.name, contentType:f.type||'application/octet-stream',
-      dataBase64:b64, prevId:(docs[key]&&docs[key].id)||null
-    })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
-      if(resp&&resp.ok){ docs[key]={filename:f.name,size:f.size,id:resp.id||null}; delete _docPending[key]; renderDoc(key); toast('Document enregistré'); }
-      else throw new Error('upload');
-    }).catch(function(){ delete _docPending[key]; _docErrState[key]='Échec de l\'envoi — réessayez.'; renderDoc(key); toast('Échec de l\'envoi du document'); });
-  };
-  rd.readAsDataURL(f);
-}
-/* Supprime un document envoyé (retire la pièce jointe Airtable + réinitialise la carte). */
-function removeDoc(key){
-  var item=docs&&docs[key];
-  if(item&&item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
-  })}).catch(function(){}); }
-  if(docs) delete docs[key];
-  delete _docPending[key]; delete _docErrState[key];
-  var inp=document.getElementById('f-'+key); if(inp) inp.value='';
-  renderDoc(key);
-  toast('Document supprimé');
-}
+/* Sélection/dépôt de fichiers → upload (append), multi-fichiers. */
+window.onF=function(inp,key){ var fs=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value=''; fs.forEach(function(f){ uploadFileFor(key,f); }); };
 function updateDocProgress(){
   var allUz=document.querySelectorAll('#sl-root .uz');
   var visible=[],done=0;
@@ -2614,8 +2627,8 @@ function updateDocProgress(){
 /* ── CNI multi-fichiers + vérification IA (via /api/drafts → workflow n8n / Claude vision) ── */
 /* docs.cni est un TABLEAU [{filename,id}] (recto, verso, une pièce par déclarant). Compat ancien format (objet). */
 var _cniTimer=null, _cniSeq=0, _cniTmp=0, _cniChecking=false;
-function getCniList(){ var v=docs.cni; if(!v) return []; return Array.isArray(v)?v:[v]; }
-function setCniList(a){ docs.cni=a; }
+function getCniList(){ return getDocList('cni'); }
+function setCniList(a){ setDocList('cni',a); }
 
 /* ── Uploader CNI (analyse IA) : helpers + config d'états (couleur = sens) ── */
 function _cnuSize(b){ if(b==null) return ''; if(b<1024) return b+' o'; if(b<1048576) return (b/1024).toFixed(0)+' Ko'; return (b/1048576).toFixed(1)+' Mo'; }
@@ -2665,46 +2678,8 @@ function renderCniList(){
 
   var body=document.getElementById('cni-body');
   if(body){ body.innerHTML='';
-    if(!list.length){
-      var dz=_cnuEl('button','cnu-drop'); dz.type='button';
-      dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
-      dz.appendChild(_cnuEl('span','cnu-drop-t','Glissez le recto et le verso ici, ou parcourez'));
-      dz.appendChild(_cnuEl('span','cnu-drop-s','JPG, PNG ou PDF — 3 Mo max par fichier'));
-      dz.onclick=function(){ trig('f-cni'); };
-      dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
-      dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
-      dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
-        var fs=(e.dataTransfer&&e.dataTransfer.files)?Array.prototype.slice.call(e.dataTransfer.files):[];
-        fs.forEach(function(f){ uploadCniFile(f); }); });
-      body.appendChild(dz);
-    } else {
-      list.forEach(function(item,idx){
-        var chip=_cnuEl('div','cnu-chip');
-        var vf=item._verdict;
-        var badFile = !item._pending && vf && (vf.lisible===false || vf.estPiece===false);
-        var okFile  = !item._pending && vf && !badFile;
-        if(badFile) chip.classList.add('is-bad'); else if(okFile) chip.classList.add('is-ok');
-        chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
-        var meta=_cnuEl('div','cnu-fmeta');
-        meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
-        meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
-        if(badFile) meta.appendChild(_cnuEl('div','cnu-fprob', vf.probleme || (vf.lisible===false?'Document illisible.':'Ce n\'est pas une pièce d\'identité.')));
-        chip.appendChild(meta);
-        if(item._pending){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
-        else if(badFile){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
-        if(!item._pending){
-          var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
-          rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
-          rm.onclick=(function(i,btn,lbl){ return function(e){ e.stopPropagation();
-            if(btn.getAttribute('data-confirm')==='1'){ removeCniFile(i); return; }
-            btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
-            clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
-          }; })(idx,rm,rl);
-          chip.appendChild(rm);
-        }
-        body.appendChild(chip);
-      });
-    }
+    if(!list.length) body.appendChild(_docDropzone('cni'));
+    else list.forEach(function(item,idx){ body.appendChild(_docChip('cni',item,idx,true)); });
   }
 
   var ex=document.getElementById('cni-extra');
@@ -2740,48 +2715,12 @@ function renderCniList(){
 
   var foot=document.getElementById('cni-foot');
   if(foot){ foot.innerHTML='';
-    var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-cni'); };
-    if(st==='nonconform'){ add.innerHTML=REFRESH_SVG; add.appendChild(_cnuEl('span',null,'Remplacer le document')); }
-    else { add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); }
-    foot.appendChild(add);
+    if(list.length){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-cni'); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }
   }
   updateDocProgress();
 }
-/* Sélection d'un ou plusieurs fichiers CNI → upload de chacun (append dans Airtable). */
-window.onCni=function(inp){
-  var files=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value='';
-  files.forEach(function(f){ uploadCniFile(f); });
-};
-function _removeCniTmp(tmp){ setCniList(getCniList().filter(function(x){return x._tmp!==tmp;})); renderCniList(); }
-function uploadCniFile(f){
-  if(f.size>3*1024*1024){ toast('Fichier trop volumineux (max 3 Mo) : '+f.name); return; }
-  var tmp='t'+(++_cniTmp);
-  var list=getCniList(); list.push({filename:f.name,size:f.size,id:null,_tmp:tmp,_pending:true}); setCniList(list); renderCniList();
-  var rd=new FileReader();
-  rd.onerror=function(){ _removeCniTmp(tmp); toast('Lecture impossible : '+f.name); };
-  rd.onload=function(){
-    var b64=String(rd.result).split(',')[1]||'';
-    fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||v('sl-email-cr')||'',
-      key:'cni', label:'CNI', filename:f.name, contentType:f.type||'application/octet-stream', dataBase64:b64, prevId:null
-    })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
-      if(resp&&resp.ok){
-        var l=getCniList();
-        for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
-        setCniList(l); renderCniList(); toast('Document enregistré'); scheduleCniCheck();
-      } else throw new Error('upload');
-    }).catch(function(){ _removeCniTmp(tmp); toast('Échec de l\'envoi : '+f.name); });
-  };
-  rd.readAsDataURL(f);
-}
-/* Retrait d'un fichier CNI : suppression côté Airtable (best-effort) + local, puis re-vérification. */
-function removeCniFile(idx){
-  var list=getCniList(), item=list[idx]; if(!item) return;
-  if(item.id){ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
-  })}).catch(function(){}); }
-  list.splice(idx,1); setCniList(list); renderCniList(); scheduleCniCheck();
-}
+/* Sélection/dépôt de fichiers CNI → upload (append). */
+window.onCni=function(inp){ var fs=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value=''; fs.forEach(function(f){ uploadFileFor('cni',f); }); };
 /* Vérification IA sur l'ENSEMBLE des CNI en un seul appel (débounce). */
 function scheduleCniCheck(){ clearTimeout(_cniTimer); _cniTimer=setTimeout(doCniCheck,600); }
 function doCniCheck(){
@@ -3356,10 +3295,9 @@ function hydrateDraft(p){
     if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
     // Documents déjà fournis (fichiers dans Airtable) → re-cocher les zones + nom de fichier
     if(p.docs){ docs=p.docs;
-      Object.keys(docs).forEach(function(k){ if(k!=='cni' && docs[k]) markDocUploaded(k, docs[k].filename); });
-      if(docs.cni && !Array.isArray(docs.cni)) docs.cni=[docs.cni];   // compat ancien format (objet unique)
-      renderCniList();
-      if(getCniList().length) scheduleCniCheck();   // re-vérifie le lot à la reprise (dégradé si indispo)
+      Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
+      syncDocZones();
+      if(getCniList().length) scheduleCniCheck();   // re-vérifie le lot CNI à la reprise
     }
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
@@ -3488,9 +3426,12 @@ function buildDraftPayload(){
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:(v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville')).trim(),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});p.proprietaire=propT;}
   p.fields=collectAllFields();   // snapshot complet → restauration intégrale à la reprise
-  p.docs=Object.assign({},docs); // documents déjà uploadés (métadonnées ; fichiers stockés dans Airtable)
-  if(Array.isArray(p.docs.cni))  // CNI multi : ne garder que les fichiers réellement uploadés, sans champs transitoires
-    p.docs.cni=p.docs.cni.filter(function(x){return x&&x.id;}).map(function(x){return {filename:x.filename,id:x.id};});
+  p.docs={};   // un tableau par pièce, uniquement les fichiers réellement uploadés (sans champs transitoires)
+  Object.keys(docs).forEach(function(k){
+    var arr=Array.isArray(docs[k])?docs[k]:(docs[k]?[docs[k]]:[]);
+    var kept=arr.filter(function(x){return x&&x.id;}).map(function(x){return {filename:x.filename,size:x.size,id:x.id};});
+    if(kept.length) p.docs[k]=kept;
+  });
   return p;
 }
 /* Machine à états : met à jour TOUS les boutons (un par étape, un seul visible à la fois) */
