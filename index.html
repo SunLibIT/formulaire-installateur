@@ -695,6 +695,8 @@
     #sl-root .cnu-callout.t-info { color: var(--teal-ink) !important; background: var(--teal-soft) !important; border-color: var(--teal-soft) !important; }
     #sl-root .cnu-callout.t-amber { color: var(--amber) !important; background: var(--amber-bg) !important; border-color: var(--amber-border) !important; }
     #sl-root .cnu-callout.t-red { color: var(--danger) !important; background: var(--red-bg) !important; border-color: var(--red-border) !important; }
+    #sl-root .cnu-callout ul.cnu-list { margin: 4px 0 0 !important; padding-left: 18px !important; }
+    #sl-root .cnu-callout ul.cnu-list li { margin: 2px 0 !important; }
     #sl-root .cnu-recheck { margin-left: auto !important; display: inline-flex !important; align-items: center !important; gap: 5px !important; border: 1px solid currentColor !important; background: transparent !important; color: inherit !important; font-size: 12px !important; font-weight: 600 !important; padding: 3px 8px !important; border-radius: 7px !important; cursor: pointer !important; flex: 0 0 auto !important; }
     #sl-root .cnu-recheck svg { width: 13px !important; height: 13px !important; }
     #sl-root .cnu-foot { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 12px !important; flex-wrap: wrap !important; }
@@ -2517,9 +2519,7 @@ function renderDoc(key){
       meta.appendChild(_cnuEl('div','cnu-fname',name));
       meta.appendChild(_cnuEl('div','cnu-fsub', pend?'Envoi…':((item&&item.size)?_cnuSize(item.size):'Enregistré')));
       chip.appendChild(meta);
-      var stt=_cnuEl('span','cnu-fstate');
-      stt.innerHTML=pend?('<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'):('<span style="color:var(--green)">'+CHECK_SVG_SM+'</span>');
-      chip.appendChild(stt);
+      if(pend){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
       if(!pend){
         var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer le document');
         rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
@@ -2618,6 +2618,15 @@ function setCniList(a){ docs.cni=a; }
 function _cnuSize(b){ if(b==null) return ''; if(b<1024) return b+' o'; if(b<1048576) return (b/1024).toFixed(0)+' Ko'; return (b/1048576).toFixed(1)+' Mo'; }
 function _cnuEl(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
 function _cnuCallout(tone,ico,text){ var c=_cnuEl('div','cnu-callout t-'+tone); c.innerHTML=ico; c.appendChild(_cnuEl('span',null,text)); return c; }
+/* Encadré avec une liste à puces ne remontant que les éléments en erreur. */
+function _cnuCalloutList(tone,ico,intro,items){
+  var c=_cnuEl('div','cnu-callout t-'+tone); c.innerHTML=ico;
+  var box=_cnuEl('div');
+  if(intro) box.appendChild(_cnuEl('div',null,intro));
+  var ul=document.createElement('ul'); ul.className='cnu-list';
+  items.forEach(function(it){ var li=document.createElement('li'); li.textContent=it; ul.appendChild(li); });
+  box.appendChild(ul); c.appendChild(box); return c;
+}
 /* État courant déduit des fichiers + du verdict IA agrégé. */
 function cniState(){
   var list=getCniList();
@@ -2673,9 +2682,7 @@ function renderCniList(){
         meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
         meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
         chip.appendChild(meta);
-        var stt=_cnuEl('span','cnu-fstate');
-        stt.innerHTML=item._pending?('<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'):('<span style="color:var(--green)">'+CHECK_SVG_SM+'</span>');
-        chip.appendChild(stt);
+        if(item._pending){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
         if(!item._pending){
           var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
           rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
@@ -2700,19 +2707,20 @@ function renderCniList(){
       an.appendChild(at); ex.appendChild(an);
     } else if(st==='incomplete'){
       var w=[];
-      if(v.rectoVersoPresents===false) w.push('le recto/verso semble incomplet — ajoutez la face manquante');
-      if(v.correspondAbonne===false) w.push('un nom détecté ne correspond pas aux abonnés saisis');
-      ex.appendChild(_cnuCallout('amber',ALERT_SVG, w.length?('Pièce(s) française(s) détectée(s), mais '+w.join(' ; ')+'.'):'Vérification à compléter.'));
+      if(v.rectoVersoPresents===false) w.push('Recto/verso incomplet — ajoutez la face manquante.');
+      if(v.correspondAbonne===false) w.push('Un nom détecté ne correspond pas aux abonnés saisis.');
+      if(w.length) ex.appendChild(_cnuCalloutList('amber',ALERT_SVG,'Pièce(s) détectée(s), à compléter :',w));
+      else ex.appendChild(_cnuCallout('amber',ALERT_SVG,'Vérification à compléter.'));
     } else if(st==='conform'){
       ex.appendChild(_cnuCallout('info',SHIELD_SVG,'Pièce(s) d\'identité vérifiée(s) : lisible(s), en cours de validité et cohérente(s) avec le(s) déclarant(s).'));
     } else if(st==='nonconform'){
-      var msg;
-      if(v.estPieceIdentite===false) msg='Un document fourni ne semble pas être une pièce d\'identité. Vérifiez les fichiers, puis remplacez le document.';
-      else if(v.estFrancaise===false) msg='Pièce d\'identité non française détectée'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+'. Une pièce française est requise.';
-      else if(v.lisible===false) msg='Une pièce d\'identité est illisible ou trop floue. Reprenez la photo à plat, bien éclairée et sans reflet, puis remplacez le document.';
-      else if(v.ageMax75Respecte===false) msg='Âge maximum dépassé : le client a '+(v.age!=null?(v.age+' ans'):'plus de 75 ans')+' (limite : 75 ans).';
-      else msg='La pièce d\'identité ne remplit pas les conditions requises.';
-      ex.appendChild(_cnuCallout('red',ALERT_SVG,msg));
+      var probs=[];
+      if(v.estPieceIdentite===false) probs.push('Un document fourni ne semble pas être une pièce d\'identité.');
+      if(v.estFrancaise===false) probs.push('Pièce d\'identité non française'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+' — une pièce française est requise.');
+      if(v.lisible===false) probs.push('Pièce illisible ou trop floue — reprenez la photo à plat, bien éclairée et sans reflet.');
+      if(v.ageMax75Respecte===false) probs.push('Âge maximum dépassé : le client a '+(v.age!=null?(v.age+' ans'):'plus de 75 ans')+' (limite : 75 ans).');
+      if(!probs.length) probs.push('La pièce d\'identité ne remplit pas les conditions requises.');
+      ex.appendChild(_cnuCalloutList('red',ALERT_SVG,'À corriger :',probs));
     } else if(st==='unverified' && list.length){
       var c=_cnuCallout('info',INFO_SVG,'Documents enregistrés. La vérification automatique est momentanément indisponible — vous pouvez continuer.');
       var rc=_cnuEl('button','cnu-recheck'); rc.type='button'; rc.innerHTML=REFRESH_SVG; rc.appendChild(_cnuEl('span',null,'Revérifier'));
