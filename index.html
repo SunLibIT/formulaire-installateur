@@ -639,6 +639,68 @@
     @keyframes sl-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { #sl-root .sl-spin { animation: none !important; } }
 
+    /* ═══════ Uploader CNI (analyse IA) — surcharge du .uz de base ═══════ */
+    #sl-root .uz.uz-multi { cursor: default !important; padding: 16px !important; border-style: solid !important; border-color: var(--line) !important; background: var(--surface, #fff) !important; transition: border-color .18s !important; }
+    #sl-root .uz.uz-multi:hover { border-color: var(--line) !important; background: var(--surface, #fff) !important; }
+    #sl-root .uz.uz-multi.ok { border-color: var(--line) !important; background: var(--surface, #fff) !important; }
+    #sl-root .uz-multi[data-state="analyzing"], #sl-root .uz-multi[data-state="incomplete"] { border-color: var(--amber-border) !important; }
+    #sl-root .uz-multi[data-state="conform"] { border-color: var(--green) !important; }
+    #sl-root .uz-multi[data-state="nonconform"] { border-color: var(--red-border) !important; }
+    #sl-root .cnu-head { display: flex !important; gap: 12px !important; align-items: flex-start !important; }
+    #sl-root .cnu-ico { display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 40px !important; height: 40px !important; border-radius: var(--r) !important; background: var(--teal-soft) !important; color: var(--teal-ink) !important; flex: 0 0 auto !important; transition: background .18s, color .18s !important; }
+    #sl-root .cnu-ico svg { width: 20px !important; height: 20px !important; }
+    #sl-root .uz-multi[data-state="analyzing"] .cnu-ico, #sl-root .uz-multi[data-state="incomplete"] .cnu-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
+    #sl-root .uz-multi[data-state="conform"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
+    #sl-root .uz-multi[data-state="nonconform"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
+    #sl-root .cnu-htext { flex: 1 1 auto !important; min-width: 0 !important; }
+    #sl-root .cnu-titrow { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
+    #sl-root .cnu-title { font-size: 14px !important; font-weight: 700 !important; color: var(--ink) !important; }
+    #sl-root .cnu-hint { display: block !important; font-size: 12px !important; color: var(--ink-soft) !important; margin-top: 3px !important; line-height: 1.45 !important; }
+    #sl-root .cnu-pill { display: inline-flex !important; align-items: center !important; gap: 5px !important; padding: 3px 9px !important; border-radius: 999px !important; font-size: 11.5px !important; font-weight: 600 !important; white-space: nowrap !important; border: 1px solid transparent !important; }
+    #sl-root .cnu-pill svg { width: 13px !important; height: 13px !important; flex: none !important; }
+    #sl-root .cnu-pill.t-neutral { color: var(--ink-soft) !important; background: #EEF1F4 !important; border-color: var(--line) !important; }
+    #sl-root .cnu-pill.t-teal { color: var(--teal-ink) !important; background: var(--teal-soft) !important; border-color: var(--teal-soft) !important; }
+    #sl-root .cnu-pill.t-amber { color: var(--amber) !important; background: var(--amber-bg) !important; border-color: var(--amber-border) !important; }
+    #sl-root .cnu-pill.t-green { color: var(--green) !important; background: var(--green-soft) !important; border-color: var(--green-soft) !important; }
+    #sl-root .cnu-pill.t-red { color: var(--danger) !important; background: var(--red-bg) !important; border-color: var(--red-border) !important; }
+    #sl-root .cnu-body { margin-top: 14px !important; display: flex !important; flex-direction: column !important; gap: 8px !important; }
+    #sl-root .cnu-drop { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 6px !important; width: 100% !important; padding: 22px 16px !important; border: 1.5px dashed var(--line) !important; border-radius: var(--r) !important; background: #fbfcfd !important; text-align: center !important; cursor: pointer !important; transition: border-color .15s, background .15s !important; }
+    #sl-root .cnu-drop:hover, #sl-root .cnu-drop.is-over { border-color: var(--teal) !important; background: var(--teal-soft) !important; }
+    #sl-root .cnu-drop-ico { color: var(--teal) !important; display: inline-flex !important; }
+    #sl-root .cnu-drop-ico svg { width: 22px !important; height: 22px !important; }
+    #sl-root .cnu-drop-t { font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; }
+    #sl-root .cnu-drop-s { font-size: 12px !important; color: var(--ink-soft) !important; }
+    #sl-root .cnu-chip { display: flex !important; align-items: center !important; gap: 10px !important; padding: 8px 10px !important; border: 1px solid var(--line) !important; border-radius: var(--r) !important; background: var(--surface, #fff) !important; }
+    #sl-root .cnu-ftype { color: var(--ink-soft) !important; flex: 0 0 auto !important; display: inline-flex !important; }
+    #sl-root .cnu-ftype svg { width: 16px !important; height: 16px !important; }
+    #sl-root .cnu-fmeta { min-width: 0 !important; flex: 1 1 auto !important; }
+    #sl-root .cnu-fname { font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    #sl-root .cnu-fsub { font-size: 11.5px !important; color: var(--ink-soft) !important; }
+    #sl-root .cnu-fstate { flex: 0 0 auto !important; display: inline-flex !important; }
+    #sl-root .cnu-fstate svg { width: 15px !important; height: 15px !important; }
+    #sl-root .cnu-frm { flex: 0 0 auto !important; display: inline-flex !important; align-items: center !important; gap: 4px !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; padding: 4px 7px !important; border-radius: 7px !important; font-size: 12px !important; font-weight: 600 !important; opacity: 0 !important; transition: color .15s, background .15s, opacity .15s !important; }
+    #sl-root .cnu-chip:hover .cnu-frm, #sl-root .cnu-chip:focus-within .cnu-frm, #sl-root .cnu-frm.is-confirm { opacity: 1 !important; }
+    #sl-root .cnu-frm:hover, #sl-root .cnu-frm:focus-visible { color: var(--danger) !important; background: var(--red-bg) !important; }
+    #sl-root .cnu-frm.is-confirm { color: #fff !important; background: var(--danger) !important; }
+    #sl-root .cnu-frm svg { width: 14px !important; height: 14px !important; }
+    #sl-root .cnu-analyzing { display: flex !important; flex-direction: column !important; gap: 6px !important; margin-top: 10px !important; }
+    #sl-root .cnu-atext { display: inline-flex !important; align-items: center !important; gap: 6px !important; font-size: 12px !important; color: var(--amber) !important; }
+    #sl-root .cnu-bar { position: relative !important; overflow: hidden !important; height: 4px !important; border-radius: 999px !important; background: var(--amber-border) !important; }
+    #sl-root .cnu-bar > i { position: absolute !important; top: 0 !important; bottom: 0 !important; width: 40% !important; left: -40% !important; border-radius: 999px !important; background: linear-gradient(90deg, transparent, var(--amber), transparent) !important; animation: cnu-indet 1.15s ease-in-out infinite !important; }
+    @keyframes cnu-indet { 0% { left: -40%; } 100% { left: 100%; } }
+    @media (prefers-reduced-motion: reduce) { #sl-root .cnu-bar > i { animation: none !important; left: 0 !important; width: 100% !important; opacity: .5 !important; } }
+    #sl-root .cnu-callout { display: flex !important; gap: 8px !important; align-items: flex-start !important; margin-top: 10px !important; padding: 10px 12px !important; border-radius: var(--r) !important; font-size: 12.5px !important; line-height: 1.5 !important; border: 1px solid transparent !important; }
+    #sl-root .cnu-callout svg { flex: 0 0 auto !important; width: 16px !important; height: 16px !important; margin-top: 1px !important; }
+    #sl-root .cnu-callout.t-info { color: var(--teal-ink) !important; background: var(--teal-soft) !important; border-color: var(--teal-soft) !important; }
+    #sl-root .cnu-callout.t-amber { color: var(--amber) !important; background: var(--amber-bg) !important; border-color: var(--amber-border) !important; }
+    #sl-root .cnu-callout.t-red { color: var(--danger) !important; background: var(--red-bg) !important; border-color: var(--red-border) !important; }
+    #sl-root .cnu-recheck { margin-left: auto !important; display: inline-flex !important; align-items: center !important; gap: 5px !important; border: 1px solid currentColor !important; background: transparent !important; color: inherit !important; font-size: 12px !important; font-weight: 600 !important; padding: 3px 8px !important; border-radius: 7px !important; cursor: pointer !important; flex: 0 0 auto !important; }
+    #sl-root .cnu-recheck svg { width: 13px !important; height: 13px !important; }
+    #sl-root .cnu-foot { display: flex !important; align-items: center !important; gap: 10px !important; margin-top: 12px !important; flex-wrap: wrap !important; }
+    #sl-root .cnu-add { display: inline-flex !important; align-items: center !important; gap: 6px !important; border: 1px solid var(--line) !important; background: #fff !important; color: var(--teal-ink) !important; font-size: 13px !important; font-weight: 600 !important; padding: 8px 12px !important; border-radius: var(--r) !important; cursor: pointer !important; transition: border-color .15s, background .15s !important; }
+    #sl-root .cnu-add:hover { border-color: var(--teal) !important; background: var(--teal-soft) !important; }
+    #sl-root .cnu-add svg { width: 15px !important; height: 15px !important; }
+
     /* ── ÉTAPE 3 : ADRESSE ── */
     /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
     #sl-root .sl-sunlogo { position: absolute !important; top: -22px !important; right: -18px !important; width: 150px !important; height: 150px !important; z-index: 0 !important; pointer-events: none !important; }
@@ -1550,12 +1612,18 @@
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span><span class="uz-info"><span class="uz-lbl">Devis d'abonnement — Modèle SunLib <span class="req">*</span></span><span class="uz-sub">Document PDF signé</span></span></div>
               <span class="uz-fn" id="fn-devis"></span><span class="uz-chk" id="uz-devis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
-            <div class="uz uz-multi" id="uz-cni-wrap">
-              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="uz-info"><span class="uz-lbl">CNI des abonnés — recto/verso <span class="req">*</span></span><span class="uz-sub">Toutes personnes déclarant des revenus sur le foyer — ajoutez recto/verso et une pièce par déclarant</span></span></div>
+            <div class="uz uz-multi" id="uz-cni-wrap" data-state="empty">
+              <div class="cnu-head">
+                <span class="cnu-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span>
+                <div class="cnu-htext">
+                  <div class="cnu-titrow"><span class="cnu-title">CNI des abonnés — recto/verso <span class="req">*</span></span><span class="cnu-pill t-neutral" id="cni-pill"></span></div>
+                  <span class="cnu-hint">Toutes les personnes déclarant des revenus sur le foyer — un recto/verso par déclarant.</span>
+                </div>
+              </div>
               <input type="file" id="f-cni" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none!important" onchange="onCni(this)"/>
-              <div id="cni-list" style="margin-top:8px;"></div>
-              <button type="button" id="cni-add" class="cni-add" onclick="trig('f-cni')" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed rgba(255,255,255,.28);background:transparent;color:inherit;border-radius:8px;cursor:pointer;font-size:13px;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter un document</button>
-              <span class="uz-fn" id="cni-check"></span>
+              <div class="cnu-body" id="cni-body"></div>
+              <div id="cni-extra" aria-live="polite"></div>
+              <div class="cnu-foot" id="cni-foot"></div>
             </div>
             <div class="uz" onclick="trig('f-impots')"><input type="file" id="f-impots" accept=".pdf" onchange="onF(this,'impots')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg></span><span class="uz-info"><span class="uz-lbl">Avis d'imposition — 4 pages <span class="req">*</span></span><span class="uz-sub">Dernier avis complet</span></span></div>
@@ -1945,6 +2013,12 @@ var ALERT_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="c
 var CHECK_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg>';
 var SPIN_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>';
 var XCIRCLE_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+var UPLOAD_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a5 5 0 0 1 1-9 6.5 6.5 0 0 1 12 1.5A4.5 4.5 0 0 1 18.5 17"></path><path d="M12 12v8"></path><path d="m8.5 15.5 3.5-3.5 3.5 3.5"></path></svg>';
+var FILE_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path><path d="M14 3v6h6"></path><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>';
+var INFO_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16"></line><circle cx="12" cy="7.8" r="0.6" fill="currentColor" stroke="none"></circle></svg>';
+var SHIELD_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6l-7-3Z"></path><path d="m9 12 2 2 4-4"></path></svg>';
+var PLUS_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+var REFRESH_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-8-5"></path><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 8 5"></path><path d="M21 3v5h-5"></path><path d="M3 21v-5h5"></path></svg>';
 var ICO_X='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>';
 var ICO_SEARCH='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>';
 var BTN_SEARCH=ICO_SEARCH+'Rechercher';   // contenu de réinitialisation des boutons de recherche SIREN
@@ -2472,45 +2546,122 @@ function updateDocProgress(){
 
 /* ── CNI multi-fichiers + vérification IA (via /api/drafts → workflow n8n / Claude vision) ── */
 /* docs.cni est un TABLEAU [{filename,id}] (recto, verso, une pièce par déclarant). Compat ancien format (objet). */
-var _cniTimer=null, _cniSeq=0, _cniTmp=0;
+var _cniTimer=null, _cniSeq=0, _cniTmp=0, _cniChecking=false;
 function getCniList(){ var v=docs.cni; if(!v) return []; return Array.isArray(v)?v:[v]; }
 function setCniList(a){ docs.cni=a; }
 
-/* Badge d'état sous la zone CNI. state: pending | ok | warn | bad | skip */
-function setCniBadge(state,msg){
-  var el=document.getElementById('cni-check'); if(!el) return;
-  if(state==='skip'||!state){ el.textContent=''; return; }
-  var colors={pending:'var(--amber)',ok:'var(--green)',warn:'var(--amber)',bad:'var(--danger)'};
-  var icons={pending:'<span class="sl-spin">'+SPIN_SVG_SM+'</span>',ok:CHECK_SVG_SM,warn:ALERT_SVG,bad:XCIRCLE_SVG_SM};
-  el.style.setProperty('display','flex','important'); el.style.setProperty('align-items','center','important'); el.style.setProperty('gap','6px','important'); el.style.setProperty('margin-top','8px','important');
-  el.style.setProperty('font-size','12px','important'); el.style.setProperty('line-height','1.4','important');
-  el.style.setProperty('color',colors[state]||'var(--ink-soft)','important');
-  el.innerHTML=icons[state]||''; var _cs=document.createElement('span'); _cs.textContent=msg||''; el.appendChild(_cs);
+/* ── Uploader CNI (analyse IA) : helpers + config d'états (couleur = sens) ── */
+function _cnuSize(b){ if(b==null) return ''; if(b<1024) return b+' o'; if(b<1048576) return (b/1024).toFixed(0)+' Ko'; return (b/1048576).toFixed(1)+' Mo'; }
+function _cnuEl(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function _cnuCallout(tone,ico,text){ var c=_cnuEl('div','cnu-callout t-'+tone); c.innerHTML=ico; c.appendChild(_cnuEl('span',null,text)); return c; }
+/* État courant déduit des fichiers + du verdict IA agrégé. */
+function cniState(){
+  var list=getCniList();
+  if(!list.length) return 'empty';
+  for(var i=0;i<list.length;i++){ if(list[i]._pending) return 'uploading'; }
+  if(_cniChecking) return 'analyzing';
+  var v=idCheckResult;
+  if(!v || v.ok!==true) return 'unverified';   // dégradé, non bloquant
+  if(v.estPieceIdentite===false || v.estFrancaise===false || v.lisible===false) return 'nonconform';
+  if(v.rectoVersoPresents===false || v.correspondAbonne===false) return 'incomplete';
+  return 'conform';
 }
-/* Rendu de la liste des fichiers CNI (coche + nom + bouton Retirer) + état « ok » de la zone. */
+var CNU_PILL={
+  empty:      {t:'En attente de dépôt',       tone:'neutral', ico:UPLOAD_SVG,     spin:false},
+  uploading:  {t:'Téléversement…',            tone:'teal',    ico:SPIN_SVG_SM,    spin:true},
+  analyzing:  {t:'Analyse en cours',          tone:'amber',   ico:SPIN_SVG_SM,    spin:true},
+  incomplete: {t:'À compléter',               tone:'amber',   ico:ALERT_SVG,      spin:false},
+  conform:    {t:'Conforme',                  tone:'green',   ico:CHECK_SVG_SM,   spin:false},
+  nonconform: {t:'Non conforme',              tone:'red',     ico:XCIRCLE_SVG_SM, spin:false},
+  unverified: {t:'Vérification indisponible', tone:'neutral', ico:INFO_SVG,       spin:false}
+};
+/* Rendu complet de l'uploader CNI (pastille + corps + encadré + pied) selon l'état réel. */
 function renderCniList(){
-  var wrap=document.getElementById('uz-cni-wrap'), box=document.getElementById('cni-list');
-  if(!box) return;
-  var list=getCniList(); box.innerHTML='';
-  list.forEach(function(item,idx){
-    var row=document.createElement('div');
-    row.style.setProperty('display','flex','important'); row.style.setProperty('align-items','center','important');
-    row.style.setProperty('gap','8px','important'); row.style.setProperty('padding','6px 0','important');
-    if(idx>0) row.style.setProperty('border-top','1px solid rgba(255,255,255,.08)','important');
-    var chk=document.createElement('span'); chk.style.setProperty('flex','0 0 auto','important');
-    chk.style.setProperty('color', item._pending?'var(--amber)':'var(--green)','important');
-    chk.innerHTML=item._pending?('<span class="sl-spin">'+SPIN_SVG_SM+'</span>'):CHECK_SVG_SM;
-    var nm=document.createElement('span'); nm.textContent=item.filename||'document';
-    nm.style.setProperty('flex','1 1 auto','important'); nm.style.setProperty('overflow','hidden','important');
-    nm.style.setProperty('text-overflow','ellipsis','important'); nm.style.setProperty('white-space','nowrap','important'); nm.style.setProperty('font-size','13px','important');
-    var btn=document.createElement('button'); btn.type='button'; btn.textContent='Retirer';
-    btn.style.setProperty('flex','0 0 auto','important'); btn.style.setProperty('background','transparent','important');
-    btn.style.setProperty('border','0','important'); btn.style.setProperty('color','#dc2626','important');
-    btn.style.setProperty('cursor','pointer','important'); btn.style.setProperty('font-size','12px','important'); btn.style.setProperty('padding','2px 4px','important');
-    btn.onclick=function(e){ e.stopPropagation(); removeCniFile(idx); };
-    row.appendChild(chk); row.appendChild(nm); row.appendChild(btn); box.appendChild(row);
-  });
-  if(wrap){ if(list.length) wrap.classList.add('ok'); else wrap.classList.remove('ok'); }
+  var wrap=document.getElementById('uz-cni-wrap'); if(!wrap) return;
+  var list=getCniList(), st=cniState(), v=idCheckResult||{};
+  wrap.setAttribute('data-state',st);
+  if(list.length) wrap.classList.add('ok'); else wrap.classList.remove('ok');
+
+  var pill=document.getElementById('cni-pill');
+  if(pill){ var pc=CNU_PILL[st]||CNU_PILL.empty; pill.className='cnu-pill t-'+pc.tone;
+    pill.innerHTML=(pc.spin?('<span class="sl-spin">'+pc.ico+'</span>'):pc.ico);
+    pill.appendChild(_cnuEl('span',null,pc.t)); }
+
+  var body=document.getElementById('cni-body');
+  if(body){ body.innerHTML='';
+    if(!list.length){
+      var dz=_cnuEl('button','cnu-drop'); dz.type='button';
+      dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
+      dz.appendChild(_cnuEl('span','cnu-drop-t','Glissez le recto et le verso ici, ou parcourez'));
+      dz.appendChild(_cnuEl('span','cnu-drop-s','JPG, PNG ou PDF — 3 Mo max par fichier'));
+      dz.onclick=function(){ trig('f-cni'); };
+      dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
+      dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
+      dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
+        var fs=(e.dataTransfer&&e.dataTransfer.files)?Array.prototype.slice.call(e.dataTransfer.files):[];
+        fs.forEach(function(f){ uploadCniFile(f); }); });
+      body.appendChild(dz);
+    } else {
+      list.forEach(function(item,idx){
+        var chip=_cnuEl('div','cnu-chip');
+        chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
+        var meta=_cnuEl('div','cnu-fmeta');
+        meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
+        meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
+        chip.appendChild(meta);
+        var stt=_cnuEl('span','cnu-fstate');
+        stt.innerHTML=item._pending?('<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'):('<span style="color:var(--green)">'+CHECK_SVG_SM+'</span>');
+        chip.appendChild(stt);
+        if(!item._pending){
+          var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
+          rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
+          rm.onclick=(function(i,btn,lbl){ return function(e){ e.stopPropagation();
+            if(btn.getAttribute('data-confirm')==='1'){ removeCniFile(i); return; }
+            btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
+            clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
+          }; })(idx,rm,rl);
+          chip.appendChild(rm);
+        }
+        body.appendChild(chip);
+      });
+    }
+  }
+
+  var ex=document.getElementById('cni-extra');
+  if(ex){ ex.innerHTML='';
+    if(st==='analyzing'){
+      var an=_cnuEl('div','cnu-analyzing'); an.innerHTML='<div class="cnu-bar"><i></i></div>';
+      var at=_cnuEl('span','cnu-atext'); at.innerHTML='<span class="sl-spin">'+SPIN_SVG_SM+'</span>';
+      at.appendChild(_cnuEl('span',null,'Analyse de conformité en cours (lisibilité, validité, correspondance du nom)…'));
+      an.appendChild(at); ex.appendChild(an);
+    } else if(st==='incomplete'){
+      var w=[];
+      if(v.rectoVersoPresents===false) w.push('le recto/verso semble incomplet — ajoutez la face manquante');
+      if(v.correspondAbonne===false) w.push('un nom détecté ne correspond pas aux abonnés saisis');
+      ex.appendChild(_cnuCallout('amber',ALERT_SVG, w.length?('Pièce(s) française(s) détectée(s), mais '+w.join(' ; ')+'.'):'Vérification à compléter.'));
+    } else if(st==='conform'){
+      ex.appendChild(_cnuCallout('info',SHIELD_SVG,'Pièce(s) d\'identité vérifiée(s) : lisible(s), en cours de validité et cohérente(s) avec le(s) déclarant(s).'));
+    } else if(st==='nonconform'){
+      var msg;
+      if(v.estPieceIdentite===false) msg='Un document fourni ne semble pas être une pièce d\'identité. Vérifiez les fichiers, puis remplacez le document.';
+      else if(v.estFrancaise===false) msg='Pièce d\'identité non française détectée'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+'. Une pièce française est requise.';
+      else msg='Une pièce d\'identité est illisible ou trop floue. Reprenez la photo à plat, bien éclairée et sans reflet, puis remplacez le document.';
+      ex.appendChild(_cnuCallout('red',ALERT_SVG,msg));
+    } else if(st==='unverified' && list.length){
+      var c=_cnuCallout('info',INFO_SVG,'Documents enregistrés. La vérification automatique est momentanément indisponible — vous pouvez continuer.');
+      var rc=_cnuEl('button','cnu-recheck'); rc.type='button'; rc.innerHTML=REFRESH_SVG; rc.appendChild(_cnuEl('span',null,'Revérifier'));
+      rc.onclick=function(){ scheduleCniCheck(); };
+      c.appendChild(rc); ex.appendChild(c);
+    }
+  }
+
+  var foot=document.getElementById('cni-foot');
+  if(foot){ foot.innerHTML='';
+    var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-cni'); };
+    if(st==='nonconform'){ add.innerHTML=REFRESH_SVG; add.appendChild(_cnuEl('span',null,'Remplacer le document')); }
+    else { add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); }
+    foot.appendChild(add);
+  }
   updateDocProgress();
 }
 /* Sélection d'un ou plusieurs fichiers CNI → upload de chacun (append dans Airtable). */
@@ -2522,7 +2673,7 @@ function _removeCniTmp(tmp){ setCniList(getCniList().filter(function(x){return x
 function uploadCniFile(f){
   if(f.size>3*1024*1024){ toast('Fichier trop volumineux (max 3 Mo) : '+f.name); return; }
   var tmp='t'+(++_cniTmp);
-  var list=getCniList(); list.push({filename:f.name,id:null,_tmp:tmp,_pending:true}); setCniList(list); renderCniList();
+  var list=getCniList(); list.push({filename:f.name,size:f.size,id:null,_tmp:tmp,_pending:true}); setCniList(list); renderCniList();
   var rd=new FileReader();
   rd.onerror=function(){ _removeCniTmp(tmp); toast('Lecture impossible : '+f.name); };
   rd.onload=function(){
@@ -2552,30 +2703,18 @@ function removeCniFile(idx){
 function scheduleCniCheck(){ clearTimeout(_cniTimer); _cniTimer=setTimeout(doCniCheck,600); }
 function doCniCheck(){
   var ids=getCniList().map(function(x){return x.id;}).filter(Boolean);
-  if(!ids.length){ idCheckResult=null; setCniBadge('skip'); return; }
-  idCheckResult=null; setCniBadge('pending','Vérification de la ou des pièces d\'identité…');
+  if(!ids.length){ idCheckResult=null; _cniChecking=false; renderCniList(); return; }
+  idCheckResult=null; _cniChecking=true; renderCniList();
   try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
   var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
   var seq=++_cniSeq;
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     action:'verifyid', draftId:getDraftId(), type_client:ct, ids:ids, abonnes:abonnes
   })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
-    if(seq!==_cniSeq) return; idCheckResult=v; applyCniVerdict(v);
-  }).catch(function(){ if(seq!==_cniSeq) return; idCheckResult=null; setCniBadge('skip'); });
+    if(seq!==_cniSeq) return; _cniChecking=false; idCheckResult=v; renderCniList();
+  }).catch(function(){ if(seq!==_cniSeq) return; _cniChecking=false; idCheckResult=null; renderCniList(); });
 }
-/* Verdict → badge. Rouge (bloquant) : pas une pièce / pas française / illisible.
-   Orange (avertissement, non bloquant) : recto-verso incomplet ou nom ne correspondant pas. */
-function applyCniVerdict(v){
-  if(!v || v.ok!==true){ setCniBadge('skip'); return; }
-  if(v.estPieceIdentite===false){ setCniBadge('bad','Un document fourni ne semble pas être une pièce d\'identité.'); return; }
-  if(v.estFrancaise===false){ setCniBadge('bad','Pièce d\'identité non française détectée'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+'.'); return; }
-  if(v.lisible===false){ setCniBadge('bad','Une pièce d\'identité est illisible ou trop floue.'); return; }
-  var warns=[];
-  if(v.rectoVersoPresents===false) warns.push('recto/verso incomplet');
-  if(v.correspondAbonne===false) warns.push('un nom ne correspond pas aux abonnés saisis');
-  if(warns.length){ setCniBadge('warn','Pièce(s) française(s) détectée(s), mais : '+warns.join(' ; ')+'.'); return; }
-  setCniBadge('ok','Pièce(s) d\'identité française(s) vérifiée(s).');
-}
+/* (Le rendu du verdict est intégré à renderCniList via cniState/CNU_PILL/encadrés.) */
 /* Motif de blocage (string) si verdict négatif clair, sinon null. Dégradé : ok!==true → non bloquant. */
 function cniBlockReason(){
   if(ct!=='part') return null;
@@ -2966,7 +3105,7 @@ function initA11y(){
   // Étape 6 : la case de certification débloque « Créer le dossier »
   var cert=document.getElementById('sl-certify');
   if(cert)cert.addEventListener('change',refreshCreate);
-  document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.setAttribute('role','button');uz.setAttribute('tabindex','0');var lb=uz.querySelector('.uz-lbl');if(lb)uz.setAttribute('aria-label',lb.textContent.replace(/\*/g,'').trim());});
+  document.querySelectorAll('#sl-root .uz:not(.uz-multi)').forEach(function(uz){uz.setAttribute('role','button');uz.setAttribute('tabindex','0');var lb=uz.querySelector('.uz-lbl');if(lb)uz.setAttribute('aria-label',lb.textContent.replace(/\*/g,'').trim());});
   ['siret-st','prop-siret-st','doc-prog-lbl','sim-pv-c','sim-pvbv-c','sim-pvb-c','sim-bat-c'].forEach(function(id){var e=document.getElementById(id);if(e)e.setAttribute('aria-live','polite');});
   // Modales : clic overlay + Échap ferment, piège à focus (Tab) sur les boutons
   [['modal-confirm-overlay',closeConfirm],['modal-danger-overlay',closeDanger],['modal-alert-overlay',closeAlert],['modal-leave-overlay',leaveCancel]].forEach(function(m){
