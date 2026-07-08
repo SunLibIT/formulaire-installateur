@@ -46,6 +46,15 @@
       --danger: #dc2626;
       --ink: #1f2937;
       --ink-soft: #6b7280;
+      --teal-ink: #0B7880;
+      --teal-soft: #E3F4F6;
+      --green-soft: #EAF8EF;
+      --amber: #B45309;
+      --amber-bg: #FEF3C7;
+      --amber-border: #FCE8B2;
+      --red-bg: #FEF2F2;
+      --red-border: #FBD0D0;
+      --focus: 0 0 0 3px rgba(14,163,180,.30);
     }
 
     #sl-root .wrap {
@@ -599,22 +608,36 @@
     #sl-root .cb span { font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; cursor: pointer !important; }
 
     /* UPLOAD */
-    #sl-root .uz { display: block !important; width: 100% !important; border: 2px dashed #ddd !important; border-radius: var(--rl) !important; padding: 14px 16px !important; cursor: pointer !important; background: #fafafa !important; margin-bottom: 8px !important; transition: all 0.18s !important; position: relative !important; }
-    #sl-root .uz:hover { border-color: var(--teal) !important; background: #e8f7f9 !important; }
-    #sl-root .uz.ok { border-color: var(--green) !important; border-style: solid !important; background: #f0fdf5 !important; }
+    #sl-root .uz { display: block !important; width: 100% !important; border: 2px dashed var(--line) !important; border-radius: var(--rl) !important; padding: 14px 16px !important; cursor: pointer !important; background: #fbfcfd !important; margin-bottom: 8px !important; transition: border-color .18s, background .18s, box-shadow .18s !important; position: relative !important; }
+    #sl-root .uz:hover { border-color: var(--teal) !important; background: var(--teal-soft) !important; }
+    #sl-root .uz:focus-visible { outline: none !important; box-shadow: var(--focus) !important; border-color: var(--teal) !important; }
+    #sl-root .uz.pending { border-style: solid !important; border-color: var(--amber-border) !important; background: #fffaf0 !important; }
+    #sl-root .uz.ok { border-style: solid !important; border-color: var(--green) !important; background: var(--green-soft) !important; }
+    #sl-root .uz.err { border-style: solid !important; border-color: var(--danger) !important; background: var(--red-bg) !important; }
     #sl-root .uz input[type=file] { display: none !important; }
     #sl-root .uz-top { display: block !important; font-size: 0 !important; }
-    #sl-root .uz-ico { display: inline-flex !important; align-items: center !important; justify-content: center !important; vertical-align: middle !important; width: 38px !important; height: 38px !important; border-radius: 9px !important; background: #fff !important; color: var(--color-teal) !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important; margin-right: 12px !important; }
+    #sl-root .uz-ico { display: inline-flex !important; align-items: center !important; justify-content: center !important; vertical-align: middle !important; width: 38px !important; height: 38px !important; border-radius: var(--r) !important; background: var(--teal-soft) !important; color: var(--teal-ink) !important; margin-right: 12px !important; transition: background .18s, color .18s !important; }
     #sl-root .uz-ico svg { width: 20px !important; height: 20px !important; }
-    #sl-root .uz.ok .uz-ico { background: #e8f8ee !important; }
+    #sl-root .uz.pending .uz-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
+    #sl-root .uz.ok .uz-ico { background: #dff3e6 !important; color: var(--green) !important; }
+    #sl-root .uz.err .uz-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
     #sl-root .uz-info { display: inline-block !important; vertical-align: middle !important; width: calc(100% - 58px) !important; }
-    #sl-root .uz-lbl { display: block !important; font-size: 12px !important; font-weight: 600 !important; color: #333 !important; }
-    #sl-root .uz-sub { display: block !important; font-size: 11px !important; color: #aaa !important; margin-top: 1px !important; }
-    #sl-root .uz-fn { display: block !important; font-size: 11px !important; color: var(--green) !important; font-weight: 600 !important; margin-top: 6px !important; padding-left: 50px !important; }
-    #sl-root .uz-del { display: inline-block !important; margin-left: 10px !important; background: transparent !important; border: 0 !important; color: #dc2626 !important; cursor: pointer !important; font-size: 11px !important; font-weight: 600 !important; padding: 0 !important; text-decoration: underline !important; vertical-align: baseline !important; }
+    #sl-root .uz-lbl { display: block !important; font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; }
+    #sl-root .uz-sub { display: block !important; font-size: 12px !important; color: var(--ink-soft) !important; margin-top: 2px !important; line-height: 1.45 !important; }
+    #sl-root .uz-fn { display: flex !important; align-items: center !important; gap: 6px !important; flex-wrap: wrap !important; font-size: 12px !important; color: var(--teal-ink) !important; font-weight: 600 !important; margin-top: 8px !important; padding-left: 50px !important; }
+    #sl-root .uz.pending .uz-fn { color: var(--amber) !important; }
+    #sl-root .uz.ok .uz-fn { color: var(--green) !important; }
+    #sl-root .uz.err .uz-fn { color: var(--danger) !important; }
+    #sl-root .uz-del { display: inline-flex !important; align-items: center !important; gap: 5px !important; margin-left: auto !important; background: transparent !important; border: 0 !important; color: var(--ink-soft) !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; padding: 3px 8px !important; border-radius: 7px !important; transition: color .15s, background .15s !important; }
+    #sl-root .uz-del:hover, #sl-root .uz-del:focus-visible { color: var(--danger) !important; background: var(--red-bg) !important; }
+    #sl-root .uz-del.uz-del-confirm { color: #fff !important; background: var(--danger) !important; }
+    #sl-root .uz-del svg { width: 13px !important; height: 13px !important; margin-right: 0 !important; }
     #sl-root .uz-chk { position: absolute !important; top: 12px !important; right: 14px !important; width: 22px !important; height: 22px !important; border-radius: 50% !important; background: var(--green) !important; color: #fff !important; align-items: center !important; justify-content: center !important; display: none !important; }
     #sl-root .uz-chk svg { width: 13px !important; height: 13px !important; }
     #sl-root .uz.ok .uz-chk { display: flex !important; }
+    #sl-root .sl-spin { display: inline-flex !important; animation: sl-spin .8s linear infinite !important; }
+    @keyframes sl-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { #sl-root .sl-spin { animation: none !important; } }
 
     /* ── ÉTAPE 3 : ADRESSE ── */
     /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
@@ -1920,6 +1943,8 @@ window.rmAbo=function(id){
 var RE_EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/, RE_TEL=/^[+0-9 ().-]{10,}$/, RE_SIRET=/^\d{14}$/;
 var ALERT_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"></path><line x1="12" y1="9.5" x2="12" y2="14.5"></line><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"></circle></svg>';
 var CHECK_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg>';
+var SPIN_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>';
+var XCIRCLE_SVG_SM='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
 var ICO_X='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>';
 var ICO_SEARCH='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>';
 var BTN_SEARCH=ICO_SEARCH+'Rechercher';   // contenu de réinitialisation des boutons de recherche SIREN
@@ -2342,17 +2367,24 @@ window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
 /* Applique l'état visuel « fourni » (coche verte + nom de fichier) à une zone .uz donnée. */
 function _paintDocZone(uz,filename){
   if(!uz)return;
+  uz.classList.remove('pending','err');
   uz.classList.add('ok');
   var fn=uz.querySelector('.uz-fn');
   if(fn){
     fn.innerHTML=CHECK_SVG_SM;
-    var s=document.createElement('span'); s.textContent=' '+(filename||'document enregistré'); fn.appendChild(s);
+    var s=document.createElement('span'); s.textContent=(filename||'document enregistré'); fn.appendChild(s);
     var inp=uz.querySelector('input[type=file]');
     var key=inp?(inp.id||'').replace(/^f-/,''):'';
     if(key){
-      var del=document.createElement('button'); del.type='button'; del.className='uz-del'; del.textContent='Supprimer';
+      var del=document.createElement('button'); del.type='button'; del.className='uz-del';
+      del.innerHTML=ICO_X; var dl=document.createElement('span'); dl.textContent='Supprimer'; del.appendChild(dl);
       del.setAttribute('aria-label','Supprimer ce document');
-      del.onclick=function(e){ e.stopPropagation(); removeDoc(key); };
+      del.onclick=function(e){
+        e.stopPropagation();
+        if(del.getAttribute('data-confirm')==='1'){ removeDoc(key); return; }
+        del.setAttribute('data-confirm','1'); dl.textContent='Confirmer le retrait'; del.classList.add('uz-del-confirm');
+        clearTimeout(del._t); del._t=setTimeout(function(){ del.setAttribute('data-confirm','0'); dl.textContent='Supprimer'; del.classList.remove('uz-del-confirm'); },3500);
+      };
       fn.appendChild(del);
     }
   }
@@ -2378,9 +2410,9 @@ function syncDocZones(){
   updateDocProgress();
 }
 function _docErr(key,msg){
-  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z)z.classList.remove('ok');}
+  var inp=document.getElementById('f-'+key); if(inp){var z=inp.closest('.uz'); if(z){ z.classList.remove('ok','pending'); z.classList.add('err'); }}
   var fn=document.getElementById('fn-'+key);
-  if(fn){ fn.innerHTML=''; var e=document.createElement('span'); e.style.setProperty('color','#dc2626','important'); e.textContent=msg; fn.appendChild(e); }
+  if(fn){ fn.innerHTML=ALERT_SVG; var e=document.createElement('span'); e.textContent=msg; fn.appendChild(e); }
 }
 /* Sélection d'un document → upload immédiat vers Airtable (via /api/drafts), puis coche. */
 window.onF=function(inp,key){
@@ -2388,7 +2420,9 @@ window.onF=function(inp,key){
   var uz=inp.closest('.uz'); var lblEl=uz?uz.querySelector('.uz-lbl'):null;
   var label=(lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
   if(f.size > 3*1024*1024){ inp.value=''; _docErr(key,'Fichier trop volumineux (max 3 Mo)'); toast('Fichier trop volumineux (max 3 Mo)'); return; }
-  var fn=document.getElementById('fn-'+key); if(fn) fn.textContent='Envoi en cours…';
+  if(uz){ uz.classList.remove('ok','err'); uz.classList.add('pending'); }
+  var fn=document.getElementById('fn-'+key);
+  if(fn){ fn.innerHTML='<span class="sl-spin">'+SPIN_SVG_SM+'</span>'; var _es=document.createElement('span'); _es.textContent='Envoi en cours…'; fn.appendChild(_es); }
   var rd=new FileReader();
   rd.onerror=function(){ _docErr(key,'Lecture du fichier impossible'); };
   rd.onload=function(){
@@ -2415,7 +2449,7 @@ function removeDoc(key){
   if(docs) delete docs[key];
   var inp=document.getElementById('f-'+key); if(inp) inp.value='';
   var uz=inp?inp.closest('.uz'):null;
-  if(uz){ uz.classList.remove('ok'); var fn=uz.querySelector('.uz-fn'); if(fn) fn.textContent=''; }
+  if(uz){ uz.classList.remove('ok','pending','err'); var fn=uz.querySelector('.uz-fn'); if(fn) fn.textContent=''; }
   updateDocProgress();
   toast('Document supprimé');
 }
@@ -2446,12 +2480,12 @@ function setCniList(a){ docs.cni=a; }
 function setCniBadge(state,msg){
   var el=document.getElementById('cni-check'); if(!el) return;
   if(state==='skip'||!state){ el.textContent=''; return; }
-  var colors={pending:'#9aa0a6',ok:'#16a34a',warn:'#d97706',bad:'#dc2626'};
-  var icons={pending:'⏳ ',ok:'✓ ',warn:'⚠ ',bad:'✗ '};
-  el.style.setProperty('display','block','important'); el.style.setProperty('margin-top','8px','important');
+  var colors={pending:'var(--amber)',ok:'var(--green)',warn:'var(--amber)',bad:'var(--danger)'};
+  var icons={pending:'<span class="sl-spin">'+SPIN_SVG_SM+'</span>',ok:CHECK_SVG_SM,warn:ALERT_SVG,bad:XCIRCLE_SVG_SM};
+  el.style.setProperty('display','flex','important'); el.style.setProperty('align-items','center','important'); el.style.setProperty('gap','6px','important'); el.style.setProperty('margin-top','8px','important');
   el.style.setProperty('font-size','12px','important'); el.style.setProperty('line-height','1.4','important');
-  el.style.setProperty('color',colors[state]||'#9aa0a6','important');
-  el.textContent=(icons[state]||'')+(msg||'');
+  el.style.setProperty('color',colors[state]||'var(--ink-soft)','important');
+  el.innerHTML=icons[state]||''; var _cs=document.createElement('span'); _cs.textContent=msg||''; el.appendChild(_cs);
 }
 /* Rendu de la liste des fichiers CNI (coche + nom + bouton Retirer) + état « ok » de la zone. */
 function renderCniList(){
@@ -2464,8 +2498,8 @@ function renderCniList(){
     row.style.setProperty('gap','8px','important'); row.style.setProperty('padding','6px 0','important');
     if(idx>0) row.style.setProperty('border-top','1px solid rgba(255,255,255,.08)','important');
     var chk=document.createElement('span'); chk.style.setProperty('flex','0 0 auto','important');
-    chk.style.setProperty('color', item._pending?'#9aa0a6':'#16a34a','important');
-    chk.innerHTML=item._pending?'⏳':CHECK_SVG_SM;
+    chk.style.setProperty('color', item._pending?'var(--amber)':'var(--green)','important');
+    chk.innerHTML=item._pending?('<span class="sl-spin">'+SPIN_SVG_SM+'</span>'):CHECK_SVG_SM;
     var nm=document.createElement('span'); nm.textContent=item.filename||'document';
     nm.style.setProperty('flex','1 1 auto','important'); nm.style.setProperty('overflow','hidden','important');
     nm.style.setProperty('text-overflow','ellipsis','important'); nm.style.setProperty('white-space','nowrap','important'); nm.style.setProperty('font-size','13px','important');
