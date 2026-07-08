@@ -672,6 +672,9 @@
     #sl-root .cnu-drop-t { font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; }
     #sl-root .cnu-drop-s { font-size: 12px !important; color: var(--ink-soft) !important; }
     #sl-root .cnu-chip { display: flex !important; align-items: center !important; gap: 10px !important; padding: 8px 10px !important; border: 1px solid var(--line) !important; border-radius: var(--r) !important; background: var(--surface, #fff) !important; }
+    #sl-root .cnu-chip.is-ok { border-color: var(--green) !important; background: var(--green-soft) !important; }
+    #sl-root .cnu-chip.is-bad { border-color: var(--red-border) !important; background: var(--red-bg) !important; }
+    #sl-root .cnu-fprob { font-size: 11.5px !important; color: var(--danger) !important; font-weight: 600 !important; margin-top: 2px !important; line-height: 1.4 !important; }
     #sl-root .cnu-ftype { color: var(--ink-soft) !important; flex: 0 0 auto !important; display: inline-flex !important; }
     #sl-root .cnu-ftype svg { width: 16px !important; height: 16px !important; }
     #sl-root .cnu-fmeta { min-width: 0 !important; flex: 1 1 auto !important; }
@@ -2677,12 +2680,18 @@ function renderCniList(){
     } else {
       list.forEach(function(item,idx){
         var chip=_cnuEl('div','cnu-chip');
+        var vf=item._verdict;
+        var badFile = !item._pending && vf && (vf.lisible===false || vf.estPiece===false);
+        var okFile  = !item._pending && vf && !badFile;
+        if(badFile) chip.classList.add('is-bad'); else if(okFile) chip.classList.add('is-ok');
         chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
         var meta=_cnuEl('div','cnu-fmeta');
         meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
         meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
+        if(badFile) meta.appendChild(_cnuEl('div','cnu-fprob', vf.probleme || (vf.lisible===false?'Document illisible.':'Ce n\'est pas une pièce d\'identité.')));
         chip.appendChild(meta);
         if(item._pending){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
+        else if(badFile){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
         if(!item._pending){
           var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
           rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
@@ -2715,10 +2724,10 @@ function renderCniList(){
       ex.appendChild(_cnuCallout('info',SHIELD_SVG,'Pièce(s) d\'identité vérifiée(s) : lisible(s), en cours de validité et cohérente(s) avec le(s) déclarant(s).'));
     } else if(st==='nonconform'){
       var probs=[];
-      if(v.estPieceIdentite===false) probs.push('Un document fourni ne semble pas être une pièce d\'identité.');
       if(v.estFrancaise===false) probs.push('Pièce d\'identité non française'+(v.pays&&v.pays!=='inconnu'?(' ('+v.pays+')'):'')+' — une pièce française est requise.');
-      if(v.lisible===false) probs.push('Pièce illisible ou trop floue — reprenez la photo à plat, bien éclairée et sans reflet.');
       if(v.ageMax75Respecte===false) probs.push('Âge maximum dépassé : le client a '+(v.age!=null?(v.age+' ans'):'plus de 75 ans')+' (limite : 75 ans).');
+      var anyBad=list.some(function(x){ return x._verdict && (x._verdict.lisible===false || x._verdict.estPiece===false); });
+      if(anyBad) probs.push('Un ou plusieurs documents sont illisibles ou ne sont pas des pièces d\'identité (voir les lignes en rouge ci-dessus).');
       if(!probs.length) probs.push('La pièce d\'identité ne remplit pas les conditions requises.');
       ex.appendChild(_cnuCalloutList('red',ALERT_SVG,'À corriger :',probs));
     } else if(st==='unverified' && list.length){
@@ -2777,6 +2786,7 @@ function removeCniFile(idx){
 function scheduleCniCheck(){ clearTimeout(_cniTimer); _cniTimer=setTimeout(doCniCheck,600); }
 function doCniCheck(){
   var ids=getCniList().map(function(x){return x.id;}).filter(Boolean);
+  var l0=getCniList(); for(var i0=0;i0<l0.length;i0++){ l0[i0]._verdict=null; }   // efface les verdicts par fichier
   if(!ids.length){ idCheckResult=null; _cniChecking=false; renderCniList(); return; }
   idCheckResult=null; _cniChecking=true; renderCniList();
   try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
@@ -2785,7 +2795,10 @@ function doCniCheck(){
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     action:'verifyid', draftId:getDraftId(), type_client:ct, ids:ids, abonnes:abonnes
   })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
-    if(seq!==_cniSeq) return; _cniChecking=false; idCheckResult=v; renderCniList();
+    if(seq!==_cniSeq) return; _cniChecking=false; idCheckResult=v;
+    var arr=(v&&Array.isArray(v.fichiers))?v.fichiers:[]; var list=getCniList(), j=0;
+    for(var i=0;i<list.length;i++){ if(list[i].id){ list[i]._verdict=arr[j]||null; j++; } }
+    renderCniList();
   }).catch(function(){ if(seq!==_cniSeq) return; _cniChecking=false; idCheckResult=null; renderCniList(); });
 }
 /* (Le rendu du verdict est intégré à renderCniList via cniState/CNU_PILL/encadrés.) */
