@@ -97,8 +97,28 @@ Assistant (wizard) multi-étapes. Variables d'état clés dans l'IIFE : `ct` (`'
 
 - **Flux** : `FLOW_PART=[1,2,4,5,6]` / `FLOW_PRO=[1,2,3,4,5,6]` → Type · Identité · *(collab pro)* · Adresse (Google Maps) · Installation · Documents + Récap.
 - **Brouillons** : `buildDraftPayload()` → `saveDraft()` (upsert serveur sur `ID Brouillon`). Reprise : `hydrate(p)` restaure snapshot complet (`p.fields` + tableaux + `docs`).
-- **Documents (multi-fichiers partout)** : chaque pièce = une **carte uploader** ; `docs[key]` est **toujours un tableau** `[{filename,size,id}]`. Upload immédiat en **append** via `onF(inp,key)` → `uploadFileFor(key,f)` → `/api/drafts {action:'upload'}` (sans `prevId`) → pièce jointe Airtable (champ `Documents`). Retrait : `removeFileFor(key,idx)` → `removedoc`. Rendu : `upgradeDocZones()` transforme les `.uz` en cartes au chargement, `renderDoc(key)` / `renderDocZone(key)` (dispatch cni↔autres), builders partagés `_docDropzone`/`_docChip`. Chaque carte a « Ajouter un document ». Progression via classe `.ok` sur les `.uz`.
+- **Documents — deux portées (scope)** : *(1)* **pièces du projet** (communes au dossier) = cartes multi-fichiers, `docs[key]` = tableau `[{filename,size,id}]`, upload en **append** via `onF(inp,key)` → `uploadFileFor(key,f)`. *(2)* **pièces d'abonné** = **CNI par personne**, deux slots mono-fichier `docs['cni-recto-<uid>']` / `docs['cni-verso-<uid>']` (`uid` = identité **stable** de l'abonné, dans `p.abonnes[].uid`). Section « Documents des abonnés » reconstruite par `renderAbonneDocs()` (une carte par abonné : nom + email + « X/2 »), slots bâtis par `_buildCniSlotCard`. Upload en **remplacement** : `uploadFileFor(key,f,{single:true})` (envoie `prevId`). Rendu : `renderDocZone(key)` dispatche `isCniKey(k)`→`renderCniSlot` sinon `renderDoc` ; `upgradeDocZones()` transforme les `.uz` statiques (projet) en cartes ; builders partagés `_docDropzone`/`_docChip`. Progression via classe `.ok` sur les `.uz` (total dynamique = pièces projet + 2 × abonnés). Snapshot : chaque fichier mémorise `scope` (+ `face`/`abo` pour les CNI) ; à la reprise, `renderAbonneDocs()` rebranche `docs['cni-…-<uid>']` sur l'abonné via son `uid`.
 - **Création finale** : `slCreate()` (gardée par la case de certification `#sl-certify`).
+
+### Documents & contrôles par type (récap)
+
+Toutes les pièces : obligatoires, multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, ou PDF/JPG/PNG — filtre natif, non revérifié) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd », limite non affichée). **Aucune analyse de contenu hors CNI.**
+
+| Document (clé `docs`) | Portée | Part. | Pro | Formats | Contenu |
+|---|---|:--:|:--:|---|---|
+| CNI **recto + verso par abonné** (`cni-recto-<uid>` / `cni-verso-<uid>`) | abonné | ✅ | — | PDF/JPG/PNG | **IA par face** (§ Feature CNI) |
+| Google Maps toiture (`maps` / `map-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
+| Calepinage PV (`calep` / `cal-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
+| Devis abonnement (`devis` / `dev-pro`) | dossier | ✅ | ✅ | PDF | — |
+| Avis d'imposition (`impots`) ³ | dossier | ✅ | — | PDF | — |
+| Facture d'énergie (`elec`) | dossier | ✅ | — | PDF/JPG/PNG | — |
+| Titre de propriété (`prop`) | dossier | ✅ | — | PDF | — |
+| Fiche technique batterie (`bat-tech`) ¹ | dossier | ✅ | — | PDF/JPG/PNG | — |
+| Extrait Kbis (`kbis`) ² | dossier | — | ✅ | PDF | — |
+
+¹ Affichée si `iType` ∈ {`pvb`,`bat`} et `ct==='part'` (`tog('doc-bat',…)`). ² « < 3 mois » = consigne affichée, non contrôlée. ³ Portée **dossier** (1 seul) même en foyer multiple — dette technique (« par foyer fiscal »).
+
+**Contrôle IA — CNI seulement (particuliers), par abonné** : bloquant à la création (`cniBlockReason`) si, pour un abonné, recto **ou** verso manquant, ou (sur une face déposée) illisible / pas une pièce / non française / > 75 ans / périmée ; avertissement (non bloquant) si face inversée (`face`≠slot) ou nom ≠ abonné ; par fichier (lisible + `estPiece` + `face`) → slot vert/rouge ; verdict indisponible/indéterminé → non bloquant. Détails : § *Feature vérification IA de la CNI*.
 
 ## Serverless `api/drafts.js`
 
@@ -114,16 +134,17 @@ Actions (POST `body.action`) + GET/DELETE :
 
 Variables d'env Vercel : `AIRTABLE_TOKEN` (requis), `AIRTABLE_BASE_ID`, `ALLOW_ORIGIN`, `N8N_ID_WEBHOOK_URL`, `N8N_ID_WEBHOOK_SECRET`, `N8N_ID_WEBHOOK_HEADER` (défaut `x-sl-secret`).
 
-## Feature : vérification IA de la CNI (multi-fichiers)
+## Feature : vérification IA de la CNI (par abonné, recto/verso, asynchrone)
 
-Contrôle IA de la pièce d'identité à l'upload. Voir la mémoire projet `cni-ai-check` pour les IDs/état courant.
+Contrôle IA de la pièce d'identité **par abonné et par face**. Voir la mémoire projet `cni-ai-check` pour les IDs/état courant.
 
-- **Toutes les pièces sont multi-fichiers** : `docs[key]` = tableau `[{filename,size,id,_pending,_verdict?}]` pour **toutes** les clés (plus d'objet unique). Upload/retrait génériques `uploadFileFor`/`removeFileFor`, builders `_docDropzone`/`_docChip`. La **CNI** (`key==='cni'`, particuliers) ajoute l'analyse IA par-dessus : `renderCniList`, `getCniList`/`setCniList` (alias de `getDocList('cni')`), `doCniCheck`, coloration par fichier via `item._verdict`. Compat ancien format (objet unique) : `hydrateDraft` wrappe en tableau à la reprise.
-- **Check** : après ajout/retrait → `scheduleCniCheck()` (débounce) → `doCniCheck()` envoie les **ids** (pas le base64) à `/api/drafts {action:'verifyid'}`. Le proxy `handleVerifyId` télécharge les pièces depuis Airtable et transmet `{files:[{dataBase64,contentType,filename}], abonnes}` au webhook n8n. *(On envoie des ids, pas des base64, à cause de la limite d'entrée de 4,5 Mo des fonctions Vercel.)*
-- **Workflow n8n** : `SunLib — Vérification CNI (IA)` — webhook → construit la requête (boucle sur `files[]`) → appel modèle vision (**actuellement Anthropic Claude**, `claude-sonnet-4-5`, tool use forcé `verdict_cni`, credential n8n `anthropicApi`) → normalise → renvoie un verdict JSON. Le front/proxy sont **agnostiques du fournisseur**.
-- **Verdict** : `{ ok, estPieceIdentite, typeDocument, pays, estFrancaise, rectoVersoPresents, lisible, nomDetecte, prenomDetecte, dateNaissance, age, ageMax75Respecte, correspondAbonne, confiance, raison }`. L'IA extrait `dateNaissance` (AAAA-MM-JJ, personne principale) ; le nœud « Normaliser le verdict » calcule `age` + `ageMax75Respecte` (règle métier : **75 ans max**) avec la date du jour. Verdict **par fichier** dans `fichiers[]` (aligné sur l'ordre des documents envoyés) : `{lisible, estPiece, probleme}` → le front colore chaque ligne en vert/rouge (lisibilité + « est une pièce »). Les vérifs transverses (recto/verso, nom, française, âge) restent au niveau de la zone.
-- **Blocage** (`cniBlockReason`, appelé dans `slCreate`) : bloquant si `estPieceIdentite`/`estFrancaise`/`lisible` = false ou `ageMax75Respecte` = false (client > 75 ans) ; avertissement non bloquant si recto-verso incomplet ou nom ≠ abonnés. Âge indéterminé (`ageMax75Respecte` = null) → non bloquant.
-- **Dégradé** : si le verdict est indisponible (`ok!==true` : n8n absent, 403, timeout…), la création **n'est pas bloquée** (une panne ne doit pas casser le formulaire).
+- **Structure** : deux slots **mono-fichier** par abonné — `docs['cni-recto-<uid>']` et `docs['cni-verso-<uid>']` (`uid` = `p.abonnes[].uid`, stable). Le client dépose **recto et verso séparément** (pas de fichier « combiné »). Cartes bâties par `renderAbonneDocs()` → `_buildCniSlotCard` → `renderCniSlot(key)`. Helpers de clé : `cniKey(uid,face)`, `isCniKey(k)`, `cniFaceOf(k)`, `cniUidOf(k)`. Upload en **remplacement** (`uploadFileFor(key,f,{single:true})`, `prevId`). Le verdict d'une face est stocké **sur son fichier** : `docs[key][0]._verdict = {lisible, estPiece, face, probleme, full}`.
+- **Analyse ASYNCHRONE par face** : à chaque ajout/remplacement d'une face → `scheduleCniFaceCheck(key)` (débounce par slot) → `doCniFaceCheck(key)` envoie **l'id de CE fichier** + **le seul abonné concerné** à `/api/drafts {action:'verifyid'}`. Les faces ne s'attendent pas ; chaque slot affiche son propre état (`empty → uploading → analyzing → conform/nonconform`). *(On envoie un id, pas de base64 — limite d'entrée 4,5 Mo des fonctions Vercel.)* Le proxy `handleVerifyId` télécharge la pièce et transmet `{files, abonnes}` au webhook n8n.
+- **Workflow n8n** : `SunLib — Vérification CNI (IA)` — webhook → construit la requête (`files[]`) → modèle vision (**Anthropic Claude**, `claude-sonnet-4-5`, tool use forcé `verdict_cni`, credential `anthropicApi`) → normalise → verdict JSON. Front/proxy **agnostiques du fournisseur**.
+- **Verdict** (pour la/les face(s) envoyée(s)) : `{ ok, estPieceIdentite, typeDocument, pays, estFrancaise, rectoVersoPresents, lisible, nomDetecte, prenomDetecte, dateNaissance, dateDelivrance, dateExpiration, dateExpirationEffective, perimee, age, ageMax75Respecte, correspondAbonne, confiance, raison, fichiers:[{lisible, estPiece, face, probleme}] }`. `face` ∈ `recto`/`verso`/`inconnu` (détecté sur le contenu : photo+état civil = recto ; MRZ/signature/adresse = verso). Le nœud « Normaliser le verdict » calcule `age` + `ageMax75Respecte` (**75 ans max**) et la **validité** (`perimee` + `dateExpirationEffective`). **Règle française** : une CNI plastifiée délivrée à un **majeur** entre le 02/01/2004 et le 31/12/2013 voit sa validité **prolongée de 5 ans** (`dateExpirationEffective` = imprimée + 5 ans) ; naissance inconnue → prolongation appliquée (cas majoritaire).
+- **Fusion par abonné** (`aboCniVerdict`/`aboCniIssues`) : le front combine les verdicts des deux faces. `renderCniSlot` colore chaque slot (par fichier : `lisible`/`estPiece`) ; `renderAboAggregate` affiche la synthèse (« X/2 », encadré) — l'**absence** d'une face n'est pas affichée en rouge tant que rien n'est déposé (invitation neutre).
+- **Blocage** (`cniBlockReason`, appelé dans `slCreate`, particuliers) : pour **chaque** abonné — bloquant si recto **ou** verso manquant, ou (sur une face déposée) `lisible`=false / `estPiece`=false / `estFrancaise`=false / `ageMax75Respecte`=false / `perimee`=true ; **avertissement** (non bloquant) si `face`≠slot (recto/verso inversés) ou `correspondAbonne`=false. Indéterminés (null) → non bloquant.
+- **Dégradé** : verdict indisponible (`ok!==true` : n8n absent, 403, timeout…) → la présence (recto+verso) reste exigée, mais les contrôles de contenu **ne bloquent pas** (une panne ne casse pas le formulaire).
 
 ## Pièges connus
 

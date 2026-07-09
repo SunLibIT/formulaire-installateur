@@ -92,6 +92,8 @@ async function atGet(url, tries) {
 }
 
 async function findId(table, draftId) {
+  draftId = String(draftId || '').trim();
+  if (!draftId) return null;   // ID vide → NE PAS matcher (sinon {ID Brouillon}='' accroche tout record à ID vide → écrasement)
   var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
   var d = await atGet(tbl(table) + '?maxRecords=1&filterByFormula=' + formula);   // throw → upsert ne crée pas de doublon par erreur
   return (d.records && d.records[0]) ? d.records[0].id : null;
