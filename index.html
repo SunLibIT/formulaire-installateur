@@ -673,6 +673,7 @@
     #sl-root .cnu-drop-s { font-size: 12px !important; color: var(--ink-soft) !important; }
     #sl-root .cnu-chip { display: flex !important; align-items: center !important; gap: 10px !important; padding: 8px 10px !important; border: 1px solid var(--line) !important; border-radius: var(--r) !important; background: var(--surface, #fff) !important; }
     #sl-root .cnu-chip.is-ok { border-color: var(--green) !important; background: var(--green-soft) !important; }
+    #sl-root .cnu-chip.is-warn { border-color: var(--amber-border) !important; background: var(--amber-bg) !important; }
     #sl-root .cnu-chip.is-bad { border-color: var(--red-border) !important; background: var(--red-bg) !important; }
     #sl-root .cnu-fprob { font-size: 11.5px !important; color: var(--danger) !important; font-weight: 600 !important; margin-top: 2px !important; line-height: 1.4 !important; }
     #sl-root .cnu-ftype { color: var(--ink-soft) !important; flex: 0 0 auto !important; display: inline-flex !important; }
@@ -2514,21 +2515,21 @@ function _docDropzone(key){
     fs.forEach(function(f){ uploadFileFor(key,f); }); });
   return dz;
 }
-/* Chip d'un fichier. isCni : applique la coloration/verdict par fichier. */
-function _docChip(key,item,idx,isCni){
+/* Chip d'un fichier avec coloration + motif PAR FICHIER (tous documents).
+   vinfo = { tone:'ok'|'warn'|'bad', probleme:string } ou null (neutre / en cours). */
+function _docChip(key,item,idx,vinfo){
   var chip=_cnuEl('div','cnu-chip');
-  var vf=isCni?item._verdict:null;
-  var badFile = isCni && !item._pending && vf && (vf.lisible===false || vf.estPiece===false);
-  var okFile  = isCni && !item._pending && vf && !badFile;
-  if(badFile) chip.classList.add('is-bad'); else if(okFile) chip.classList.add('is-ok');
+  var tone = (!item._pending && vinfo) ? vinfo.tone : null;
+  if(tone==='bad') chip.classList.add('is-bad'); else if(tone==='warn') chip.classList.add('is-warn'); else if(tone==='ok') chip.classList.add('is-ok');
   chip.innerHTML='<span class="cnu-ftype">'+FILE_SVG+'</span>';
   var meta=_cnuEl('div','cnu-fmeta');
   meta.appendChild(_cnuEl('div','cnu-fname',item.filename||'document'));
   meta.appendChild(_cnuEl('div','cnu-fsub', item._pending?'Envoi…':(item.size?_cnuSize(item.size):'Enregistré')));
-  if(badFile) meta.appendChild(_cnuEl('div','cnu-fprob', vf.probleme || (vf.lisible===false?'Document illisible.':'Ce n\'est pas une pièce d\'identité.')));
+  if((tone==='bad'||tone==='warn') && vinfo.probleme) meta.appendChild(_cnuEl('div','cnu-fprob', vinfo.probleme));
   chip.appendChild(meta);
   if(item._pending){ var stt=_cnuEl('span','cnu-fstate'); stt.innerHTML='<span class="sl-spin" style="color:var(--amber)">'+SPIN_SVG_SM+'</span>'; chip.appendChild(stt); }
-  else if(badFile){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
+  else if(tone==='bad'){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
+  else if(tone==='warn'){ var stw=_cnuEl('span','cnu-fstate'); stw.innerHTML='<span style="color:var(--amber)">'+ALERT_SVG+'</span>'; chip.appendChild(stw); }
   if(!item._pending){
     var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
     rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
@@ -2540,6 +2541,22 @@ function _docChip(key,item,idx,isCni){
     chip.appendChild(rm);
   }
   return chip;
+}
+/* Verdict par fichier d'une CNI (à partir de item._verdict) → {tone, probleme} ou null. */
+function cniFileVinfo(item){
+  if(!item || item._pending) return null; var vf=item._verdict; if(!vf) return null;
+  if(vf.lisible===false || vf.estPiece===false) return { tone:'bad', probleme:(vf.probleme || (vf.lisible===false?'Document illisible.':'Ce n\'est pas une pièce d\'identité.')) };
+  return { tone:'ok', probleme:'' };
+}
+/* Verdict par fichier d'un document générique (à partir de docVerdicts[key]) → {tone, probleme} ou null.
+   Le verdict est au niveau du document → appliqué à chacun de ses fichiers ; le motif liste les contrôles échoués. */
+function docFileVinfo(key){
+  if(!DOC_VERIFY[key] || _docChecking[key]) return null;
+  var v=docVerdicts[key]; if(!v || v.ok!==true) return null;
+  function probs(s){ return (v.controles||[]).filter(function(c){return c.statut===s;}).map(function(c){return c.detail||c.libelle;}).join(' · '); }
+  if(v.statut==='ko') return { tone:'bad', probleme: probs('ko') || 'Document non conforme.' };
+  if(v.statut==='a_verifier') return { tone:'warn', probleme: probs('a_verifier') || 'À vérifier.' };
+  return { tone:'ok', probleme:'' };
 }
 /* Upload (append) d'un fichier pour n'importe quelle pièce. */
 /* Libellé lisible d'une pièce (préfixe du nom de fichier côté Airtable). Pour une face de CNI,
@@ -2698,12 +2715,9 @@ function renderDoc(key){
   if(body){ body.innerHTML='';
     if(!list.length) body.appendChild(_docDropzone(key));
     else {
-      list.forEach(function(item,idx){ body.appendChild(_docChip(key,item,idx,false)); });
-      if(verify && vres){
-        if(st==='nonconform'){ var ko=(vres.controles||[]).filter(function(c){return c.statut==='ko';}).map(function(c){return c.detail||c.libelle;}); body.appendChild(_cnuCalloutList('red',ALERT_SVG,'À corriger :',ko.length?ko:['Document non conforme.'])); }
-        else if(st==='incomplete'){ var av=(vres.controles||[]).filter(function(c){return c.statut==='a_verifier';}).map(function(c){return c.detail||c.libelle;}); body.appendChild(_cnuCalloutList('amber',ALERT_SVG,'À vérifier :',av.length?av:['Vérification à confirmer.'])); }
-        else if(st==='conform'){ body.appendChild(_cnuCallout('info',SHIELD_SVG,'Document vérifié : conforme au dossier.')); }
-      }
+      var vinfo=docFileVinfo(key);   // verdict par fichier (coloration + motif sur la vignette)
+      list.forEach(function(item,idx){ body.appendChild(_docChip(key,item,idx,vinfo)); });
+      if(verify && vres && st==='conform') body.appendChild(_cnuCallout('info',SHIELD_SVG,'Document vérifié : conforme au dossier.'));
     }
   }
 
@@ -2865,11 +2879,8 @@ function renderCniSlot(key){
   if(body){ body.innerHTML='';
     if(!item){ body.appendChild(_docDropzoneSingle(key,face)); }
     else {
-      body.appendChild(_docChip(key,item,0,true));
-      if(st==='nonconform'){
-        var msg=(v&&v.probleme)||(v&&v.lisible===false?'Document illisible — reprenez une photo nette.':'Ce fichier n\'est pas une pièce d\'identité.');
-        body.appendChild(_cnuCallout('red',ALERT_SVG,msg));
-      } else if(v && v.face && v.face!=='inconnu' && v.face!==face){
+      body.appendChild(_docChip(key,item,0,cniFileVinfo(item)));   // vignette colorée + motif par fichier
+      if(st!=='nonconform' && v && v.face && v.face!=='inconnu' && v.face!==face){
         body.appendChild(_cnuCallout('amber',ALERT_SVG,'Ce fichier ressemble à un '+v.face+' — vérifiez que c\'est bien le '+face+'.'));
       }
       if(!pending){ var rep=_cnuEl('button','cnu-add'); rep.type='button'; rep.onclick=function(){ trig('f-'+key); }; rep.innerHTML=REFRESH_SVG; rep.appendChild(_cnuEl('span',null,'Remplacer')); body.appendChild(rep); }
