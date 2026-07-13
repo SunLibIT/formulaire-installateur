@@ -352,7 +352,11 @@ async function handleGetDocVerdicts(p, res) {
   try {
     var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
     var d = await atGet(tbl(DOCS_TABLE) + '?pageSize=200&filterByFormula=' + formula);
-    var out = (d.records || []).map(function (r) { var f = r.fields || {}; return { id: r.id, controles: f['Contrôles'] || '', statut: f['Statut validation'] || '' }; });
+    var out = (d.records || []).map(function (r) {
+      var f = r.fields || {};
+      var att = (Array.isArray(f['Fichier']) && f['Fichier'][0]) || {};
+      return { id: r.id, cle: f['Clé'] || '', filename: att.filename || f['Nom'] || 'document', size: att.size || null, controles: f['Contrôles'] || '', statut: f['Statut validation'] || '' };
+    });
     return res.status(200).json({ docs: out });
   } catch (e) { return res.status(200).json({ docs: [] }); }
 }

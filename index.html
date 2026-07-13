@@ -684,9 +684,8 @@
     #sl-root .cnu-fstate { flex: 0 0 auto !important; display: inline-flex !important; }
     #sl-root .cnu-fstate svg { width: 15px !important; height: 15px !important; }
     #sl-root .cnu-frm { flex: 0 0 auto !important; display: inline-flex !important; align-items: center !important; gap: 4px !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; padding: 4px 7px !important; border-radius: 7px !important; font-size: 12px !important; font-weight: 600 !important; opacity: 0 !important; transition: color .15s, background .15s, opacity .15s !important; }
-    #sl-root .cnu-chip:hover .cnu-frm, #sl-root .cnu-chip:focus-within .cnu-frm, #sl-root .cnu-frm.is-confirm { opacity: 1 !important; }
+    #sl-root .cnu-chip:hover .cnu-frm, #sl-root .cnu-chip:focus-within .cnu-frm { opacity: 1 !important; }
     #sl-root .cnu-frm:hover, #sl-root .cnu-frm:focus-visible { color: var(--danger) !important; background: var(--red-bg) !important; }
-    #sl-root .cnu-frm.is-confirm { color: #fff !important; background: var(--danger) !important; }
     #sl-root .cnu-frm svg { width: 14px !important; height: 14px !important; }
     /* Bouton « Remplacer » par fichier (même comportement que Retirer, teinte teal) */
     #sl-root .cnu-frep { flex: 0 0 auto !important; display: inline-flex !important; align-items: center !important; gap: 4px !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; padding: 4px 7px !important; border-radius: 7px !important; font-size: 12px !important; font-weight: 600 !important; opacity: 0 !important; transition: color .15s, background .15s, opacity .15s !important; }
@@ -2539,19 +2538,21 @@ function _docChip(key,item,idx,vinfo){
   else if(tone==='bad'){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
   else if(tone==='warn'){ var stw=_cnuEl('span','cnu-fstate'); stw.innerHTML='<span style="color:var(--amber)">'+ALERT_SVG+'</span>'; chip.appendChild(stw); }
   if(!item._pending){
-    if(!isCniKey(key)){   // « Remplacer » par fichier (les slots CNI ont déjà leur propre bouton Remplacer)
-      var rep2=_cnuEl('button','cnu-frep'); rep2.type='button'; rep2.setAttribute('aria-label','Remplacer '+(item.filename||'ce document'));
-      rep2.innerHTML=REFRESH_SVG; rep2.appendChild(_cnuEl('span',null,'Remplacer'));
+    // « Remplacer » ce fichier — sur la vignette, pour TOUTES les pièces (CNI incluse).
+    var rep2=_cnuEl('button','cnu-frep'); rep2.type='button'; rep2.setAttribute('aria-label','Remplacer '+(item.filename||'ce document'));
+    rep2.innerHTML=REFRESH_SVG; rep2.appendChild(_cnuEl('span',null,'Remplacer'));
+    if(isCniKey(key)){   // slot mono-fichier : onCniFace remplace directement (single)
+      rep2.onclick=(function(k){ return function(e){ e.stopPropagation(); trig('f-'+k); }; })(key);
+    } else {             // multi-fichiers : retire l'ancien puis dépose le nouveau (via _replace consommé par onF)
       rep2.onclick=(function(k,fid){ return function(e){ e.stopPropagation(); _replace={key:k,id:fid}; trig('f-'+k); }; })(key,item.id);
-      chip.appendChild(rep2);
     }
+    chip.appendChild(rep2);
+    // « Retirer » — action destructrice : confirmation par une petite modale (charte).
     var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
-    rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
-    rm.onclick=(function(k,i,btn,lbl){ return function(e){ e.stopPropagation();
-      if(btn.getAttribute('data-confirm')==='1'){ removeFileFor(k,i); return; }
-      btn.setAttribute('data-confirm','1'); lbl.textContent='Confirmer'; btn.classList.add('is-confirm');
-      clearTimeout(btn._t); btn._t=setTimeout(function(){ btn.setAttribute('data-confirm','0'); lbl.textContent='Retirer'; btn.classList.remove('is-confirm'); },3500);
-    }; })(key,idx,rm,rl);
+    rm.innerHTML=ICO_X; rm.appendChild(_cnuEl('span',null,'Retirer'));
+    rm.onclick=(function(k,i,fn){ return function(e){ e.stopPropagation();
+      confirmDanger({ title:'Retirer ce document ?', message:'« '+fn+' » sera retiré du dossier. Vous pourrez le redéposer ensuite.', confirmLabel:'Retirer', onConfirm:function(){ removeFileFor(k,i); } });
+    }; })(key,idx,(item.filename||'ce document'));
     chip.appendChild(rm);
   }
   return chip;
@@ -2620,6 +2621,7 @@ function uploadFileFor(key,f,opts){
         for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
         setDocList(key,l); renderDocZone(key); toast('Document enregistré');
         if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
+        scheduleAutoSave();
       } else throw new Error('upload');
     }).catch(function(){ setDocList(key,getDocList(key).filter(function(x){return x._tmp!==tmp;})); renderDocZone(key); toast('Échec de l\'envoi : '+f.name); });
   };
@@ -2633,6 +2635,7 @@ function removeFileFor(key,idx){
   })}).catch(function(){}); }
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
   if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
+  scheduleAutoSave();
 }
 /* Info-bulle « exemple attendu » (bouton i + popup au survol) pour la pièce Google Maps.
    sfx = clé du document → IDs SVG uniques (pas de doublon d'id entre part/pro). */
@@ -2901,11 +2904,10 @@ function renderCniSlot(key){
   if(body){ body.innerHTML='';
     if(!item){ body.appendChild(_docDropzoneSingle(key,face)); }
     else {
-      body.appendChild(_docChip(key,item,0,cniFileVinfo(item)));   // vignette colorée + motif par fichier
+      body.appendChild(_docChip(key,item,0,cniFileVinfo(item)));   // vignette colorée + motif + Remplacer/Retirer par fichier
       if(st!=='nonconform' && v && v.face && v.face!=='inconnu' && v.face!==face){
         body.appendChild(_cnuCallout('amber',ALERT_SVG,'Ce fichier ressemble à un '+v.face+' — vérifiez que c\'est bien le '+face+'.'));
       }
-      if(!pending){ var rep=_cnuEl('button','cnu-add'); rep.type='button'; rep.onclick=function(){ trig('f-'+key); }; rep.innerHTML=REFRESH_SVG; rep.appendChild(_cnuEl('span',null,'Remplacer')); body.appendChild(rep); }
     }
   }
   updateDocProgress();
@@ -3052,13 +3054,30 @@ function restoreDocVerdicts(draftId){
   };
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getdocverdicts', draftId:draftId})})
   .then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
-    var byId={}; ((resp&&resp.docs)||[]).forEach(function(x){ byId[x.id]=x; });
-    Object.keys(docs).forEach(function(k){ getDocList(k).forEach(function(it){
-      if(!it||!it.id) return; var row=byId[it.id]; if(!row||!row.controles) return;
-      try{ var vd=JSON.parse(row.controles); if(isCniKey(k)) it._verdict=vd; else docVerdicts[k]=vd; }catch(e){}
-    }); });
+    var rows=(resp&&resp.docs)||[];
+    if(rows.length){   // la table Documents fait foi : on reconstruit les fichiers + verdicts (survit même si le brouillon n'a pas été ré-enregistré)
+      var nd={};
+      rows.forEach(function(row){
+        if(!row.cle||!row.id) return;
+        if(!nd[row.cle]) nd[row.cle]=[];
+        var it={ filename:row.filename||'document', size:row.size||null, id:row.id };
+        var vd=null; if(row.controles){ try{ vd=JSON.parse(row.controles); }catch(e){} }
+        if(vd){ if(isCniKey(row.cle)) it._verdict=vd; else docVerdicts[row.cle]=vd; }
+        nd[row.cle].push(it);
+      });
+      docs=nd;
+    }
     renderAbonneDocs(); syncDocZones(); recheck();
   }).catch(recheck);
+}
+/* Auto-enregistrement du brouillon (débounce) après dépôt/retrait — le dossier + le mapping des fichiers
+   restent à jour côté serveur, donc tout revient après un refresh. Silencieux. */
+var _autoSaveT=null;
+function scheduleAutoSave(){
+  clearTimeout(_autoSaveT);
+  _autoSaveT=setTimeout(function(){
+    try{ saveDraft(buildDraftPayload()).then(function(){ if(typeof markClean==='function') markClean(); },function(){}); }catch(e){}
+  },1200);
 }
 /* Re-déclenche la vérif des documents qui référencent `changedKey` (contrôle croisé). Ex. maj du calepinage → re-vérifie Google Maps. */
 function scheduleDependents(changedKey){
@@ -3664,12 +3683,12 @@ function hydrateDraft(p){
     applyAllFields(p.fields);
     if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
     // Documents déjà fournis (fichiers dans Airtable) → re-cocher les zones + nom de fichier
-    if(p.docs){ docs=p.docs;
-      Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
-      renderAbonneDocs();   // reconstruit les cartes CNI par abonné (clés cni-recto/verso-<uid>)
-      syncDocZones();
-      restoreDocVerdicts(p.draftId || getDraftId());   // restaure les verdicts persistés ; ne re-analyse que le manquant
-    }
+    docs = (p.docs && typeof p.docs==='object') ? p.docs : {};
+    Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
+    renderAbonneDocs();   // reconstruit les cartes CNI par abonné (clés cni-recto/verso-<uid>)
+    syncDocZones();
+    // La table Documents fait foi : reconstruit les fichiers réellement déposés + leurs verdicts (survit même si le brouillon n'a pas été ré-enregistré), et ne re-analyse que le manquant.
+    restoreDocVerdicts(p.draftId || getDraftId());
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
       var tags=document.querySelectorAll('#sl-root .prop-tag');
