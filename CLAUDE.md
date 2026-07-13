@@ -122,15 +122,19 @@ Toutes les pièces : obligatoires, multi-fichiers. **Contrôles génériques** (
 
 ## Serverless `api/drafts.js`
 
-Proxy Airtable. Base par défaut `appmroXyuCrYwDbM7`, tables `Particulier`/`Pro`, table `Sessions`. `export const maxDuration = 60`.
+Proxy Airtable. Base par défaut `appmroXyuCrYwDbM7`, tables `Particulier`/`Pro`, `Sessions`, **`Documents`** (`tblbXUlBAoQJBl21P`). `export const maxDuration = 60`.
+
+**Stockage des documents (depuis 2026-07-13) = table `Documents` dédiée, 1 ligne par fichier** (fini le champ pièce jointe unique). Champs : `Nom`, `Fichier` (pièce jointe, id `fldx0yxmkJ90wRfxl`), `Type` (single-select, mappé depuis la clé via `typeForKey`), `Portée` (Dossier/Abonné), `Abonné`, `Clé` (clé `docs`), `Statut validation`, `Contrôles` (JSON), `Confiance`, `Dossier Particulier`/`Dossier Pro` (liens), `ID Brouillon`. **L'`id` renvoyé au front = l'id de la LIGNE** (`rec…`) — utilisé par `verifyid`/`removedoc`. *(Les anciens champs `Documents` (attachments) sur Particulier/Pro sont conservés mais plus utilisés — cutover propre, pas de migration : la base n'était pas en prod.)*
 
 Actions (POST `body.action`) + GET/DELETE :
 - `GET ?email=` → dossiers « En cours ».
-- `POST` (payload) → upsert brouillon.
-- `POST {action:'upload'}` → ajoute une pièce jointe (append).
-- `POST {action:'verifyid'}` → vérification IA de la CNI (voir plus bas).
-- `POST {action:'removedoc'}` → retire une pièce jointe (par id).
+- `POST` (payload) → upsert brouillon ; **si `p.validation`** écrit `Statut validation`/`Points bloquants`/`Rapport validation`/`Validé le` sur la fiche (C) ; **si `p.docStatuts`** met à jour le statut par ligne `Documents` (B).
+- `POST {action:'upload'}` → **crée une ligne `Documents`** (liée au dossier) + y attache le fichier (`typeForKey`/`scope`/`abo`/`key`). `prevId` → supprime l'ancienne ligne (remplacement). Renvoie l'id de ligne.
+- `POST {action:'verifyid'}` → vérification IA (voir plus bas) ; `filesFromIds` lit les fichiers **par id de ligne** `Documents`.
+- `POST {action:'removedoc'}` → **supprime la ligne** `Documents` (par id).
 - `DELETE ?id=&type=` → supprime un brouillon.
+
+Verdict persisté (schéma dossier) : sur `Particulier`/`Pro` — `Statut validation` (Conforme/À vérifier/Non conforme), `Points bloquants`, `Rapport validation` (JSON), `Validé le` ; front `buildValidation()` + `buildDocStatuts()` (envoyés à la **création**). `sniffMedia` corrige le `media_type` (magic bytes) avant l'appel Claude.
 
 Variables d'env Vercel : `AIRTABLE_TOKEN` (requis), `AIRTABLE_BASE_ID`, `ALLOW_ORIGIN`, `N8N_ID_WEBHOOK_URL`, `N8N_ID_WEBHOOK_SECRET`, `N8N_ID_WEBHOOK_HEADER` (défaut `x-sl-secret`).
 

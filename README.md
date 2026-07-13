@@ -24,7 +24,7 @@ Le widget est un assistant (wizard) multi-étapes :
 
 ### Fonctionnalités clés
 - **Brouillons** : enregistrement serveur (upsert sur `ID Brouillon`) ; reprise qui restaure **l'intégralité** des champs (snapshot complet), le type d'installation, l'adresse/carte, les abonnés/collaborateurs et les documents fournis.
-- **Documents** : uploadés directement en pièces jointes Airtable (champ `Documents`), ≤ 3 Mo/fichier (au-delà : « Fichier trop lourd »). Deux portées — **documents du projet** (communs) et **documents des abonnés** (CNI **recto + verso par personne**, vérifiée par IA face par face). Liste complète et contrôles → [Documents & contrôles](#documents--contrôles).
+- **Documents** : chaque fichier = **une ligne dans la table Airtable `Documents`** (liée au dossier, avec type/portée/abonné/verdict), ≤ 3 Mo/fichier (au-delà : « Fichier trop lourd »). Deux portées — **documents du projet** (communs) et **documents des abonnés** (CNI **recto + verso par personne**, vérifiée par IA face par face). Liste complète et contrôles → [Documents & contrôles](#documents--contrôles).
 - **Adresse** : autocomplétion BAN (`api-adresse.data.gouv.fr`) + carte Google Maps satellite avec marqueur déplaçable.
 - **Pro** : recherche SIREN (préremplissage entreprise/dirigeant).
 - **Resize iframe** : la hauteur réelle est postée au parent (`postMessage({iframeHeight})`), anti-boucle.
@@ -104,7 +104,8 @@ Base `appmroXyuCrYwDbM7` :
 
 | Table | Contenu |
 |---|---|
-| `Particulier` / `Pro` | 1 ligne par dossier, upsert sur `ID Brouillon`. Champs métier (email installateur, statut, étape, adresse, type d'installation, mensualité…), snapshot JSON complet dans `Données JSON`, et pièces jointes dans `Documents`. |
+| `Particulier` / `Pro` | 1 ligne par dossier, upsert sur `ID Brouillon`. Champs métier (email installateur, statut, étape, adresse, type d'installation, mensualité…), snapshot JSON complet dans `Données JSON`, et **verdict de validation** (`Statut validation`, `Points bloquants`, `Rapport validation`, `Validé le`). |
+| `Documents` | **1 ligne par fichier** déposé, liée au dossier. Champs : `Fichier` (pièce jointe), `Type`, `Portée` (Dossier/Abonné), `Abonné`, `Statut validation`, `Contrôles`, `Confiance`. |
 | `Sessions` | 1 ligne par email installateur : `Date accès`, `Device`, liens vers les brouillons (Particulier/Pro). |
 
 ### API `/api/drafts`
@@ -112,7 +113,7 @@ Base `appmroXyuCrYwDbM7` :
 |---|---|
 | `GET ?email=` | Liste les dossiers « En cours » de l'installateur (Particulier + Pro), payload complet inclus pour la reprise. |
 | `POST` (body = payload) | Upsert du brouillon dans la bonne table. |
-| `POST` (`action:"upload"`) | Upload d'un document dans le champ `Documents`. |
+| `POST` (`action:"upload"`) | Crée une ligne dans la table `Documents` (liée au dossier) + y attache le fichier. |
 | `DELETE ?id=&type=` | Supprime un brouillon. |
 
 ---

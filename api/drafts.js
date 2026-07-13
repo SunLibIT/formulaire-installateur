@@ -61,6 +61,14 @@ function fieldsFromPayload(p) {
     f['Nom dossier'] = full || 'Dossier particulier';
     f['Mensualité estimée TTC'] = num(m.ttc);
   }
+  // Verdict de validation documentaire (persisté pour le routage / la relecture).
+  if (p.validation && typeof p.validation === 'object') {
+    var SV = { conforme: 'Conforme', a_verifier: 'À vérifier', non_conforme: 'Non conforme' };
+    if (p.validation.statutGlobal) f['Statut validation'] = SV[p.validation.statutGlobal] || 'À vérifier';
+    f['Points bloquants'] = Array.isArray(p.validation.pointsBloquants) ? p.validation.pointsBloquants.join('\n') : String(p.validation.pointsBloquants || '');
+    f['Rapport validation'] = JSON.stringify(p.validation.rapport || p.validation);
+    f['Validé le'] = new Date().toISOString();
+  }
   return f;
 }
 
@@ -156,9 +164,24 @@ async function touchSession(email, device, link) {
   } catch (e) { /* journalisation best-effort */ }
 }
 
-// ── Pièces jointes (documents) → champ « Documents » de la table correspondante ──
+// ── Documents → table dédiée « Documents » (1 ligne = 1 fichier, liée au dossier) ──
 const CONTENT = 'https://content.airtable.com/v0';
-const DOC_FIELD = { part: 'fldPX5DUDg8WBd5cc', pro: 'fld4ESJbPobjn1Rrc' };   // ids des champs « Documents »
+const DOCS_TABLE = 'Documents';
+const DOCS_FILE_FIELD = 'fldx0yxmkJ90wRfxl';   // champ « Fichier » (pièce jointe) de la table Documents
+// Type (single-select de la table Documents) déduit de la clé du document.
+const TYPE_BY_KEY = {
+  maps: 'Google Maps', 'map-pro': 'Google Maps',
+  calep: 'Étude installateur', 'cal-pro': 'Étude installateur',
+  devis: 'Devis', 'dev-pro': 'Devis',
+  impots: "Avis d'imposition",
+  elec: 'Facture énergie',
+  prop: 'Titre de propriété',
+  kbis: 'Kbis'
+};
+function typeForKey(key) {
+  if (/^cni-(recto|verso)-/.test(String(key || ''))) return 'CNI';
+  return TYPE_BY_KEY[key] || 'Autre';
+}
 
 // Trouve le record du brouillon, ou le crée a minima (pour pouvoir y attacher un fichier avant le 1er save).
 async function ensureRecord(table, p) {
@@ -176,32 +199,43 @@ async function ensureRecord(table, p) {
   return (r.ok && d.records && d.records[0]) ? d.records[0].id : null;
 }
 
-// Upload d'UN document dans le champ « Documents » (append) ; si prevId fourni, retire d'abord l'ancien (remplacement).
+// Upload d'UN document → crée une ligne dans la table « Documents » (liée au dossier) + y attache le fichier.
+// Renvoie l'id de la LIGNE (utilisé ensuite pour la lecture/retrait). prevId : ancienne ligne à supprimer (remplacement).
 async function handleUpload(p, res) {
   if (!p.draftId || !p.dataBase64) return res.status(400).json({ error: 'draftId + dataBase64 requis' });
   var table = TABLES[p.type_client] || 'Particulier';
-  var fieldId = DOC_FIELD[p.type_client === 'pro' ? 'pro' : 'part'];
-  var recId = await ensureRecord(table, p);
-  if (!recId) return res.status(500).json({ error: 'record introuvable/non créé' });
-  if (p.prevId) {   // remplacement : on retire l'ancien fichier de ce document
-    try {
-      var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
-      var gd = await gr.json();
-      var cur = (gd.fields && gd.fields['Documents']) || [];
-      var kept = cur.filter(function (a) { return a.id !== p.prevId; }).map(function (a) { return { id: a.id }; });
-      await fetch(tbl(table), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: recId, fields: { 'Documents': kept } }] }) });
-    } catch (e) { /* best-effort */ }
-  }
-  var filename = (p.label ? p.label + ' — ' : '') + (p.filename || 'document');
-  var ur = await fetch(CONTENT + '/' + BASE + '/' + recId + '/' + fieldId + '/uploadAttachment', {
+  var recId = await ensureRecord(table, p);   // dossier (pour le lien)
+  if (!recId) return res.status(500).json({ error: 'dossier introuvable/non créé' });
+  // 1) créer la ligne Documents (métadonnées + lien vers le dossier)
+  var linkField = (p.type_client === 'pro') ? 'Dossier Pro' : 'Dossier Particulier';
+  var rowFields = {
+    'Nom': p.label || p.filename || 'document',
+    'Type': typeForKey(p.key),
+    'Portée': p.scope || (typeForKey(p.key) === 'CNI' ? 'Abonné' : 'Dossier'),
+    'Abonné': p.abo || '',
+    'Clé': String(p.key || ''),
+    'ID Brouillon': String(p.draftId || ''),
+    'Statut validation': 'Non vérifié'
+  };
+  rowFields[linkField] = [recId];
+  var cr = await fetch(tbl(DOCS_TABLE), { method: 'POST', headers: H, body: JSON.stringify({ records: [{ fields: rowFields }], typecast: true }) });
+  var cd = await cr.json();
+  if (!cr.ok) return res.status(cr.status).json({ error: cd });
+  var rowId = cd.records && cd.records[0] && cd.records[0].id;
+  if (!rowId) return res.status(500).json({ error: 'ligne Documents non créée' });
+  // 2) attacher le fichier à la ligne
+  var filename = p.filename || 'document';
+  var ur = await fetch(CONTENT + '/' + BASE + '/' + rowId + '/' + DOCS_FILE_FIELD + '/uploadAttachment', {
     method: 'POST', headers: H,
     body: JSON.stringify({ contentType: p.contentType || 'application/octet-stream', filename: filename, file: p.dataBase64 })
   });
   var ud = await ur.json();
-  if (!ur.ok) return res.status(ur.status).json({ error: ud });
-  var atts = (ud.fields && (ud.fields[fieldId] || ud.fields['Documents'])) || [];
-  var last = atts.length ? atts[atts.length - 1] : null;
-  return res.status(200).json({ ok: true, id: last && last.id, filename: filename });
+  if (!ur.ok) {
+    try { await fetch(tbl(DOCS_TABLE) + '/' + rowId, { method: 'DELETE', headers: H }); } catch (e) {}   // rollback de la ligne vide
+    return res.status(ur.status).json({ error: ud });
+  }
+  if (p.prevId) { try { await fetch(tbl(DOCS_TABLE) + '/' + encodeURIComponent(p.prevId), { method: 'DELETE', headers: H }); } catch (e) {} }   // remplacement : supprime l'ancienne ligne
+  return res.status(200).json({ ok: true, id: rowId, filename: filename });
 }
 
 // Détecte le vrai type MIME à partir des octets (magic bytes). Le contentType déclaré par Airtable/
@@ -216,19 +250,17 @@ function sniffMedia(buf, fallback) {
   return fallback || 'application/octet-stream';
 }
 
-// Récupère les pièces jointes Airtable (par ids) et les renvoie en base64. Les URLs d'attachement
-// Airtable sont signées et lues juste-à-temps (fraîches). Client → proxy ne transporte que des ids
-// (léger) ; le proxy télécharge et envoie les base64 à n8n (Vercel n'a pas de limite de 4,5 Mo en sortie).
+// Récupère les fichiers (par ids de LIGNES de la table Documents) et les renvoie en base64. Les URLs
+// d'attachement Airtable sont signées et lues juste-à-temps. Client → proxy ne transporte que des ids.
 async function filesFromIds(table, draftId, ids) {
   var out = [];
-  var recId = await findId(table, draftId);
-  if (!recId) return out;
-  var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
-  var gd = await gr.json();
-  var atts = (gd.fields && gd.fields['Documents']) || [];
-  var byId = {}; atts.forEach(function (a) { byId[a.id] = a; });
   for (var i = 0; i < ids.length; i++) {
-    var a = byId[ids[i]]; if (!a || !a.url) continue;
+    var id = ids[i]; if (!id) continue;
+    var gr = await fetch(tbl(DOCS_TABLE) + '/' + encodeURIComponent(id), { headers: H });
+    if (!gr.ok) continue;
+    var gd = await gr.json();
+    var atts = (gd.fields && gd.fields['Fichier']) || [];
+    var a = atts[0]; if (!a || !a.url) continue;
     var fr = await fetch(a.url); if (!fr.ok) continue;
     var buf = Buffer.from(await fr.arrayBuffer());
     out.push({ dataBase64: buf.toString('base64'), contentType: sniffMedia(buf, a.type), filename: a.filename || '' });   // type réel (magic bytes), pas le contentType déclaré
@@ -282,20 +314,13 @@ async function handleVerifyId(p, res) {
   }
 }
 
-// Retire UNE pièce jointe (par id) du champ « Documents » — utilisé par le bouton « Retirer » (CNI multi).
+// Retire UN document = supprime sa LIGNE dans la table « Documents » (par id de ligne).
 async function handleRemoveDoc(p, res) {
-  if (!p.draftId || !p.id) return res.status(400).json({ error: 'draftId + id requis' });
-  var table = TABLES[p.type_client] || 'Particulier';
+  if (!p.id) return res.status(400).json({ error: 'id requis' });
   try {
-    var recId = await findId(table, p.draftId);
-    if (!recId) return res.status(200).json({ ok: true });   // rien à retirer
-    var gr = await fetch(tbl(table) + '/' + recId, { headers: H });
-    var gd = await gr.json();
-    var cur = (gd.fields && gd.fields['Documents']) || [];
-    var kept = cur.filter(function (a) { return a.id !== p.id; }).map(function (a) { return { id: a.id }; });
-    var pr = await fetch(tbl(table), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: recId, fields: { 'Documents': kept } }] }) });
-    if (!pr.ok) { var t = ''; try { t = await pr.text(); } catch (e) {} return res.status(pr.status).json({ error: t }); }
-    return res.status(200).json({ ok: true });
+    var pr = await fetch(tbl(DOCS_TABLE) + '/' + encodeURIComponent(p.id), { method: 'DELETE', headers: H });
+    if (!pr.ok && pr.status !== 404) { var t = ''; try { t = await pr.text(); } catch (e) {} return res.status(pr.status).json({ error: t }); }
+    return res.status(200).json({ ok: true });   // 404 = déjà supprimée → idempotent
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }
@@ -339,6 +364,17 @@ export default async function handler(req, res) {
       var recId = dd.records && dd.records[0] && dd.records[0].id;
       // Relier le brouillon a la session de l'installateur + journaliser l'acces (best-effort).
       await touchSession(String(p.email_installateur || '').trim().toLowerCase(), simplifyUA(req.headers['user-agent']), { type: p.type_client, draftRecId: recId });
+      // Statut de validation par document (sur chaque ligne Documents) — best-effort.
+      if (Array.isArray(p.docStatuts) && p.docStatuts.length) {
+        var SVROW = { ok: 'Conforme', a_verifier: 'À vérifier', ko: 'Non conforme' };
+        await Promise.all(p.docStatuts.map(function (d) {
+          if (!d || !d.id) return null;
+          var df = { 'Statut validation': SVROW[d.statut] || 'Non vérifié' };
+          if (d.controles != null) df['Contrôles'] = (typeof d.controles === 'string') ? d.controles : JSON.stringify(d.controles);
+          if (typeof d.confiance === 'number') df['Confiance'] = d.confiance;
+          return fetch(tbl(DOCS_TABLE), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: d.id, fields: df }], typecast: true }) }).catch(function () {});
+        }));
+      }
       return res.status(200).json({ ok: true, id: recId });
     }
 

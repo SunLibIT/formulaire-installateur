@@ -2555,6 +2555,14 @@ function docLabelFor(key){
   var lblEl=card?card.querySelector('.cnu-title'):null;
   return (lblEl?lblEl.textContent:key).replace(/\*/g,'').replace(/\s+/g,' ').trim();
 }
+/* Abonné concerné (+ face) pour une pièce d'abonné (CNI) ; vide pour une pièce de dossier. */
+function docAboFor(key){
+  if(!isCniKey(key)) return '';
+  var uid=cniUidOf(key), face=cniFaceOf(key), a=null;
+  for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ a=abos[i]; break; } }
+  var who=a?(((a.prenom||'')+' '+(a.nom||'')).trim()):'';
+  return (who||'Abonné')+' — '+face;
+}
 /* Upload d'un fichier pour une pièce. opts.single : un seul fichier (remplace l'existant via prevId). */
 function uploadFileFor(key,f,opts){
   opts=opts||{};
@@ -2574,7 +2582,7 @@ function uploadFileFor(key,f,opts){
     var b64=String(rd.result).split(',')[1]||'';
     fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||v('sl-email-cr')||'',
-      key:key, label:label, filename:f.name, contentType:f.type||'application/octet-stream', dataBase64:b64, prevId:prevId
+      key:key, label:label, scope:(isCniKey(key)?'Abonné':'Dossier'), abo:docAboFor(key), filename:f.name, contentType:f.type||'application/octet-stream', dataBase64:b64, prevId:prevId
     })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
       if(resp&&resp.ok){
         var l=getDocList(key);
@@ -3009,6 +3017,48 @@ function docsBlockReason(){
   }
   return null;
 }
+/* Statut de validation par FICHIER (pour la table Documents) : [{id, statut, controles, confiance}]. */
+function buildDocStatuts(){
+  var out=[];
+  Object.keys(docs).forEach(function(k){
+    var list=getDocList(k);
+    if(isCniKey(k)){
+      list.forEach(function(it){ if(!it||!it.id) return; var vf=it._verdict; var st=vf?((vf.lisible===false||vf.estPiece===false)?'ko':'ok'):null;
+        out.push({id:it.id, statut:st, controles:(vf?JSON.stringify(vf.full||vf):''), confiance:(vf&&vf.full&&typeof vf.full.confiance==='number')?vf.full.confiance:null}); });
+    } else if(DOC_VERIFY[k]){
+      var v=docVerdicts[k];
+      list.forEach(function(it){ if(!it||!it.id) return; out.push({id:it.id, statut:(v?v.statut:null), controles:(v?JSON.stringify(v.controles||[]):''), confiance:(v&&typeof v.confianceExtraction==='number')?v.confianceExtraction:null}); });
+    } else {
+      list.forEach(function(it){ if(!it||!it.id) return; out.push({id:it.id, statut:null, controles:'', confiance:null}); });
+    }
+  });
+  return out;
+}
+/* Rapport de validation du dossier (persisté sur la fiche pour le routage) : {statutGlobal, pointsBloquants, rapport}. */
+function buildValidation(){
+  var pb=[];
+  var c=(ct==='part')?cniBlockReason():null; if(c) pb.push(c);
+  var d=docsBlockReason(); if(d) pb.push(d);
+  var documents=[], anyAV=false;
+  Object.keys(DOC_VERIFY).forEach(function(k){
+    if(!getDocList(k).length) return;
+    var v=docVerdicts[k];
+    if(v&&v.ok===true){ documents.push({type:v.type, cle:k, statut:v.statut, controles:v.controles||[]}); if(v.statut==='a_verifier') anyAV=true; }
+    else documents.push({type:DOC_VERIFY[k], cle:k, statut:'non_verifie'});
+  });
+  if(ct==='part'){
+    for(var i=0;i<abos.length;i++){ var a=abos[i], uid=a.uid; if(!uid) continue;
+      var label=((a.prenom||'')+' '+(a.nom||'')).trim()||('Abonné '+(i+1));
+      var res=aboCniIssues(uid,label);
+      var st=res.block.length?'non_conforme':((res.missing.length||res.warn.length)?'a_verifier':'conforme');
+      if(st==='a_verifier') anyAV=true;
+      documents.push({type:'CNI', abonne:label, statut:st, points:res.block.concat(res.warn)});
+    }
+  }
+  var statutGlobal = pb.length ? 'non_conforme' : (anyAV ? 'a_verifier' : 'conforme');
+  var synth = pb.length ? ('À corriger : '+pb.join(' ; ')) : (anyAV ? 'Dossier à vérifier (contrôles non concluants).' : 'Dossier conforme.');
+  return { statutGlobal:statutGlobal, pointsBloquants:pb, rapport:{ documents:documents, syntheseHumaine:synth } };
+}
 
 var addr=document.getElementById('sl-addr'),pac=document.getElementById('sl-pac');
 var ICON_PIN_SM='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
@@ -3357,6 +3407,7 @@ window.slCreate=function(){
   if(btn){ btn.disabled=true; btn.setAttribute('aria-busy','true'); btn.innerHTML='<span class="btn-spin" aria-hidden="true"></span>Création…'; }
   var st=document.getElementById('sc6-status'); if(st){ st.className='foot-status'; st.textContent='Création du dossier en cours…'; }
   var p=buildDraftPayload(); p.status='submitted';   // même enregistrement que le brouillon, passé en « Soumis »
+  p.validation=buildValidation(); p.docStatuts=buildDocStatuts();   // persiste le verdict global + par fichier (B + C)
   saveDraft(p).then(function(){
     hideBusy();
     if(btn){ btn.removeAttribute('aria-busy'); btn.innerHTML=CHECK_SVG_SM+'Dossier créé'; }
