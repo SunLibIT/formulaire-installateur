@@ -204,6 +204,18 @@ async function handleUpload(p, res) {
   return res.status(200).json({ ok: true, id: last && last.id, filename: filename });
 }
 
+// Détecte le vrai type MIME à partir des octets (magic bytes). Le contentType déclaré par Airtable/
+// l'upload est parfois faux (ex. .png qui est en réalité un JPEG) → Claude rejette « media type mismatch ».
+function sniffMedia(buf, fallback) {
+  if (!buf || buf.length < 12) return fallback || 'application/octet-stream';
+  if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+  if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'application/pdf';
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'image/webp';
+  return fallback || 'application/octet-stream';
+}
+
 // Récupère les pièces jointes Airtable (par ids) et les renvoie en base64. Les URLs d'attachement
 // Airtable sont signées et lues juste-à-temps (fraîches). Client → proxy ne transporte que des ids
 // (léger) ; le proxy télécharge et envoie les base64 à n8n (Vercel n'a pas de limite de 4,5 Mo en sortie).
@@ -219,7 +231,7 @@ async function filesFromIds(table, draftId, ids) {
     var a = byId[ids[i]]; if (!a || !a.url) continue;
     var fr = await fetch(a.url); if (!fr.ok) continue;
     var buf = Buffer.from(await fr.arrayBuffer());
-    out.push({ dataBase64: buf.toString('base64'), contentType: a.type || 'application/octet-stream', filename: a.filename || '' });
+    out.push({ dataBase64: buf.toString('base64'), contentType: sniffMedia(buf, a.type), filename: a.filename || '' });   // type réel (magic bytes), pas le contentType déclaré
   }
   return out;
 }
