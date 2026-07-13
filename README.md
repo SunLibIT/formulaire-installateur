@@ -47,8 +47,8 @@ Deux **portées** de documents :
 | Document | Portée | Particulier | Pro | Formats | Contrôle du contenu |
 |---|---|:---:|:---:|---|---|
 | CNI de chaque abonné — **recto + verso séparés** | abonné | ✅ | — | PDF/JPG/PNG | **IA par face** (voir ci-dessous) |
-| Copie d'écran Google Maps — toiture | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
-| Étude personnalisée + calepinage PV | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
+| Copie d'écran Google Maps — toiture | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (vue aérienne, toiture ciblée, cohérence calepinage) |
+| Étude personnalisée + calepinage PV | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (calepinage, production/conso/taux, courbe, cash flow) |
 | Devis d'abonnement — Modèle SunLib | dossier | ✅ | ✅ | PDF | — |
 | Avis d'imposition — 4 pages ³ | dossier | ✅ | — | PDF | — |
 | Facture d'énergie de référence | dossier | ✅ | — | PDF/JPG/PNG | — |
@@ -67,11 +67,14 @@ Deux **portées** de documents :
 - **Avertissement non bloquant si** : recto et verso **inversés** (l'emplacement ne correspond pas à la face détectée) · nom détecté ≠ abonné.
 - **Dégradé** : si l'IA est indisponible, le recto + verso restent exigés mais les contrôles de contenu **ne bloquent pas**.
 
-**Contrôle IA des autres documents** (généralisé, 1ᵉʳ couvert : le **titre de propriété**) :
+**Contrôle IA des autres documents** (généralisé, extensible type par type) :
 
 - Chaque document concerné est analysé **à son dépôt** ; la carte affiche *en analyse → conforme / à vérifier / à revoir* + le détail des points à corriger.
-- Les données lues sont comparées aux **informations déjà saisies dans le formulaire** (nom de l'abonné, adresse du bien) — pas de CRM externe.
-- **Titre de propriété** — bloque la création si : ce n'est pas un **acte notarié** ou une **taxe foncière** · le **nom** ne correspond pas à l'abonné · l'**adresse** ne correspond pas au dossier · (taxe foncière) **pages manquantes** · document **illisible**. IA indisponible → non bloquant.
+- Les données lues sont comparées aux **informations déjà saisies dans le formulaire** (nom de l'abonné, adresse du bien) — pas de CRM externe. Certains contrôles croisent deux documents (ex. la copie Google Maps est comparée au **calepinage de l'étude**).
+- **Titre de propriété** — bloque si : ni **acte notarié** ni **taxe foncière** · **nom** ≠ abonné · **adresse** ≠ dossier · (taxe foncière) **pages manquantes** · **illisible**.
+- **Copie d'écran Google Maps** — bloque si : pas une **vue aérienne** · aucune **toiture ciblée** · **illisible**. Avertissement (non bloquant) si la vue ne semble pas cohérente avec le calepinage.
+- **Étude installateur** — bloque si un élément attendu est absent : **calepinage** lisible · **production** annuelle (kWh) · **consommation** annuelle (kWh) · **taux d'autoconsommation** · **courbe de charge** · **cash flow**.
+- Dans tous les cas : IA indisponible ou verdict indéterminé → **non bloquant**.
 
 ---
 

@@ -243,6 +243,11 @@ async function handleVerifyId(p, res) {
     return res.status(200).json({ ok: false, erreur: 'lecture', raison: 'Lecture des documents impossible.' });
   }
   if (!files.length) return res.status(200).json({ ok: false, erreur: 'aucun_fichier', raison: 'Aucun document à vérifier.' });
+  // Pièces de référence (contrôle croisé, ex. calepinage pour Google Maps) — best-effort, ne bloque pas si indisponible.
+  var refFiles = [];
+  if (Array.isArray(p.refIds) && p.refIds.length && p.draftId) {
+    try { refFiles = await filesFromIds(table, p.draftId, p.refIds); } catch (e) { refFiles = []; }
+  }
   var headers = { 'Content-Type': 'application/json' };
   if (N8N_ID_SECRET) headers[N8N_ID_HEADER] = N8N_ID_SECRET;
   var ctrl = new AbortController();
@@ -250,7 +255,7 @@ async function handleVerifyId(p, res) {
   try {
     var r = await fetch(N8N_ID_URL, {
       method: 'POST', headers: headers, signal: ctrl.signal,
-      body: JSON.stringify({ files: files, abonnes: Array.isArray(p.abonnes) ? p.abonnes : [], docType: p.docType || 'CNI', form: (p.form && typeof p.form === 'object') ? p.form : {} })
+      body: JSON.stringify({ files: files, refFiles: refFiles, abonnes: Array.isArray(p.abonnes) ? p.abonnes : [], docType: p.docType || 'CNI', form: (p.form && typeof p.form === 'object') ? p.form : {} })
     });
     if (!r.ok) {
       var t = ''; try { t = await r.text(); } catch (e) {}

@@ -107,8 +107,8 @@ Toutes les pièces : obligatoires, multi-fichiers. **Contrôles génériques** (
 | Document (clé `docs`) | Portée | Part. | Pro | Formats | Contenu |
 |---|---|:--:|:--:|---|---|
 | CNI **recto + verso par abonné** (`cni-recto-<uid>` / `cni-verso-<uid>`) | abonné | ✅ | — | PDF/JPG/PNG | **IA par face** (§ Feature CNI) |
-| Google Maps toiture (`maps` / `map-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
-| Calepinage PV (`calep` / `cal-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | — |
+| Google Maps toiture (`maps` / `map-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (§ docs génériques) — [CMP-ÉTUDE] vs calepinage |
+| Étude + calepinage (`calep` / `cal-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (§ docs génériques) — présence prod/conso/taux/courbe/cash-flow |
 | Devis abonnement (`devis` / `dev-pro`) | dossier | ✅ | ✅ | PDF | — |
 | Avis d'imposition (`impots`) ³ | dossier | ✅ | — | PDF | — |
 | Facture d'énergie (`elec`) | dossier | ✅ | — | PDF/JPG/PNG | — |
@@ -150,12 +150,16 @@ Contrôle IA de la pièce d'identité **par abonné et par face**. Voir la mémo
 
 Même infra que la CNI, généralisée aux **autres pièces** (1ᵉʳ document couvert : **titre de propriété**). Le principe des comparaisons est **[CMP-FORM]** : on compare la donnée lue sur le document aux **champs déjà saisis dans le formulaire** (source de vérité ; pas de CRM externe), transmis à l'upload.
 
-- **Front** : registre `DOC_VERIFY` (clé document → `docType`, ex. `{ prop:'TITRE_PROPRIETE' }`) — extensible pour les futurs documents. À l'ajout/retrait d'un tel document → `scheduleDocCheck(key)` → `doDocCheck(key)` POST `/api/drafts {action:'verifyid', docType, ids, form}` où `form` = `docFormContext()` (`{adresse, abonnes}` lus dans le formulaire). Verdict stocké dans `docVerdicts[key]` ; `renderDoc` affiche l'état (`analyse → conforme/à vérifier/à revoir`) + encadré des contrôles échoués. Blocage : `docsBlockReason()` (appelé dans `slCreate`) bloque si un document vérifié a `statut==='ko'`.
-- **Proxy** : `handleVerifyId` transmet `docType` + `form` au webhook (inchangé sinon). `docType` absent ⇒ `'CNI'` (rétrocompat).
+- **Front** : registre `DOC_VERIFY` (clé document → `docType`) — actuellement `{ prop:'TITRE_PROPRIETE', maps/'map-pro':'GOOGLE_MAPS', calep/'cal-pro':'ETUDE_INSTALLATEUR' }`. À l'ajout/retrait → `scheduleDocCheck(key)` → `doDocCheck(key)` POST `/api/drafts {action:'verifyid', docType, ids, refIds, form}` où `form` = `docFormContext()` (`{adresse, abonnes}`). Verdict dans `docVerdicts[key]` ; `renderDoc` affiche l'état (`analyse → conforme/à vérifier/à revoir`) + contrôles échoués. Blocage : `docsBlockReason()` (dans `slCreate`) si `statut==='ko'`.
+- **Contrôle croisé [CMP-DOC]/[CMP-ÉTUDE]** : `DOC_REFS` (ex. `{ maps:['calep'] }`) → `doDocCheck` joint les `refIds` (fichiers de la pièce de référence) ; le proxy les résout en `refFiles` transmis à l'IA. `scheduleDependents(key)` re-déclenche les docs qui référencent `key` (maj du calepinage → re-vérifie Google Maps).
+- **Proxy** : `handleVerifyId` transmet `docType` + `form` + `refFiles` (résolus depuis `refIds`) au webhook. `docType` absent ⇒ `'CNI'` (rétrocompat).
 - **Workflow n8n** (même workflow que la CNI, **un nœud par type**, cf. § précédent) : le Switch `Aiguiller par type` route vers `Extraction Titre` (outil `extraction_doc` par type) ; `Normaliser Titre` produit un verdict au **format « document » du schéma dossier** : `{ ok, type, statut:'ok'|'ko'|'a_verifier', confianceExtraction, donneesExtraites, controles:[{regle,libelle,type,statut,bloquant,valeurAttendue,valeurConstatee,detail,confiance}], raison }`. Le `form` est transporté jusqu'au normalize via `$('Extraction Titre').item.json.form` ; `docType` (pour le 2ᵉ Switch) via `$('Reception du document').item.json.body.docType`.
-- **TITRE_PROPRIETE — contrôles** : `type_document` (acte notarié OU taxe foncière) · `nom_form` ([CMP-FORM] nom = abonné) · `adresse_form` ([CMP-FORM] adresse = dossier) · `pages_completes` (si taxe foncière) · `lisible`. Tous bloquants ; `a_verifier` / IA indisponible → non bloquant.
+- **Types couverts & contrôles** (tous bloquants sauf mention ; `a_verifier` / IA indisponible → non bloquant) :
+  - `TITRE_PROPRIETE` : `type_document` (acte notarié OU taxe foncière) · `nom_form` [CMP-FORM] · `adresse_form` [CMP-FORM] · `pages_completes` (si taxe foncière) · `lisible`.
+  - `GOOGLE_MAPS` : `vue_aerienne` · `toiture_ciblee` · `coherence_calepinage` [CMP-ÉTUDE] (**non bloquant** : `a_verifier`, comparaison visuelle floue) · `lisible`. Reçoit le calepinage via `refFiles`.
+  - `ETUDE_INSTALLATEUR` (clé `calep`/`cal-pro`) : `calepinage` (présent + lisible) · `production_kwh` · `consommation_kwh` · `taux_autoconso` · `courbe_charge` · `cash_flow` · `lisible` (présence + extraction).
 - **Schéma dossier agrégé** (cible, non encore assemblé) : `{ dossierId, profil, statutGlobal, documents:[…], documentsManquants, pointsBloquants, syntheseHumaine }` — les verdicts par document (`docVerdicts` + CNI) en sont les briques.
-- **Étendre (ajouter un type de document)** : *(front)* ajouter la clé dans `DOC_VERIFY` ; *(n8n)* ajouter 2 nœuds Code (`Extraction <Type>` + `Normaliser <Type>`) et 1 branche à chacun des 2 Switch (case `docType` → ces nœuds), puis relier `Extraction <Type>` → `Analyse Claude Vision` et `Normaliser <Type>` → `Renvoie le verdict`. Webhook/secret/proxy inchangés.
+- **Étendre (ajouter un type de document)** : *(front)* ajouter la clé dans `DOC_VERIFY` (+ `DOC_REFS` si contrôle croisé) ; *(n8n)* ajouter 2 nœuds Code (`Extraction <Type>` + `Normaliser <Type>`) et 1 branche à chacun des 2 Switch (`updateNodeParameters replace:true` avec toutes les règles), puis relier `Extraction <Type>` → `Analyse Claude Vision` (sortie du 1ᵉʳ Switch) et `Normaliser <Type>` → `Renvoie le verdict` (sortie du 2ᵉ Switch). Travailler sur le **brouillon**, vérifier via `get_workflow_details`, puis `publish_workflow`. Webhook/secret/proxy inchangés.
 
 ## Pièges connus
 

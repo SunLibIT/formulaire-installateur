@@ -2562,7 +2562,7 @@ function uploadFileFor(key,f,opts){
         var l=getDocList(key);
         for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
         setDocList(key,l); renderDocZone(key); toast('Document enregistré');
-        if(isCniKey(key)) scheduleCniFaceCheck(key); else if(DOC_VERIFY[key]) scheduleDocCheck(key);
+        if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
       } else throw new Error('upload');
     }).catch(function(){ setDocList(key,getDocList(key).filter(function(x){return x._tmp!==tmp;})); renderDocZone(key); toast('Échec de l\'envoi : '+f.name); });
   };
@@ -2575,7 +2575,7 @@ function removeFileFor(key,idx){
     action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
   })}).catch(function(){}); }
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
-  if(isCniKey(key)) scheduleCniFaceCheck(key); else if(DOC_VERIFY[key]) scheduleDocCheck(key);
+  if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
 }
 /* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
    en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
@@ -2911,7 +2911,10 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR' };
+/* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
+   Ex. la copie Google Maps est comparée au calepinage de l'étude. */
+var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'] };
 var docVerdicts={}, _docTimers={}, _docSeqs={}, _docChecking={};
 /* Libellé lisible d'un document (pour les messages de blocage). */
 function docName(key){ var t=document.querySelector('#sl-root #uz-'+key+' .cnu-title'); return t?t.textContent.replace(/\*/g,'').replace(/\s+/g,' ').trim():key; }
@@ -2928,15 +2931,22 @@ function doDocCheck(key){
   var docType=DOC_VERIFY[key]; if(!docType) return;
   var ids=getDocList(key).map(function(x){return x.id;}).filter(Boolean);
   if(!ids.length){ docVerdicts[key]=null; _docChecking[key]=false; renderDoc(key); return; }
+  var refIds=[]; (DOC_REFS[key]||[]).forEach(function(rk){ getDocList(rk).forEach(function(x){ if(x.id) refIds.push(x.id); }); });   // pièces de référence (croisées)
   _docChecking[key]=true; docVerdicts[key]=null; renderDoc(key);
   var seq=(_docSeqs[key]=(_docSeqs[key]||0)+1);
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    action:'verifyid', draftId:getDraftId(), type_client:ct, docType:docType, ids:ids, form:docFormContext()
+    action:'verifyid', draftId:getDraftId(), type_client:ct, docType:docType, ids:ids, refIds:refIds, form:docFormContext()
   })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
     if(seq!==_docSeqs[key]) return; _docChecking[key]=false;
     docVerdicts[key]=(v&&v.ok===true)?v:null;   // ok!==true → dégradé (non bloquant)
     renderDoc(key);
   }).catch(function(){ if(seq!==_docSeqs[key]) return; _docChecking[key]=false; docVerdicts[key]=null; renderDoc(key); });
+}
+/* Re-déclenche la vérif des documents qui référencent `changedKey` (contrôle croisé). Ex. maj du calepinage → re-vérifie Google Maps. */
+function scheduleDependents(changedKey){
+  Object.keys(DOC_REFS).forEach(function(dep){
+    if((DOC_REFS[dep]||[]).indexOf(changedKey)>-1 && DOC_VERIFY[dep] && getDocList(dep).length) scheduleDocCheck(dep);
+  });
 }
 /* Motif de blocage si un document vérifié est non conforme (statut « ko »), sinon null. IA indispo → non bloquant. */
 function docsBlockReason(){
