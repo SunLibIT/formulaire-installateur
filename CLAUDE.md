@@ -132,6 +132,8 @@ Actions (POST `body.action`) + GET/DELETE :
 - `POST {action:'upload'}` → **crée une ligne `Documents`** (liée au dossier) + y attache le fichier (`typeForKey`/`scope`/`abo`/`key`). `prevId` → supprime l'ancienne ligne (remplacement). Renvoie l'id de ligne.
 - `POST {action:'verifyid'}` → vérification IA (voir plus bas) ; `filesFromIds` lit les fichiers **par id de ligne** `Documents`.
 - `POST {action:'removedoc'}` → **supprime la ligne** `Documents` (par id).
+- `POST {action:'docverdict', items:[{id,statut,controles,confiance}]}` → **écrit le verdict sur les lignes** `Documents` ; appelé par le front **dès qu'une analyse se termine** (`persistDocVerdict`), pour persister sans attendre la création.
+- `POST {action:'getdocverdicts', draftId}` → relit les verdicts persistés (`[{id,controles,statut}]`) ; à la reprise, `restoreDocVerdicts()` les restaure et **ne relance l'IA que sur les documents sans verdict stocké** (plus de re-trigger complet). `Contrôles` stocke le **verdict front complet** (JSON) pour permettre cette restauration.
 - `DELETE ?id=&type=` → supprime un brouillon.
 
 Verdict persisté (schéma dossier) : sur `Particulier`/`Pro` — `Statut validation` (Conforme/À vérifier/Non conforme), `Points bloquants`, `Rapport validation` (JSON), `Validé le` ; front `buildValidation()` + `buildDocStatuts()` (envoyés à la **création**). `sniffMedia` corrige le `media_type` (magic bytes) avant l'appel Claude.

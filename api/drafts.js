@@ -326,6 +326,37 @@ async function handleRemoveDoc(p, res) {
   }
 }
 
+const SV_ROW = { ok: 'Conforme', a_verifier: 'À vérifier', ko: 'Non conforme' };
+
+// Écrit le verdict de validation sur des LIGNES Documents (par id) — appelé dès qu'une analyse IA se termine,
+// pour persister le résultat sans attendre la création (et éviter de tout re-analyser à la reprise).
+async function handleDocVerdict(p, res) {
+  var items = Array.isArray(p.items) ? p.items : [];
+  try {
+    await Promise.all(items.map(function (d) {
+      if (!d || !d.id) return null;
+      var df = { 'Statut validation': SV_ROW[d.statut] || 'Non vérifié' };
+      if (d.controles != null) df['Contrôles'] = (typeof d.controles === 'string') ? d.controles : JSON.stringify(d.controles);
+      if (typeof d.confiance === 'number') df['Confiance'] = d.confiance;
+      return fetch(tbl(DOCS_TABLE), { method: 'PATCH', headers: H, body: JSON.stringify({ records: [{ id: d.id, fields: df }], typecast: true }) }).catch(function () {});
+    }));
+    return res.status(200).json({ ok: true });
+  } catch (e) { return res.status(200).json({ ok: false }); }
+}
+
+// Relit les verdicts déjà persistés d'un dossier (par ID Brouillon) → { docs:[{id, controles, statut}] }.
+// Permet à la reprise de restaurer les verdicts sans relancer l'IA.
+async function handleGetDocVerdicts(p, res) {
+  var draftId = String(p.draftId || '').trim();
+  if (!draftId) return res.status(200).json({ docs: [] });
+  try {
+    var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
+    var d = await atGet(tbl(DOCS_TABLE) + '?pageSize=200&filterByFormula=' + formula);
+    var out = (d.records || []).map(function (r) { var f = r.fields || {}; return { id: r.id, controles: f['Contrôles'] || '', statut: f['Statut validation'] || '' }; });
+    return res.status(200).json({ docs: out });
+  } catch (e) { return res.status(200).json({ docs: [] }); }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -345,9 +376,11 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       var p = (typeof req.body === 'string') ? JSON.parse(req.body || '{}') : (req.body || {});
-      if (p.action === 'verifyid') return handleVerifyId(p, res);   // vérification IA de la CNI (n8n + Claude)
-      if (p.action === 'removedoc') return handleRemoveDoc(p, res);   // retrait d'une pièce jointe (CNI multi)
-      if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document (pièce jointe)
+      if (p.action === 'verifyid') return handleVerifyId(p, res);   // vérification IA d'un document (n8n + Claude)
+      if (p.action === 'removedoc') return handleRemoveDoc(p, res);   // suppression d'une ligne Documents
+      if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document → ligne Documents
+      if (p.action === 'docverdict') return handleDocVerdict(p, res);   // persiste le verdict après analyse
+      if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
       var fields = fieldsFromPayload(p);

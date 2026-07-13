@@ -2952,6 +2952,7 @@ function doCniFaceCheck(key){
       } else { it._verdict=null; }   // IA indisponible → pas de verdict (non bloquant)
     }
     renderCniSlot(key); renderAboAggregate(uid);
+    if(it&&it.id&&it._verdict) persistDocVerdict([{ id:it.id, statut:((it._verdict.lisible===false||it._verdict.estPiece===false)?'ko':'ok'), controles:JSON.stringify(it._verdict), confiance:(it._verdict.full&&typeof it._verdict.full.confiance==='number')?it._verdict.full.confiance:null }]);
   }).catch(function(){ if(seq!==_cniSeqs[key]) return; _cniChecking[key]=false; renderCniSlot(key); renderAboAggregate(uid); });
 }
 /* Motif de blocage (string) si un abonné n'a pas de CNI conforme, sinon null. IA indispo → non bloquant. */
@@ -3000,7 +3001,31 @@ function doDocCheck(key){
     if(seq!==_docSeqs[key]) return; _docChecking[key]=false;
     docVerdicts[key]=(v&&v.ok===true)?v:null;   // ok!==true → dégradé (non bloquant)
     renderDoc(key);
+    if(docVerdicts[key]){ var _v=docVerdicts[key]; var items=getDocList(key).filter(function(x){return x.id;}).map(function(x){ return {id:x.id, statut:_v.statut, controles:JSON.stringify(_v), confiance:(typeof _v.confianceExtraction==='number')?_v.confianceExtraction:null}; }); if(items.length) persistDocVerdict(items); }
   }).catch(function(){ if(seq!==_docSeqs[key]) return; _docChecking[key]=false; docVerdicts[key]=null; renderDoc(key); });
+}
+/* Persiste le verdict sur les lignes Documents (auto, dès qu'une analyse se termine) — fire-and-forget. */
+function persistDocVerdict(items){
+  try{ fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'docverdict', items:items})}).catch(function(){}); }catch(e){}
+}
+/* Reprise : relit les verdicts déjà persistés (table Documents) → restaure sans relancer l'IA ;
+   ne re-vérifie que ce qui n'a pas de verdict stocké. */
+function restoreDocVerdicts(draftId){
+  var recheck=function(){
+    Object.keys(docs).forEach(function(k){ if(!getDocList(k).length) return;
+      if(isCniKey(k)){ if(!(getDocList(k)[0]||{})._verdict) scheduleCniFaceCheck(k); }
+      else if(DOC_VERIFY[k]){ if(!docVerdicts[k]) scheduleDocCheck(k); }
+    });
+  };
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getdocverdicts', draftId:draftId})})
+  .then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(resp){
+    var byId={}; ((resp&&resp.docs)||[]).forEach(function(x){ byId[x.id]=x; });
+    Object.keys(docs).forEach(function(k){ getDocList(k).forEach(function(it){
+      if(!it||!it.id) return; var row=byId[it.id]; if(!row||!row.controles) return;
+      try{ var vd=JSON.parse(row.controles); if(isCniKey(k)) it._verdict=vd; else docVerdicts[k]=vd; }catch(e){}
+    }); });
+    renderAbonneDocs(); syncDocZones(); recheck();
+  }).catch(recheck);
 }
 /* Re-déclenche la vérif des documents qui référencent `changedKey` (contrôle croisé). Ex. maj du calepinage → re-vérifie Google Maps. */
 function scheduleDependents(changedKey){
@@ -3610,10 +3635,7 @@ function hydrateDraft(p){
       Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
       renderAbonneDocs();   // reconstruit les cartes CNI par abonné (clés cni-recto/verso-<uid>)
       syncDocZones();
-      Object.keys(docs).forEach(function(k){                       // re-vérifie à la reprise
-        if(isCniKey(k) && getDocList(k).length) scheduleCniFaceCheck(k);
-        else if(DOC_VERIFY[k] && getDocList(k).length) scheduleDocCheck(k);
-      });
+      restoreDocVerdicts(p.draftId || getDraftId());   // restaure les verdicts persistés ; ne re-analyse que le manquant
     }
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){
