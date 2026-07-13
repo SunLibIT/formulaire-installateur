@@ -49,7 +49,7 @@ Deux **portées** de documents :
 | CNI de chaque abonné — **recto + verso séparés** | abonné | ✅ | — | PDF/JPG/PNG | **IA par face** (voir ci-dessous) |
 | Copie d'écran Google Maps — toiture | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (vue aérienne, toiture ciblée, cohérence calepinage) |
 | Étude personnalisée + calepinage PV | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (calepinage, production/conso/taux, courbe, cash flow) |
-| Devis d'abonnement — Modèle SunLib | dossier | ✅ | ✅ | PDF | — |
+| Devis d'abonnement — Modèle SunLib | dossier | ✅ | ✅ | PDF | **IA** (signature, total HT = 0, montant/durée, matériel) |
 | Avis d'imposition — 4 pages ³ | dossier | ✅ | — | PDF | — |
 | Facture d'énergie de référence | dossier | ✅ | — | PDF/JPG/PNG | — |
 | Titre de propriété | dossier | ✅ | — | PDF | **IA** (voir ci-dessous) |
@@ -74,7 +74,10 @@ Deux **portées** de documents :
 - **Titre de propriété** — bloque si : ni **acte notarié** ni **taxe foncière** · **nom** ≠ abonné · **adresse** ≠ dossier · (taxe foncière) **pages manquantes** · **illisible**.
 - **Copie d'écran Google Maps** — bloque si : pas une **vue aérienne** · aucune **toiture ciblée** · **illisible**. Avertissement (non bloquant) si la vue ne semble pas cohérente avec le calepinage.
 - **Étude installateur** — bloque si un élément attendu est absent : **calepinage** lisible · **production** annuelle (kWh) · **consommation** annuelle (kWh) · **taux d'autoconsommation** · **courbe de charge** · **cash flow**.
+- **Devis d'abonnement** (particulier) — bloque si : **non signé** · **total HT ≠ 0 €** (modèle abonnement) · **durée** ≠ dossier · **liste du matériel** (panneaux + onduleurs) absente. Avertissement si le **montant d'abonnement** diffère de la mensualité estimée.
 - Dans tous les cas : IA indisponible ou verdict indéterminé → **non bloquant**.
+
+Une **aide contextuelle** (bouton « i » + exemple au survol) est affichée sur la pièce *Copie d'écran Google Maps* pour guider l'installateur.
 
 ---
 

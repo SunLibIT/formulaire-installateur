@@ -750,6 +750,24 @@
     #sl-root .uz-card[data-state="nonconform"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
     #sl-root .uz-card[data-state="nonconform"] .cnu-body .cnu-callout, #sl-root .uz-card[data-state="incomplete"] .cnu-body .cnu-callout, #sl-root .uz-card[data-state="conform"] .cnu-body .cnu-callout { margin-top: 10px !important; }
 
+    /* ── Info-bulle « exemple attendu » (bouton i + popup au survol) — aide sur la pièce Google Maps ── */
+    #sl-root .sun-tip { position: relative !important; display: inline-flex !important; vertical-align: middle !important; }
+    #sl-root .sun-tip__icon { display: inline-flex !important; align-items: center !important; justify-content: center !important; width: 18px !important; height: 18px !important; padding: 0 !important; border: none !important; border-radius: 50% !important; background: #d97706 !important; color: #fff !important; cursor: pointer !important; font-family: Georgia, "Times New Roman", serif !important; font-size: 12px !important; font-weight: 700 !important; font-style: italic !important; line-height: 1 !important; transition: background .15s ease !important; }
+    #sl-root .sun-tip__icon:hover { background: var(--amber) !important; }
+    #sl-root .sun-tip__icon:focus-visible { outline: 2px solid var(--amber) !important; outline-offset: 2px !important; }
+    #sl-root .sun-tip__popup { position: absolute !important; top: calc(100% + 10px) !important; left: 50% !important; transform: translateX(-50%) translateY(4px) !important; width: 300px !important; max-width: 88vw !important; background: #fff !important; border: 1px solid var(--line) !important; border-radius: 12px !important; box-shadow: 0 10px 30px rgba(15,23,42,.18) !important; padding: 12px !important; z-index: 50 !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; transition: opacity .16s ease, transform .16s ease, visibility .16s !important; text-align: left !important; }
+    #sl-root .sun-tip:hover .sun-tip__popup, #sl-root .sun-tip:focus-within .sun-tip__popup { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; transform: translateX(-50%) translateY(0) !important; }
+    #sl-root .sun-tip__popup::before { content: "" !important; position: absolute !important; bottom: 100% !important; left: 50% !important; transform: translateX(-50%) !important; border: 8px solid transparent !important; border-bottom-color: #e6e6e6 !important; }
+    #sl-root .sun-tip__popup::after { content: "" !important; position: absolute !important; bottom: 100% !important; left: 50% !important; transform: translateX(-50%) !important; border: 7px solid transparent !important; border-bottom-color: #fff !important; }
+    #sl-root .sun-tip__title { display: flex !important; align-items: center !important; gap: 6px !important; font-size: 12.5px !important; font-weight: 700 !important; color: var(--ink) !important; margin: 2px 2px 9px !important; }
+    #sl-root .sun-tip__title span { color: var(--green) !important; font-size: 14px !important; }
+    #sl-root .sun-tip__img { border: 1px solid var(--line) !important; border-radius: 8px !important; overflow: hidden !important; line-height: 0 !important; }
+    #sl-root .sun-tip__img svg { display: block !important; width: 100% !important; height: auto !important; }
+    #sl-root .sun-tip__points { list-style: none !important; margin: 10px 2px 2px !important; padding: 0 !important; display: flex !important; flex-direction: column !important; gap: 5px !important; }
+    #sl-root .sun-tip__points li { position: relative !important; padding-left: 18px !important; font-size: 11.5px !important; color: var(--ink-soft) !important; line-height: 1.35 !important; }
+    #sl-root .sun-tip__points li::before { content: "\2714" !important; position: absolute !important; left: 0 !important; top: 0 !important; color: var(--green) !important; font-size: 11px !important; font-weight: 700 !important; }
+    @media (prefers-reduced-motion: reduce) { #sl-root .sun-tip__popup { transition: opacity .01s !important; } #sl-root .sun-tip__icon { transition: none !important; } }
+
     /* ── ÉTAPE 3 : ADRESSE ── */
     /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
     #sl-root .sl-sunlogo { position: absolute !important; top: -22px !important; right: -18px !important; width: 150px !important; height: 150px !important; z-index: 0 !important; pointer-events: none !important; }
@@ -2577,6 +2595,38 @@ function removeFileFor(key,idx){
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
   if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
 }
+/* Info-bulle « exemple attendu » (bouton i + popup au survol) pour la pièce Google Maps.
+   sfx = clé du document → IDs SVG uniques (pas de doublon d'id entre part/pro). */
+function mapsTipHTML(sfx){
+  var pid='sun-tip-example_'+sfx, fid='sunShadow_'+sfx;
+  return '<span class="sun-tip">'+
+    '<button type="button" class="sun-tip__icon" aria-label="Voir un exemple de capture attendue" aria-describedby="'+pid+'" onclick="return false;">i</button>'+
+    '<span class="sun-tip__popup" role="tooltip" id="'+pid+'">'+
+      '<span class="sun-tip__title"><span>✔</span> Exemple de capture attendue</span>'+
+      '<span class="sun-tip__img">'+
+        '<svg viewBox="0 0 320 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vue satellite d\'une maison avec le repère rouge posé dessus et l\'adresse affichée en haut">'+
+        '<defs><filter id="'+fid+'" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.25"/></filter></defs>'+
+        '<rect x="0" y="0" width="320" height="210" fill="#6f8f57"/>'+
+        '<ellipse cx="70" cy="120" rx="70" ry="45" fill="#65834b" opacity=".55"/><ellipse cx="240" cy="60" rx="70" ry="40" fill="#88a061" opacity=".6"/><ellipse cx="180" cy="185" rx="90" ry="35" fill="#6a8850" opacity=".5"/>'+
+        '<rect x="250" y="-15" width="90" height="62" fill="#6f6456"/><line x1="250" y1="16" x2="340" y2="16" stroke="#463f38" stroke-width="1.2"/><line x1="272" y1="-15" x2="272" y2="47" stroke="#514a41" stroke-width=".8" opacity=".7"/>'+
+        '<rect x="0" y="158" width="320" height="8" fill="#c7c3b8"/><rect x="0" y="166" width="320" height="44" fill="#a6a299"/><line x1="0" y1="188" x2="320" y2="188" stroke="#d6d3c8" stroke-width="2" stroke-dasharray="12 11" opacity=".7"/>'+
+        '<rect x="138" y="138" width="34" height="20" fill="#b6b2a8"/>'+
+        '<ellipse cx="52" cy="76" rx="16" ry="6" fill="#000" opacity=".16"/><circle cx="48" cy="70" r="16" fill="#4e7a32"/><circle cx="43" cy="65" r="8" fill="#416828" opacity=".55"/>'+
+        '<ellipse cx="276" cy="133" rx="13" ry="5" fill="#000" opacity=".16"/><circle cx="272" cy="128" r="13" fill="#4e7a32"/><circle cx="268" cy="124" r="6" fill="#416828" opacity=".55"/><circle cx="232" cy="58" r="9" fill="#4e7a32"/>'+
+        '<polygon points="108,74 204,74 180,107 132,107" fill="#857a6c"/><polygon points="108,140 204,140 180,107 132,107" fill="#5c554b"/><polygon points="108,74 132,107 108,140" fill="#726859"/><polygon points="204,74 180,107 204,140" fill="#6a6156"/>'+
+        '<line x1="132" y1="107" x2="180" y2="107" stroke="#443d34" stroke-width="1.3"/><line x1="132" y1="107" x2="108" y2="74" stroke="#4a433a" stroke-width="1"/><line x1="132" y1="107" x2="108" y2="140" stroke="#4a433a" stroke-width="1"/><line x1="180" y1="107" x2="204" y2="74" stroke="#4a433a" stroke-width="1"/><line x1="180" y1="107" x2="204" y2="140" stroke="#4a433a" stroke-width="1"/>'+
+        '<polygon points="108,74 204,74 204,140 108,140" fill="none" stroke="#423b33" stroke-width="1.5"/><rect x="170" y="88" width="7" height="7" fill="#3f3931"/>'+
+        '<ellipse cx="156" cy="109" rx="8" ry="3" fill="#000" opacity=".28"/>'+
+        '<g transform="translate(138.6,76.1) scale(1.45)"><path d="M12 2 C8.13 2 5 5.13 5 9 c0 5.25 7 13 7 13 s7-7.75 7-13 c0-3.87-3.13-7-7-7 Z" fill="#ea4335" stroke="#b31412" stroke-width=".6"/><circle cx="12" cy="9" r="2.6" fill="#b31412"/><ellipse cx="9" cy="5.5" rx="2.6" ry="1.7" fill="#fff" opacity=".28"/></g>'+
+        '<rect x="12" y="12" width="236" height="30" rx="16" ry="16" fill="#fff" filter="url(#'+fid+')"/><circle cx="31" cy="27" r="6" fill="none" stroke="#5f6368" stroke-width="2"/><line x1="35" y1="31" x2="39.5" y2="35.5" stroke="#5f6368" stroke-width="2" stroke-linecap="round"/><text x="50" y="31" font-family="Arial, sans-serif" font-size="10.5" font-weight="500" fill="#3c4043">12 Rue de l\'Exemple, 00000 Ville</text>'+
+        '<rect x="296" y="120" width="16" height="16" rx="3" fill="#fff" filter="url(#'+fid+')"/><line x1="304" y1="123.5" x2="304" y2="132.5" stroke="#5f6368" stroke-width="1.4"/><line x1="299.5" y1="128" x2="308.5" y2="128" stroke="#5f6368" stroke-width="1.4"/><rect x="296" y="138" width="16" height="16" rx="3" fill="#fff" filter="url(#'+fid+')"/><line x1="299.5" y1="146" x2="308.5" y2="146" stroke="#5f6368" stroke-width="1.4"/>'+
+        '<line x1="14" y1="199" x2="54" y2="199" stroke="#3c4043" stroke-width="1.5"/><line x1="14" y1="195.5" x2="14" y2="199" stroke="#3c4043" stroke-width="1.5"/><line x1="54" y1="195.5" x2="54" y2="199" stroke="#3c4043" stroke-width="1.5"/><text x="58" y="202" font-family="Arial, sans-serif" font-size="8.5" fill="#3c4043">20 m</text>'+
+        '</svg>'+
+      '</span>'+
+      '<ul class="sun-tip__points"><li>La maison est bien visible en vue satellite.</li><li>Le repère rouge est posé sur la maison.</li><li>L\'adresse est affichée en haut de l\'image.</li></ul>'+
+    '</span>'+
+  '</span>';
+}
 /* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
    en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
 function upgradeDocZones(){
@@ -2591,7 +2641,7 @@ function upgradeDocZones(){
     var icoS=_cnuEl('span','cnu-ico'); icoS.setAttribute('aria-hidden','true'); icoS.innerHTML=icoHtml; head.appendChild(icoS);
     var ht=_cnuEl('div','cnu-htext');
     var tr=_cnuEl('div','cnu-titrow');
-    var ti=_cnuEl('span','cnu-title'); ti.innerHTML=lblHtml; tr.appendChild(ti);
+    var ti=_cnuEl('span','cnu-title'); ti.innerHTML=lblHtml; if(key==='maps'||key==='map-pro') ti.insertAdjacentHTML('beforeend',' '+mapsTipHTML(key)); tr.appendChild(ti);
     var pill=_cnuEl('span','cnu-pill'); pill.setAttribute('data-pill',''); tr.appendChild(pill);
     ht.appendChild(tr);
     if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
@@ -2911,7 +2961,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'] };
@@ -2923,7 +2973,9 @@ function docFormContext(){
   try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
   var adresse=[v('sl-num'),v('sl-rue'),v('sl-cp'),v('sl-commune')].filter(Boolean).join(' ');
   var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
-  return { adresse:adresse, abonnes:abonnes };
+  var duree=v('sl-duree')||'';
+  var mensualite=(simResult&&simResult.mTTC!=null)?{ht:+(+simResult.mHT).toFixed(2),ttc:+(+simResult.mTTC).toFixed(2)}:null;
+  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite };
 }
 /* Analyse IA d'un document (débouncée par clé) → verdict au format « document » du schéma. */
 function scheduleDocCheck(key){ if(!DOC_VERIFY[key]) return; clearTimeout(_docTimers[key]); _docTimers[key]=setTimeout(function(){ doDocCheck(key); },600); }
