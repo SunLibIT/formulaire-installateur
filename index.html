@@ -741,6 +741,14 @@
     #sl-root .cni-slot[data-state="conform"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
     #sl-root .cni-slot[data-state="nonconform"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
     #sl-root .cni-slot .cnu-body { margin-top: 12px !important; display: flex !important; flex-direction: column !important; gap: 10px !important; }
+    /* Documents génériques vérifiés par IA : la bordure suit le verdict (comme les slots CNI) */
+    #sl-root .uz.uz-card[data-state="analyzing"], #sl-root .uz.uz-card[data-state="incomplete"] { border-color: var(--amber-border) !important; }
+    #sl-root .uz.uz-card[data-state="conform"] { border-color: var(--green) !important; }
+    #sl-root .uz.uz-card[data-state="nonconform"] { border-color: var(--red-border) !important; }
+    #sl-root .uz-card[data-state="analyzing"] .cnu-ico, #sl-root .uz-card[data-state="incomplete"] .cnu-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
+    #sl-root .uz-card[data-state="conform"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
+    #sl-root .uz-card[data-state="nonconform"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
+    #sl-root .uz-card[data-state="nonconform"] .cnu-body .cnu-callout, #sl-root .uz-card[data-state="incomplete"] .cnu-body .cnu-callout, #sl-root .uz-card[data-state="conform"] .cnu-body .cnu-callout { margin-top: 10px !important; }
 
     /* ── ÉTAPE 3 : ADRESSE ── */
     /* Soleil-logo de progression (rayons qui s'allument) dans l'en-tête */
@@ -1906,7 +1914,7 @@ function createSun(svg,opts){
 function resetForm(){
   abos=[{id:1,uid:_uuid(),civ:'',nom:'',prenom:'',email:'',tel:''}];aC=1;
   collabs=[];cC=0;
-  iType=null;geo=null;simResult=null;propT='oui';adr.located=false;docs={};
+  iType=null;geo=null;simResult=null;propT='oui';adr.located=false;docs={};docVerdicts={};_docChecking={};
   // Étape 4 : repartir sans type sélectionné (champs techniques masqués)
   tog('install-fields',false);['fl-pv','fl-pvbv','fl-pvb','fl-bat'].forEach(function(f){tog(f,false);});
   var nfw=document.getElementById('nf-warn');if(nfw)nfw.classList.remove('on');
@@ -2554,7 +2562,7 @@ function uploadFileFor(key,f,opts){
         var l=getDocList(key);
         for(var i=0;i<l.length;i++){ if(l[i]._tmp===tmp){ l[i].id=resp.id||null; l[i]._pending=false; delete l[i]._tmp; break; } }
         setDocList(key,l); renderDocZone(key); toast('Document enregistré');
-        if(isCniKey(key)) scheduleCniFaceCheck(key);
+        if(isCniKey(key)) scheduleCniFaceCheck(key); else if(DOC_VERIFY[key]) scheduleDocCheck(key);
       } else throw new Error('upload');
     }).catch(function(){ setDocList(key,getDocList(key).filter(function(x){return x._tmp!==tmp;})); renderDocZone(key); toast('Échec de l\'envoi : '+f.name); });
   };
@@ -2567,7 +2575,7 @@ function removeFileFor(key,idx){
     action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
   })}).catch(function(){}); }
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
-  if(isCniKey(key)) scheduleCniFaceCheck(key);
+  if(isCniKey(key)) scheduleCniFaceCheck(key); else if(DOC_VERIFY[key]) scheduleDocCheck(key);
 }
 /* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
    en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
@@ -2595,12 +2603,21 @@ function upgradeDocZones(){
     renderDoc(key);
   });
 }
-/* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »). */
+/* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »).
+   Pour un document VÉRIFIÉ par IA (DOC_VERIFY), intègre l'état conforme/à vérifier/non conforme. */
 function renderDoc(key){
   var card=document.getElementById('uz-'+key); if(!card) return;
   var list=getDocList(key);
   var anyPending=list.some(function(x){return x._pending;});
-  var st = anyPending ? 'uploading' : (list.length ? 'ok' : 'empty');
+  var verify=DOC_VERIFY[key], vres=verify?docVerdicts[key]:null, checking=verify&&!!_docChecking[key];
+  var st;
+  if(anyPending) st='uploading';
+  else if(!list.length) st='empty';
+  else if(checking) st='analyzing';
+  else if(verify&&vres&&vres.statut==='ko') st='nonconform';
+  else if(verify&&vres&&vres.statut==='a_verifier') st='incomplete';
+  else if(verify&&vres&&vres.ok===true&&vres.statut==='ok') st='conform';
+  else st='ok';
   card.setAttribute('data-state',st);
   if(list.length) card.classList.add('ok'); else card.classList.remove('ok');
 
@@ -2608,6 +2625,10 @@ function renderDoc(key){
   if(pill){
     var P;
     if(st==='uploading') P={t:'Téléversement…',tone:'teal',ico:SPIN_SVG_SM,spin:true};
+    else if(st==='analyzing') P={t:'Analyse…',tone:'amber',ico:SPIN_SVG_SM,spin:true};
+    else if(st==='conform') P={t:'Vérifié',tone:'green',ico:CHECK_SVG_SM,spin:false};
+    else if(st==='nonconform') P={t:'À revoir',tone:'red',ico:XCIRCLE_SVG_SM,spin:false};
+    else if(st==='incomplete') P={t:'À vérifier',tone:'amber',ico:ALERT_SVG,spin:false};
     else if(st==='ok') P={t:(list.length>1?(list.length+' documents'):'Enregistré'),tone:'green',ico:CHECK_SVG_SM,spin:false};
     else P={t:'En attente',tone:'neutral',ico:UPLOAD_SVG,spin:false};
     pill.className='cnu-pill t-'+P.tone;
@@ -2618,7 +2639,14 @@ function renderDoc(key){
   var body=card.querySelector('[data-body]');
   if(body){ body.innerHTML='';
     if(!list.length) body.appendChild(_docDropzone(key));
-    else list.forEach(function(item,idx){ body.appendChild(_docChip(key,item,idx,false)); });
+    else {
+      list.forEach(function(item,idx){ body.appendChild(_docChip(key,item,idx,false)); });
+      if(verify && vres){
+        if(st==='nonconform'){ var ko=(vres.controles||[]).filter(function(c){return c.statut==='ko';}).map(function(c){return c.detail||c.libelle;}); body.appendChild(_cnuCalloutList('red',ALERT_SVG,'À corriger :',ko.length?ko:['Document non conforme.'])); }
+        else if(st==='incomplete'){ var av=(vres.controles||[]).filter(function(c){return c.statut==='a_verifier';}).map(function(c){return c.detail||c.libelle;}); body.appendChild(_cnuCalloutList('amber',ALERT_SVG,'À vérifier :',av.length?av:['Vérification à confirmer.'])); }
+        else if(st==='conform'){ body.appendChild(_cnuCallout('info',SHIELD_SVG,'Document vérifié : conforme au dossier.')); }
+      }
+    }
   }
 
   var foot=card.querySelector('[data-foot]');
@@ -2877,6 +2905,45 @@ function cniBlockReason(){
     var res=aboCniIssues(uid,label);
     if(res.missing.length) return 'CNI de '+label+' : il manque '+res.missing.join(' et ')+'.';
     if(res.block.length) return 'CNI de '+label+' : '+res.block[0];
+  }
+  return null;
+}
+
+/* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
+/* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE' };
+var docVerdicts={}, _docTimers={}, _docSeqs={}, _docChecking={};
+/* Libellé lisible d'un document (pour les messages de blocage). */
+function docName(key){ var t=document.querySelector('#sl-root #uz-'+key+' .cnu-title'); return t?t.textContent.replace(/\*/g,'').replace(/\s+/g,' ').trim():key; }
+/* Données du formulaire transmises comme RÉFÉRENCE de comparaison (adresse + abonnés). */
+function docFormContext(){
+  try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
+  var adresse=[v('sl-num'),v('sl-rue'),v('sl-cp'),v('sl-commune')].filter(Boolean).join(' ');
+  var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
+  return { adresse:adresse, abonnes:abonnes };
+}
+/* Analyse IA d'un document (débouncée par clé) → verdict au format « document » du schéma. */
+function scheduleDocCheck(key){ if(!DOC_VERIFY[key]) return; clearTimeout(_docTimers[key]); _docTimers[key]=setTimeout(function(){ doDocCheck(key); },600); }
+function doDocCheck(key){
+  var docType=DOC_VERIFY[key]; if(!docType) return;
+  var ids=getDocList(key).map(function(x){return x.id;}).filter(Boolean);
+  if(!ids.length){ docVerdicts[key]=null; _docChecking[key]=false; renderDoc(key); return; }
+  _docChecking[key]=true; docVerdicts[key]=null; renderDoc(key);
+  var seq=(_docSeqs[key]=(_docSeqs[key]||0)+1);
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    action:'verifyid', draftId:getDraftId(), type_client:ct, docType:docType, ids:ids, form:docFormContext()
+  })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
+    if(seq!==_docSeqs[key]) return; _docChecking[key]=false;
+    docVerdicts[key]=(v&&v.ok===true)?v:null;   // ok!==true → dégradé (non bloquant)
+    renderDoc(key);
+  }).catch(function(){ if(seq!==_docSeqs[key]) return; _docChecking[key]=false; docVerdicts[key]=null; renderDoc(key); });
+}
+/* Motif de blocage si un document vérifié est non conforme (statut « ko »), sinon null. IA indispo → non bloquant. */
+function docsBlockReason(){
+  for(var k in DOC_VERIFY){ if(!DOC_VERIFY.hasOwnProperty(k)) continue;
+    var v=docVerdicts[k]; if(!v||v.ok!==true||v.statut!=='ko') continue;
+    var ko=(v.controles||[]).filter(function(c){return c.statut==='ko';})[0];
+    return docName(k)+' : '+((ko&&(ko.detail||ko.libelle))||'document non conforme.');
   }
   return null;
 }
@@ -3220,6 +3287,8 @@ window.slCreate=function(){
   if(!cert||!cert.checked||_creating) return;   // sécurité : case requise + un seul envoi
   var _cniReason=cniBlockReason();               // blocage si la vérif IA a un verdict négatif clair
   if(_cniReason){ slAlert(_cniReason,'Pièce d\'identité à vérifier'); return; }
+  var _docReason=docsBlockReason();              // blocage si un document vérifié est non conforme
+  if(_docReason){ slAlert(_docReason,'Document à vérifier'); return; }
   _creating=true;
   showBusy('Création du dossier…');   // bloque toute interaction pendant l'envoi
   var btn=document.getElementById('btn-create');
@@ -3428,7 +3497,10 @@ function hydrateDraft(p){
       Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
       renderAbonneDocs();   // reconstruit les cartes CNI par abonné (clés cni-recto/verso-<uid>)
       syncDocZones();
-      Object.keys(docs).forEach(function(k){ if(isCniKey(k) && getDocList(k).length) scheduleCniFaceCheck(k); });   // re-vérifie chaque face à la reprise
+      Object.keys(docs).forEach(function(k){                       // re-vérifie à la reprise
+        if(isCniKey(k) && getDocList(k).length) scheduleCniFaceCheck(k);
+        else if(DOC_VERIFY[k] && getDocList(k).length) scheduleDocCheck(k);
+      });
     }
     // Propriétaire (pro) : re-cliquer le tag correspondant pour restaurer l'état + l'UI
     if(p.type_client==='pro' && p.proprietaire){

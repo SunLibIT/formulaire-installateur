@@ -52,7 +52,7 @@ Deux **portées** de documents :
 | Devis d'abonnement — Modèle SunLib | dossier | ✅ | ✅ | PDF | — |
 | Avis d'imposition — 4 pages ³ | dossier | ✅ | — | PDF | — |
 | Facture d'énergie de référence | dossier | ✅ | — | PDF/JPG/PNG | — |
-| Titre de propriété | dossier | ✅ | — | PDF | — |
+| Titre de propriété | dossier | ✅ | — | PDF | **IA** (voir ci-dessous) |
 | Fiche technique batterie ¹ | dossier | ✅ | — | PDF/JPG/PNG | — |
 | Extrait Kbis (moins de 3 mois) ² | dossier | — | ✅ | PDF | — |
 
@@ -66,6 +66,12 @@ Deux **portées** de documents :
 - **Bloque la création du dossier si**, pour un abonné : recto **ou** verso manquant · un fichier illisible/flou · ce n'est pas une pièce d'identité · pièce non française · personne de **plus de 75 ans** · pièce **périmée** (avec la règle FR : CNI délivrée à un majeur entre 2004 et 2013 = validité + 5 ans).
 - **Avertissement non bloquant si** : recto et verso **inversés** (l'emplacement ne correspond pas à la face détectée) · nom détecté ≠ abonné.
 - **Dégradé** : si l'IA est indisponible, le recto + verso restent exigés mais les contrôles de contenu **ne bloquent pas**.
+
+**Contrôle IA des autres documents** (généralisé, 1ᵉʳ couvert : le **titre de propriété**) :
+
+- Chaque document concerné est analysé **à son dépôt** ; la carte affiche *en analyse → conforme / à vérifier / à revoir* + le détail des points à corriger.
+- Les données lues sont comparées aux **informations déjà saisies dans le formulaire** (nom de l'abonné, adresse du bien) — pas de CRM externe.
+- **Titre de propriété** — bloque la création si : ce n'est pas un **acte notarié** ou une **taxe foncière** · le **nom** ne correspond pas à l'abonné · l'**adresse** ne correspond pas au dossier · (taxe foncière) **pages manquantes** · document **illisible**. IA indisponible → non bloquant.
 
 ---
 

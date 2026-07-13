@@ -250,7 +250,7 @@ async function handleVerifyId(p, res) {
   try {
     var r = await fetch(N8N_ID_URL, {
       method: 'POST', headers: headers, signal: ctrl.signal,
-      body: JSON.stringify({ files: files, abonnes: Array.isArray(p.abonnes) ? p.abonnes : [] })
+      body: JSON.stringify({ files: files, abonnes: Array.isArray(p.abonnes) ? p.abonnes : [], docType: p.docType || 'CNI', form: (p.form && typeof p.form === 'object') ? p.form : {} })
     });
     if (!r.ok) {
       var t = ''; try { t = await r.text(); } catch (e) {}
