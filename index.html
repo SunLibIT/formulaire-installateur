@@ -688,6 +688,13 @@
     #sl-root .cnu-frm:hover, #sl-root .cnu-frm:focus-visible { color: var(--danger) !important; background: var(--red-bg) !important; }
     #sl-root .cnu-frm.is-confirm { color: #fff !important; background: var(--danger) !important; }
     #sl-root .cnu-frm svg { width: 14px !important; height: 14px !important; }
+    /* Bouton « Remplacer » par fichier (même comportement que Retirer, teinte teal) */
+    #sl-root .cnu-frep { flex: 0 0 auto !important; display: inline-flex !important; align-items: center !important; gap: 4px !important; border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; cursor: pointer !important; padding: 4px 7px !important; border-radius: 7px !important; font-size: 12px !important; font-weight: 600 !important; opacity: 0 !important; transition: color .15s, background .15s, opacity .15s !important; }
+    #sl-root .cnu-chip:hover .cnu-frep, #sl-root .cnu-chip:focus-within .cnu-frep { opacity: 1 !important; }
+    #sl-root .cnu-frep:hover, #sl-root .cnu-frep:focus-visible { color: var(--teal-ink) !important; background: var(--teal-soft) !important; }
+    #sl-root .cnu-frep svg { width: 14px !important; height: 14px !important; }
+    /* Écran tactile (pas de survol) : actions par fichier toujours visibles */
+    @media (hover: none) { #sl-root .cnu-frm, #sl-root .cnu-frep { opacity: 1 !important; } }
     #sl-root .cnu-analyzing { display: flex !important; flex-direction: column !important; gap: 6px !important; margin-top: 10px !important; }
     #sl-root .cnu-atext { display: inline-flex !important; align-items: center !important; gap: 6px !important; font-size: 12px !important; color: var(--amber) !important; }
     #sl-root .cnu-bar { position: relative !important; overflow: hidden !important; height: 4px !important; border-radius: 999px !important; background: var(--amber-border) !important; }
@@ -2498,6 +2505,7 @@ window.trig=function(id){var el=document.getElementById(id);if(el)el.click();};
 /* Applique l'état visuel « fourni » (coche verte + nom de fichier) à une zone .uz donnée. */
 /* ── Documents = cartes uploader MULTI-fichiers (design CNI généralisé). docs[key] = tableau. ── */
 var _upTmp = 0;
+var _replace = null;   // remplacement d'UN fichier précis : {key, id} posé au clic « Remplacer », consommé par onF
 function getDocList(key){ var v=docs?docs[key]:null; if(!v) return []; return Array.isArray(v)?v:[v]; }
 function setDocList(key,a){ docs[key]=a; }
 function renderDocZone(key){ if(isCniKey(key)){ renderCniSlot(key); renderAboAggregate(cniUidOf(key)); } else renderDoc(key); }
@@ -2531,6 +2539,12 @@ function _docChip(key,item,idx,vinfo){
   else if(tone==='bad'){ var stx=_cnuEl('span','cnu-fstate'); stx.innerHTML='<span style="color:var(--danger)">'+XCIRCLE_SVG_SM+'</span>'; chip.appendChild(stx); }
   else if(tone==='warn'){ var stw=_cnuEl('span','cnu-fstate'); stw.innerHTML='<span style="color:var(--amber)">'+ALERT_SVG+'</span>'; chip.appendChild(stw); }
   if(!item._pending){
+    if(!isCniKey(key)){   // « Remplacer » par fichier (les slots CNI ont déjà leur propre bouton Remplacer)
+      var rep2=_cnuEl('button','cnu-frep'); rep2.type='button'; rep2.setAttribute('aria-label','Remplacer '+(item.filename||'ce document'));
+      rep2.innerHTML=REFRESH_SVG; rep2.appendChild(_cnuEl('span',null,'Remplacer'));
+      rep2.onclick=(function(k,fid){ return function(e){ e.stopPropagation(); _replace={key:k,id:fid}; trig('f-'+k); }; })(key,item.id);
+      chip.appendChild(rep2);
+    }
     var rm=_cnuEl('button','cnu-frm'); rm.type='button'; rm.setAttribute('aria-label','Retirer '+(item.filename||'ce document'));
     rm.innerHTML=ICO_X; var rl=_cnuEl('span',null,'Retirer'); rm.appendChild(rl);
     rm.onclick=(function(k,i,btn,lbl){ return function(e){ e.stopPropagation();
@@ -2740,7 +2754,15 @@ function syncDocZones(){
   updateDocProgress();
 }
 /* Sélection/dépôt de fichiers → upload (append), multi-fichiers. */
-window.onF=function(inp,key){ var fs=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value=''; fs.forEach(function(f){ uploadFileFor(key,f); }); };
+window.onF=function(inp,key){
+  var fs=inp.files?Array.prototype.slice.call(inp.files):[]; inp.value='';
+  if(_replace && _replace.key===key){   // remplacement d'un fichier précis : retire l'ancien puis dépose le nouveau
+    var rp=_replace; _replace=null; var f=fs[0];
+    if(f){ var lst=getDocList(key), ix=-1; for(var j=0;j<lst.length;j++){ if(lst[j].id===rp.id){ ix=j; break; } } if(ix>-1) removeFileFor(key,ix); uploadFileFor(key,f); }
+    return;
+  }
+  fs.forEach(function(f){ uploadFileFor(key,f); });
+};
 function updateDocProgress(){
   var allUz=document.querySelectorAll('#sl-root .uz');
   var visible=[],done=0;
