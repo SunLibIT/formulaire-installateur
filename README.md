@@ -50,11 +50,12 @@ Deux **portées** de documents :
 | Copie d'écran Google Maps — toiture | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (vue aérienne, toiture ciblée, cohérence calepinage) |
 | Étude personnalisée + calepinage PV | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (calepinage, production/conso/taux, courbe, cash flow) |
 | Devis d'abonnement — Modèle SunLib | dossier | ✅ | ✅ | PDF | **IA** (signature, total HT = 0, montant/durée, matériel) |
-| Avis d'imposition — 4 pages ³ | dossier | ✅ | — | PDF | — |
+| Avis d'imposition ³ | dossier | ✅ | — | PDF | **IA** (avis complet, nom cohérent, solvabilité) |
 | Facture d'énergie de référence | dossier | ✅ | — | PDF/JPG/PNG | — |
 | Titre de propriété | dossier | ✅ | — | PDF | **IA** (voir ci-dessous) |
 | Fiche technique batterie ¹ | dossier | ✅ | — | PDF/JPG/PNG | — |
 | Extrait Kbis (moins de 3 mois) ² | dossier | — | ✅ | PDF | — |
+| 3 derniers bilans | dossier | — | ✅ | PDF | **IA** (3 exercices présents, durée 12 mois) |
 
 ¹ Uniquement pour une installation « PV + batterie physique » ou « batterie seule ».
 ² « moins de 3 mois » est une consigne affichée, pas un contrôle automatique.
@@ -75,6 +76,8 @@ Deux **portées** de documents :
 - **Copie d'écran Google Maps** — bloque si : pas une **vue aérienne** · aucune **toiture ciblée** · **illisible**. Avertissement (non bloquant) si la vue ne semble pas cohérente avec le calepinage.
 - **Étude installateur** — bloque si un élément attendu est absent : **calepinage** lisible · **production** annuelle (kWh) · **consommation** annuelle (kWh) · **taux d'autoconsommation** · **courbe de charge** · **cash flow**.
 - **Devis d'abonnement** (particulier) — bloque si : **non signé** · **total HT ≠ 0 €** (modèle abonnement) · **durée** ≠ dossier · **liste du matériel** (panneaux + onduleurs) absente. Avertissement si le **montant d'abonnement** diffère de la mensualité estimée.
+- **Avis d'imposition** (particulier) — bloque si : ce n'est pas un **avis d'imposition** sur le revenu · **pages manquantes** (avis incomplet) · **aucun nom** du foyer fiscal ne correspond à un abonné · **solvabilité** insuffisante · **illisible**. La solvabilité compare l'**abonnement annuel** (mensualité TTC × 12) aux **revenus déclarés avant abattement de 10 %** : le taux d'endettement doit rester **sous 4 %** (ou **7 %** si l'offre comporte une **batterie physique**). Si les revenus ne sont pas lisibles, ce contrôle n'est pas bloquant.
+- **3 derniers bilans** (pro) — bloque si : ce ne sont pas des **comptes annuels** d'entreprise · **moins de 3 exercices** fournis · un **exercice ne couvre pas 12 mois** (tolérance 11–13 mois) · **illisible**. Si le nombre ou la durée des exercices ne sont pas lisibles, le contrôle n'est pas bloquant.
 - Dans tous les cas : IA indisponible ou verdict indéterminé → **non bloquant**.
 
 Une **aide contextuelle** (bouton « i » + exemple au survol) est affichée sur la pièce *Copie d'écran Google Maps* pour guider l'installateur.

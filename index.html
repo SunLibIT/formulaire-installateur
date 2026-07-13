@@ -1687,7 +1687,7 @@
               <span class="uz-fn" id="fn-devis"></span><span class="uz-chk" id="uz-devis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
             <div class="uz" onclick="trig('f-impots')"><input type="file" id="f-impots" accept=".pdf" onchange="onF(this,'impots')"/>
-              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg></span><span class="uz-info"><span class="uz-lbl">Avis d'imposition — 4 pages <span class="req">*</span></span><span class="uz-sub">Dernier avis complet</span></span></div>
+              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="13"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="9"/></svg></span><span class="uz-info"><span class="uz-lbl">Avis d'imposition <span class="req">*</span></span><span class="uz-sub">Dernier avis complet</span></span></div>
               <span class="uz-fn" id="fn-impots"></span><span class="uz-chk" id="uz-impots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
             <div class="uz" onclick="trig('f-elec')"><input type="file" id="f-elec" accept=".pdf,.jpg,.jpeg,.png" onchange="onF(this,'elec')"/>
@@ -1725,6 +1725,10 @@
             <div class="uz" onclick="trig('f-dev-pro')"><input type="file" id="f-dev-pro" accept=".pdf" onchange="onF(this,'dev-pro')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span><span class="uz-info"><span class="uz-lbl">Devis d'abonnement — Modèle SunLib <span class="req">*</span></span><span class="uz-sub">Document PDF signé</span></span></div>
               <span class="uz-fn" id="fn-dev-pro"></span><span class="uz-chk" id="uz-dev-pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+            </div>
+            <div class="uz" onclick="trig('f-bilans')"><input type="file" id="f-bilans" accept=".pdf" onchange="onF(this,'bilans')"/>
+              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="18" x2="8" y2="15"/><line x1="12" y1="18" x2="12" y2="13"/><line x1="16" y1="18" x2="16" y2="11"/></svg></span><span class="uz-info"><span class="uz-lbl">3 derniers bilans <span class="req">*</span></span><span class="uz-sub">Comptes annuels des 3 derniers exercices</span></span></div>
+              <span class="uz-fn" id="fn-bilans"></span><span class="uz-chk" id="uz-bilans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
           </div>
           <div class="sec" style="margin-top:20px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span><span class="sec-txt">Récapitulatif</span></div>
@@ -3005,7 +3009,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'] };
@@ -3019,7 +3023,8 @@ function docFormContext(){
   var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
   var duree=v('sl-duree')||'';
   var mensualite=(simResult&&simResult.mTTC!=null)?{ht:+(+simResult.mHT).toFixed(2),ttc:+(+simResult.mTTC).toFixed(2)}:null;
-  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite };
+  var batteriePhysique=(iType==='pvb'||iType==='bat');   // batterie physique (≠ virtuelle pvbv) → seuil de solvabilité 7 % au lieu de 4 % (avis d'imposition)
+  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique };
 }
 /* Analyse IA d'un document (débouncée par clé) → verdict au format « document » du schéma. */
 function scheduleDocCheck(key){ if(!DOC_VERIFY[key]) return; clearTimeout(_docTimers[key]); _docTimers[key]=setTimeout(function(){ doDocCheck(key); },600); }
