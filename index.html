@@ -603,6 +603,10 @@
     #sl-root .cb { display: flex !important; width: 100% !important; box-sizing: border-box !important; align-items: center !important; gap: 10px !important; padding: 11px 14px !important; margin: 6px 0 10px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; background: #fff !important; cursor: pointer !important; transition: border-color .15s, background .15s !important; }
     #sl-root .cb:hover { border-color: var(--color-teal) !important; }
     #sl-root .cb:has(input:checked) { border-color: var(--color-teal) !important; background: rgba(14,163,180,.06) !important; }
+    /* Case « nouvelle acquisition » posée dans la carte Facture : allégée (pas d'encadré dans l'encadré) */
+    #sl-root .cb.elec-acq { width: auto !important; border: 0 !important; background: transparent !important; padding: 10px 2px 2px !important; margin: 4px 0 0 !important; font-size: 13px !important; color: var(--ink-soft) !important; }
+    #sl-root .cb.elec-acq:hover { border-color: transparent !important; }
+    #sl-root .cb.elec-acq:has(input:checked) { border-color: transparent !important; background: transparent !important; }
     #sl-root .cb input[type=checkbox] { appearance: none !important; -webkit-appearance: none !important; flex: none !important; width: 20px !important; height: 20px !important; margin: 0 !important; border: 1.5px solid #cbd5e1 !important; border-radius: 6px !important; background: #fff !important; cursor: pointer !important; transition: border-color .15s !important; }
     #sl-root .cb input[type=checkbox]:checked { border-color: transparent !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5 10 17.5 19 7'/%3E%3C/svg%3E"), linear-gradient(90deg, #13A3AC, #3CAE68) !important; background-repeat: no-repeat, no-repeat !important; background-position: center, center !important; background-size: 13px, cover !important; }
     #sl-root .cb input[type=checkbox]:focus-visible { outline: 2px solid var(--color-teal) !important; outline-offset: 2px !important; }
@@ -2692,12 +2696,34 @@ function upgradeDocZones(){
     ht.appendChild(tr);
     if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
     head.appendChild(ht); uz.appendChild(head);
+    if(key==='elec') uz.appendChild(_elecAcqRow());   // case « nouvelle acquisition » → échéancier au lieu de la facture
     try{ inp.multiple=true; }catch(e){}
     uz.appendChild(inp);
     var body=_cnuEl('div','cnu-body'); body.setAttribute('data-body',''); uz.appendChild(body);
     var foot=_cnuEl('div','cnu-foot'); foot.setAttribute('data-foot',''); uz.appendChild(foot);
     renderDoc(key);
   });
+}
+/* Case « nouvelle acquisition » sur la carte Facture d'électricité : pas d'historique de factures
+   → l'installateur dépose l'échéancier (avec conso annuelle estimée) à la place de la facture.
+   La pièce reste requise (facture OU échéancier) ; seule sa nature + l'analyse IA changent. */
+function _elecAcqRow(){
+  var w=document.createElement('label'); w.className='cb elec-acq';
+  var cb=document.createElement('input'); cb.type='checkbox'; cb.id='sl-elec-newacq';
+  cb.addEventListener('change',function(){ toggleElecNewAcq(cb.checked); });
+  var sp=document.createElement('span'); sp.textContent='Nouvelle acquisition (pas d\'historique de factures)';
+  w.appendChild(cb); w.appendChild(sp); return w;
+}
+function applyElecLabels(checked){
+  var card=document.getElementById('uz-elec'); if(!card) return;
+  var ti=card.querySelector('.cnu-title'), hint=card.querySelector('.cnu-hint');
+  if(ti) ti.innerHTML=(checked?'Échéancier (nouvelle acquisition)':'Facture d\'énergie de référence')+' <span class="req">*</span>';
+  if(hint) hint.textContent=(checked?'Échéancier fournisseur avec la consommation annuelle estimée':'Une année complète');
+}
+function toggleElecNewAcq(checked){
+  applyElecLabels(checked);
+  if(getDocList('elec').length) scheduleDocCheck('elec');   // le contexte (facture ↔ échéancier) a changé → ré-analyse
+  scheduleAutoSave();
 }
 /* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »).
    Pour un document VÉRIFIÉ par IA (DOC_VERIFY), intègre l'état conforme/à vérifier/non conforme. */
@@ -3009,7 +3035,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'] };
@@ -3024,7 +3050,8 @@ function docFormContext(){
   var duree=v('sl-duree')||'';
   var mensualite=(simResult&&simResult.mTTC!=null)?{ht:+(+simResult.mHT).toFixed(2),ttc:+(+simResult.mTTC).toFixed(2)}:null;
   var batteriePhysique=(iType==='pvb'||iType==='bat');   // batterie physique (≠ virtuelle pvbv) → seuil de solvabilité 7 % au lieu de 4 % (avis d'imposition)
-  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique };
+  var elecCb=document.getElementById('sl-elec-newacq');   // « nouvelle acquisition » → un échéancier est attendu à la place de la facture
+  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique, pdl:v('sl-pdl'), nouvelleAcquisition:!!(elecCb&&elecCb.checked) };
 }
 /* Analyse IA d'un document (débouncée par clé) → verdict au format « document » du schéma. */
 function scheduleDocCheck(key){ if(!DOC_VERIFY[key]) return; clearTimeout(_docTimers[key]); _docTimers[key]=setTimeout(function(){ doDocCheck(key); },600); }
