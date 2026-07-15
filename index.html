@@ -3235,6 +3235,22 @@ function docsBlockReason(){
   }
   return null;
 }
+/* Pièces REQUISES manquantes (aucun fichier) parmi les zones VISIBLES — hors CNI (gérée par cniBlockReason).
+   Toutes les zones .uz visibles portent « * » (obligatoires) ; une zone sans classe .ok n'a pas de fichier. */
+function docsMissingReason(){
+  var miss=[];
+  document.querySelectorAll('#sl-root .uz').forEach(function(uz){
+    var p=uz.parentElement, hidden=false;
+    while(p&&p.id!=='sl-root'){ if(p.classList.contains('hide')){hidden=true;break;} p=p.parentElement; }
+    if(hidden) return;                                   // zone masquée (autre profil / batterie / propriétaire…)
+    var inp=uz.querySelector('input[type=file]'); if(!inp) return;
+    var key=(inp.id||'').replace(/^f-/,''); if(isCniKey(key)) return;   // CNI : voir cniBlockReason
+    if(uz.classList.contains('ok')) return;              // au moins un fichier déposé
+    var t=uz.querySelector('.cnu-title'); miss.push(t?t.textContent.replace(/\*/g,'').replace(/\s+/g,' ').trim():key);
+  });
+  if(!miss.length) return null;
+  return (miss.length>1?'Pièces manquantes : ':'Pièce manquante : ')+miss.join(', ')+'.';
+}
 /* Statut de validation par FICHIER (pour la table Documents) : [{id, statut, controles, confiance}]. */
 function buildDocStatuts(){
   var out=[];
@@ -3255,6 +3271,7 @@ function buildDocStatuts(){
 /* Rapport de validation du dossier (persisté sur la fiche pour le routage) : {statutGlobal, pointsBloquants, rapport}. */
 function buildValidation(){
   var pb=[];
+  var mm=docsMissingReason(); if(mm) pb.push(mm);   // pièces requises manquantes
   var c=cniBlockReason(); if(c) pb.push(c);   // CNI abonnés (part) ou dirigeant (pro)
   var d=docsBlockReason(); if(d) pb.push(d);
   var documents=[], anyAV=false;
@@ -3621,6 +3638,8 @@ function refreshCreate(){
 window.slCreate=function(){
   var cert=document.getElementById('sl-certify');
   if(!cert||!cert.checked||_creating) return;   // sécurité : case requise + un seul envoi
+  var _missReason=docsMissingReason();           // blocage si une pièce requise n'est pas déposée
+  if(_missReason){ slAlert(_missReason,'Documents à compléter'); return; }
   var _cniReason=cniBlockReason();               // blocage si la vérif IA a un verdict négatif clair
   if(_cniReason){ slAlert(_cniReason,'Pièce d\'identité à vérifier'); return; }
   var _docReason=docsBlockReason();              // blocage si un document vérifié est non conforme
