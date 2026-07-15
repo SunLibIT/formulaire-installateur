@@ -175,7 +175,7 @@ const TYPE_BY_KEY = {
   devis: 'Devis', 'dev-pro': 'Devis',
   impots: "Avis d'imposition",
   elec: 'Facture énergie',
-  prop: 'Titre de propriété',
+  prop: 'Titre de propriété', 'prop-pro': 'Titre de propriété',
   kbis: 'Kbis', 'kbis-prop': 'Kbis'
 };
 function typeForKey(key) {
