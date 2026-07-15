@@ -756,6 +756,10 @@
     #sl-root .uz.uz-card[data-state="analyzing"], #sl-root .uz.uz-card[data-state="incomplete"] { border-color: var(--amber-border) !important; }
     #sl-root .uz.uz-card[data-state="conform"] { border-color: var(--green) !important; }
     #sl-root .uz.uz-card[data-state="nonconform"] { border-color: var(--red-border) !important; }
+    /* Pièce verrouillée (séquence : étude/calepinage requis d'abord) : carte grisée + non interactive */
+    #sl-root .uz.uz-card.is-locked { background: var(--line) !important; border-color: var(--line) !important; cursor: not-allowed !important; }
+    #sl-root .uz.uz-card.is-locked .cnu-head { opacity: .5 !important; }
+    #sl-root .uz.uz-card.is-locked .cnu-title { color: var(--ink-soft) !important; }
     #sl-root .uz-card[data-state="analyzing"] .cnu-ico, #sl-root .uz-card[data-state="incomplete"] .cnu-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
     #sl-root .uz-card[data-state="conform"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
     #sl-root .uz-card[data-state="nonconform"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
@@ -2757,7 +2761,7 @@ function renderDoc(key){
   var list=getDocList(key);
   var _gate=docGateState(key);
   if(_gate.locked){   // pièce verrouillée tant que sa source (étude/calepinage) n'est pas valide
-    card.setAttribute('data-state','locked'); card.classList.remove('ok');
+    card.setAttribute('data-state','locked'); card.classList.remove('ok'); card.classList.add('is-locked');
     var _pl=card.querySelector('[data-pill]');
     if(_pl){ _pl.className='cnu-pill t-neutral'; _pl.innerHTML=LOCK_SVG; _pl.appendChild(_cnuEl('span',null,'Verrouillé')); }
     var _bd=card.querySelector('[data-body]');
@@ -2767,6 +2771,7 @@ function renderDoc(key){
     var _ft=card.querySelector('[data-foot]'); if(_ft) _ft.innerHTML='';
     updateDocProgress(); return;
   }
+  card.classList.remove('is-locked');
   var anyPending=list.some(function(x){return x._pending;});
   var verify=DOC_VERIFY[key], vres=verify?docVerdicts[key]:null, checking=verify&&!!_docChecking[key];
   var st;
@@ -3122,14 +3127,15 @@ var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOO
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
 /* Verrou de séquence : la pièce (clé) reste bloquée tant que sa pièce SOURCE (valeur) n'est pas déposée
-   ET valide. La copie Google Maps se DÉDUIT de l'étude/calepinage → l'étude doit venir d'abord. */
+   ET valide. La copie Google Maps est VÉRIFIÉE par rapport à l'étude/calepinage ([CMP-ÉTUDE]) → l'étude
+   doit venir d'abord ; la copie Google Maps reste OBLIGATOIRE ensuite. */
 var DOC_GATE={ maps:'calep', 'map-pro':'cal-pro' };
 var LOCK_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
 /* État du verrou d'une pièce → {locked, reason}. Débloquée dès que la source est déposée et analysée sans rejet
    (`ko`). IA indisponible (analyse tentée, pas de verdict) → débloquée aussi (dégradé, ne bloque jamais). */
 function docGateState(key){
   var gate=DOC_GATE[key]; if(!gate) return {locked:false};
-  if(!getDocList(gate).length) return {locked:true, reason:'Déposez d’abord l’étude (calepinage) — la copie Google Maps s’en déduit.'};
+  if(!getDocList(gate).length) return {locked:true, reason:'Déposez d’abord l’étude (calepinage) : la copie Google Maps (obligatoire) se débloque une fois l’étude validée.'};
   if(_docChecking[gate]) return {locked:true, reason:'Analyse de l’étude en cours… la copie Google Maps se débloquera ensuite.'};
   var gv=docVerdicts[gate];
   if(gv && gv.statut==='ko') return {locked:true, reason:'L’étude n’est pas conforme : corrigez-la pour débloquer la copie Google Maps.'};
