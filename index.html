@@ -2403,7 +2403,7 @@ window.setProp=function(v,el){
   document.querySelectorAll('#sl-root .prop-tag').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');tog('autre-prop',v==='non');
   tog('doc-kbis-prop', v==='non' && ct==='pro');   // Kbis du propriétaire requis seulement si l'entreprise est locataire
-  if(getDocList('kbis-prop').length) scheduleDocCheck('kbis-prop');   // le nom attendu (propriétaire) a pu changer
+  if(!_hydrating && getDocList('kbis-prop').length) scheduleDocCheck('kbis-prop');   // le nom attendu (propriétaire) a pu changer — pas à la reprise
   updateDocProgress();
   var st=document.getElementById('addr-sec-txt');
   if(st){st.textContent=(v==='oui')?'Adresse de pose des panneaux':"Site d'installation";}
@@ -2741,7 +2741,7 @@ function applyElecLabels(key,checked){
 }
 function toggleElecNewAcq(key,checked){
   applyElecLabels(key,checked);
-  if(getDocList(key).length) scheduleDocCheck(key);   // le contexte (facture ↔ échéancier) a changé → ré-analyse
+  if(!_hydrating && getDocList(key).length) scheduleDocCheck(key);   // le contexte (facture ↔ échéancier) a changé → ré-analyse — pas à la reprise
   scheduleAutoSave();
 }
 /* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »).
@@ -3777,7 +3777,9 @@ window.slResume=function(id){
   toast('Reprise du dossier « '+(d.name||'')+' »');
 };
 /* Restaure l'INTÉGRALITÉ d'un dossier à partir du payload sauvegardé (champ « Données JSON »). */
+var _hydrating=false;   // vrai pendant la reprise : évite de relancer l'IA à l'hydratation (les verdicts stockés font foi ; seul `recheck` relance les pièces sans verdict)
 function hydrateDraft(p){
+  _hydrating=true;
   try{
     // Listes dynamiques : reconstruire les tableaux puis re-rendre (les valeurs viennent du tableau)
     if(p.type_client==='part' && p.abonnes && p.abonnes.length){
@@ -3811,6 +3813,7 @@ function hydrateDraft(p){
     if(typeof refreshInstall==='function') refreshInstall();
     if(typeof updateSim==='function') updateSim();
   }catch(e){ /* hydratation best-effort : ne bloque jamais la reprise */ }
+  _hydrating=false;
 }
 window.askDeleteDossier=function(id){
   var d=findDossier(id); if(!d)return;
