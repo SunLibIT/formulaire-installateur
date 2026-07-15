@@ -1738,6 +1738,10 @@
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="uz-info"><span class="uz-lbl">Titre de propriété <span class="req">*</span></span><span class="uz-sub">Acte notarié ou taxe foncière (site d'installation)</span></span></div>
               <span class="uz-fn" id="fn-prop-pro"></span><span class="uz-chk" id="uz-prop-pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
+            <div class="uz" onclick="trig('f-elec-pro')"><input type="file" id="f-elec-pro" accept=".pdf,.jpg,.jpeg,.png" onchange="onF(this,'elec-pro')"/>
+              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><span class="uz-info"><span class="uz-lbl">12 derniers mois de factures d'électricité <span class="req">*</span></span><span class="uz-sub">12 factures mensuelles (coût + consommation)</span></span></div>
+              <span class="uz-fn" id="fn-elec-pro"></span><span class="uz-chk" id="uz-elec-pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+            </div>
             <div id="doc-kbis-prop" class="hide">
               <div class="uz" onclick="trig('f-kbis-prop')"><input type="file" id="f-kbis-prop" accept=".pdf" onchange="onF(this,'kbis-prop')"/>
                 <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span><span class="uz-info"><span class="uz-lbl">Extrait Kbis du propriétaire des murs <span class="req">*</span></span><span class="uz-sub">Société propriétaire — moins de 3 mois</span></span></div>
@@ -2709,7 +2713,7 @@ function upgradeDocZones(){
     ht.appendChild(tr);
     if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
     head.appendChild(ht); uz.appendChild(head);
-    if(key==='elec') uz.appendChild(_elecAcqRow());   // case « nouvelle acquisition » → échéancier au lieu de la facture
+    if(key==='elec'||key==='elec-pro') uz.appendChild(_elecAcqRow(key));   // case « nouvelle acquisition » → échéancier au lieu de la facture
     try{ inp.multiple=true; }catch(e){}
     uz.appendChild(inp);
     var body=_cnuEl('div','cnu-body'); body.setAttribute('data-body',''); uz.appendChild(body);
@@ -2720,22 +2724,24 @@ function upgradeDocZones(){
 /* Case « nouvelle acquisition » sur la carte Facture d'électricité : pas d'historique de factures
    → l'installateur dépose l'échéancier (avec conso annuelle estimée) à la place de la facture.
    La pièce reste requise (facture OU échéancier) ; seule sa nature + l'analyse IA changent. */
-function _elecAcqRow(){
+function _elecAcqRow(key){
+  var cbId=(key==='elec-pro')?'sl-elec-newacq-pro':'sl-elec-newacq';
   var w=document.createElement('label'); w.className='cb elec-acq';
-  var cb=document.createElement('input'); cb.type='checkbox'; cb.id='sl-elec-newacq';
-  cb.addEventListener('change',function(){ toggleElecNewAcq(cb.checked); });
+  var cb=document.createElement('input'); cb.type='checkbox'; cb.id=cbId;
+  cb.addEventListener('change',function(){ toggleElecNewAcq(key,cb.checked); });
   var sp=document.createElement('span'); sp.textContent='Nouvelle acquisition (pas d\'historique de factures)';
   w.appendChild(cb); w.appendChild(sp); return w;
 }
-function applyElecLabels(checked){
-  var card=document.getElementById('uz-elec'); if(!card) return;
+function applyElecLabels(key,checked){
+  var card=document.getElementById('uz-'+key); if(!card) return;
   var ti=card.querySelector('.cnu-title'), hint=card.querySelector('.cnu-hint');
-  if(ti) ti.innerHTML=(checked?'Échéancier (nouvelle acquisition)':'Facture d\'énergie de référence')+' <span class="req">*</span>';
-  if(hint) hint.textContent=(checked?'Échéancier fournisseur avec la consommation annuelle estimée':'Une année complète');
+  var pro=(key==='elec-pro');
+  if(ti) ti.innerHTML=(checked?'Échéancier (nouvelle acquisition)':(pro?'12 derniers mois de factures d\'électricité':'Facture d\'énergie de référence'))+' <span class="req">*</span>';
+  if(hint) hint.textContent=(checked?'Échéancier fournisseur avec la consommation annuelle estimée':(pro?'12 factures mensuelles (coût + consommation)':'Une année complète'));
 }
-function toggleElecNewAcq(checked){
-  applyElecLabels(checked);
-  if(getDocList('elec').length) scheduleDocCheck('elec');   // le contexte (facture ↔ échéancier) a changé → ré-analyse
+function toggleElecNewAcq(key,checked){
+  applyElecLabels(key,checked);
+  if(getDocList(key).length) scheduleDocCheck(key);   // le contexte (facture ↔ échéancier) a changé → ré-analyse
   scheduleAutoSave();
 }
 /* Rendu d'une carte document MULTI-fichiers (vide → dépôt ; sinon liste de chips + « Ajouter »).
@@ -3093,7 +3099,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', 'dev-pro':'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', 'dev-pro':'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', 'elec-pro':'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
@@ -3108,7 +3114,7 @@ function docFormContext(key){
   var duree=v('sl-duree')||'';
   var mensualite=(simResult&&simResult.mTTC!=null)?{ht:+(+simResult.mHT).toFixed(2),ttc:+(+simResult.mTTC).toFixed(2)}:null;
   var batteriePhysique=(iType==='pvb'||iType==='bat');   // batterie physique (≠ virtuelle pvbv) → seuil de solvabilité 7 % au lieu de 4 % (avis d'imposition)
-  var elecCb=document.getElementById('sl-elec-newacq');   // « nouvelle acquisition » → un échéancier est attendu à la place de la facture
+  var elecCb=document.getElementById(key==='elec-pro'?'sl-elec-newacq-pro':'sl-elec-newacq');   // « nouvelle acquisition » → un échéancier attendu ; case propre au profil (part/pro)
   var ctx={ profil:ct, adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique, pdl:v('sl-pdl'), nouvelleAcquisition:!!(elecCb&&elecCb.checked) };
   if(ct==='pro'){   // pro : raison sociale attendue selon la pièce (Kbis exploitant vs Kbis propriétaire des murs) — [CMP-FORM]
     ctx.raisonSociale=v('sl-pro-nom')||''; ctx.dirigeant=(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim();
