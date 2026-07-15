@@ -1734,6 +1734,15 @@
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="18" x2="8" y2="15"/><line x1="12" y1="18" x2="12" y2="13"/><line x1="16" y1="18" x2="16" y2="11"/></svg></span><span class="uz-info"><span class="uz-lbl">3 derniers bilans <span class="req">*</span></span><span class="uz-sub">Comptes annuels des 3 derniers exercices</span></span></div>
               <span class="uz-fn" id="fn-bilans"></span><span class="uz-chk" id="uz-bilans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
+            <div id="doc-kbis-prop" class="hide">
+              <div class="uz" onclick="trig('f-kbis-prop')"><input type="file" id="f-kbis-prop" accept=".pdf" onchange="onF(this,'kbis-prop')"/>
+                <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span><span class="uz-info"><span class="uz-lbl">Extrait Kbis du propriétaire des murs <span class="req">*</span></span><span class="uz-sub">Société propriétaire — moins de 3 mois</span></span></div>
+                <span class="uz-fn" id="fn-kbis-prop"></span><span class="uz-chk" id="uz-kbis-prop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+              </div>
+            </div>
+            <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="sec-txt">Pièce d'identité du dirigeant</span></div>
+            <div class="doc-abo-hint">Carte d'identité du dirigeant — <strong>recto et verso à déposer séparément</strong>.</div>
+            <div id="docs-dirigeant"></div>
           </div>
           <div class="sec" style="margin-top:20px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span><span class="sec-txt">Récapitulatif</span></div>
           <div id="sl-recap"></div>
@@ -1853,7 +1862,7 @@ function showScreen(sc, pos){
   if(sc===4){ refreshAdr(); ensureMapShown(); }
   if(sc===5) refreshInstall();
   if(sc===3&&ct==='pro') renderCollabs();
-  if(sc===6){ renderAbonneDocs(); syncDocZones(); buildRecap(); }
+  if(sc===6){ renderAbonneDocs(); renderDirigeantDocs(); syncDocZones(); buildRecap(); }
   window.scrollTo({top:0,behavior:'smooth'});
   window.parent.postMessage({scrollToIframe:true},'*');
 }
@@ -2385,6 +2394,9 @@ window.setProp=function(v,el){
   propT=v;
   document.querySelectorAll('#sl-root .prop-tag').forEach(function(t){t.classList.remove('on');});
   el.classList.add('on');tog('autre-prop',v==='non');
+  tog('doc-kbis-prop', v==='non' && ct==='pro');   // Kbis du propriétaire requis seulement si l'entreprise est locataire
+  if(getDocList('kbis-prop').length) scheduleDocCheck('kbis-prop');   // le nom attendu (propriétaire) a pu changer
+  updateDocProgress();
   var st=document.getElementById('addr-sec-txt');
   if(st){st.textContent=(v==='oui')?'Adresse de pose des panneaux':"Site d'installation";}
 };
@@ -2586,10 +2598,8 @@ function docFileVinfo(key){
    on encode l'abonné + la face (ex. « CNI Romain Dupont — recto »). */
 function docLabelFor(key){
   if(isCniKey(key)){
-    var uid=cniUidOf(key), face=cniFaceOf(key), a=null;
-    for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ a=abos[i]; break; } }
-    var who=a?(((a.prenom||'')+' '+(a.nom||'')).trim()):'';
-    return 'CNI'+(who?(' '+who):'')+' — '+face;
+    var face=cniFaceOf(key), person=cniPersonFor(cniUidOf(key));
+    return 'CNI'+(person.named?(' '+person.label):'')+' — '+face;
   }
   var card=document.getElementById('uz-'+key);
   var lblEl=card?card.querySelector('.cnu-title'):null;
@@ -2598,10 +2608,9 @@ function docLabelFor(key){
 /* Abonné concerné (+ face) pour une pièce d'abonné (CNI) ; vide pour une pièce de dossier. */
 function docAboFor(key){
   if(!isCniKey(key)) return '';
-  var uid=cniUidOf(key), face=cniFaceOf(key), a=null;
-  for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ a=abos[i]; break; } }
-  var who=a?(((a.prenom||'')+' '+(a.nom||'')).trim()):'';
-  return (who||'Abonné')+' — '+face;
+  var uid=cniUidOf(key), face=cniFaceOf(key), person=cniPersonFor(uid);
+  var who=person.named?person.label:(uid==='dir'?'Dirigeant':'Abonné');
+  return who+' — '+face;
 }
 /* Upload d'un fichier pour une pièce. opts.single : un seul fichier (remplace l'existant via prevId). */
 function uploadFileFor(key,f,opts){
@@ -2822,6 +2831,15 @@ function cniKey(uid,face){ return 'cni-'+face+'-'+uid; }
 function isCniKey(k){ return /^cni-(recto|verso)-/.test(k); }
 function cniFaceOf(k){ var m=/^cni-(recto|verso)-/.exec(k); return m?m[1]:''; }
 function cniUidOf(k){ return String(k).replace(/^cni-(recto|verso)-/,''); }
+/* Personne rattachée à une CNI (particulier : un abonné par uid ; pro : le dirigeant, uid='dir').
+   Sert de RÉFÉRENCE de comparaison du nom ([CMP-FORM]) et d'étiquette d'affichage. */
+function cniPersonFor(uid){
+  var p='', n='', fallback='cet abonné';
+  if(uid==='dir'){ p=v('sl-dir-prenom')||''; n=v('sl-dir-nom')||''; fallback='le dirigeant'; }
+  else { for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ p=abos[i].prenom||''; n=abos[i].nom||''; break; } } }
+  var full=(p+' '+n).trim();
+  return { prenom:p, nom:n, label:(full||fallback), named:!!full };
+}
 
 /* ── Uploader CNI (analyse IA) : helpers + config d'états (couleur = sens) ── */
 function _cnuSize(b){ if(b==null) return ''; if(b<1024) return b+' o'; if(b<1048576) return (b/1024).toFixed(0)+' Ko'; return (b/1048576).toFixed(1)+' Mo'; }
@@ -2870,6 +2888,29 @@ function renderAbonneDocs(){
     ['recto','verso'].forEach(function(face){ renderCniSlot(cniKey(uid,face)); });
     renderAboAggregate(uid);
   });
+  updateDocProgress();
+}
+/* Pro : carte CNI (recto + verso) du dirigeant — réutilise l'infra abonnés (uid stable 'dir'). */
+function renderDirigeantDocs(){
+  var host=document.getElementById('docs-dirigeant'); if(!host) return;
+  if(ct!=='pro'){ host.innerHTML=''; return; }
+  host.innerHTML='';
+  var uid='dir', person=cniPersonFor(uid);
+  var card=_cnuEl('div','abo-doc'); card.id='abodoc-'+uid;
+  var hd=_cnuEl('div','abo-doc-hd');
+  var idn=_cnuEl('div','abo-doc-idn');
+  idn.appendChild(_cnuEl('span','abo-doc-name', person.named?person.label:'Dirigeant'));
+  var fonction=v('sl-dir-fonction'); if(fonction) idn.appendChild(_cnuEl('span','abo-doc-mail', fonction));
+  hd.appendChild(idn);
+  var prog=_cnuEl('span','abo-doc-prog'); prog.setAttribute('data-abo-prog',uid); hd.appendChild(prog);
+  card.appendChild(hd);
+  var slots=_cnuEl('div','abo-doc-slots');
+  ['recto','verso'].forEach(function(face){ var key=cniKey(uid,face); if(docs[key] && !Array.isArray(docs[key])) docs[key]=[docs[key]]; slots.appendChild(_buildCniSlotCard(key,face)); });
+  card.appendChild(slots);
+  var agg=_cnuEl('div','abo-doc-agg'); agg.setAttribute('data-abo-agg',uid); agg.setAttribute('aria-live','polite'); card.appendChild(agg);
+  host.appendChild(card);
+  ['recto','verso'].forEach(function(face){ renderCniSlot(cniKey(uid,face)); });
+  renderAboAggregate(uid);
   updateDocProgress();
 }
 /* Coquille DOM d'un slot (recto/verso) — en-tête + pastille + input caché + corps. */
@@ -2979,8 +3020,7 @@ function aboCniIssues(uid,label){
 /* Encadré de synthèse + progression « X/2 » d'un abonné. L'absence (recto/verso manquant) n'est PAS
    affichée en rouge tant qu'on n'a rien déposé (invitation neutre via les slots) — elle bloque à la création. */
 function renderAboAggregate(uid){
-  var a=null; for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ a=abos[i]; break; } }
-  var label=a?(((a.prenom||'')+' '+(a.nom||'')).trim()||'cet abonné'):'cet abonné';
+  var label=cniPersonFor(uid).label;
   var res=aboCniIssues(uid,label), g=res.g;
   var prog=document.querySelector('#sl-root [data-abo-prog="'+uid+'"]');
   if(prog){ var done=(g.rItem?1:0)+(g.vItem?1:0); prog.textContent=done+'/2'; prog.className='abo-doc-prog'+(done===2?' done':''); }
@@ -3002,8 +3042,8 @@ function doCniFaceCheck(key){
   var uid=cniUidOf(key), item=getDocList(key)[0]||null, id=item&&item.id;
   if(!id){ if(item) item._verdict=null; _cniChecking[key]=false; renderCniSlot(key); renderAboAggregate(uid); return; }
   try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
-  var a=null; for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ a=abos[i]; break; } }
-  var abonnes=a?[{prenom:a.prenom||'',nom:a.nom||''}]:[];
+  var person=cniPersonFor(uid);
+  var abonnes=(person.prenom||person.nom)?[{prenom:person.prenom,nom:person.nom}]:[];
   _cniChecking[key]=true; renderCniSlot(key); renderAboAggregate(uid);
   var seq=(_cniSeqs[key]=(_cniSeqs[key]||0)+1);
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -3022,6 +3062,12 @@ function doCniFaceCheck(key){
 }
 /* Motif de blocage (string) si un abonné n'a pas de CNI conforme, sinon null. IA indispo → non bloquant. */
 function cniBlockReason(){
+  if(ct==='pro'){   // pro : CNI recto/verso du dirigeant
+    var resD=aboCniIssues('dir', cniPersonFor('dir').label);
+    if(resD.missing.length) return 'CNI du dirigeant : il manque '+resD.missing.join(' et ')+'.';
+    if(resD.block.length) return 'CNI du dirigeant : '+resD.block[0];
+    return null;
+  }
   if(ct!=='part') return null;
   for(var i=0;i<abos.length;i++){
     var a=abos[i], uid=a.uid; if(!uid) continue;
@@ -3035,7 +3081,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'] };
@@ -3043,7 +3089,7 @@ var docVerdicts={}, _docTimers={}, _docSeqs={}, _docChecking={};
 /* Libellé lisible d'un document (pour les messages de blocage). */
 function docName(key){ var t=document.querySelector('#sl-root #uz-'+key+' .cnu-title'); return t?t.textContent.replace(/\*/g,'').replace(/\s+/g,' ').trim():key; }
 /* Données du formulaire transmises comme RÉFÉRENCE de comparaison (adresse + abonnés). */
-function docFormContext(){
+function docFormContext(key){
   try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
   var adresse=[v('sl-num'),v('sl-rue'),v('sl-cp'),v('sl-commune')].filter(Boolean).join(' ');
   var abonnes=(ct==='part'&&Array.isArray(abos))?abos.map(function(a){return {prenom:a.prenom||'',nom:a.nom||''};}):[];
@@ -3051,7 +3097,14 @@ function docFormContext(){
   var mensualite=(simResult&&simResult.mTTC!=null)?{ht:+(+simResult.mHT).toFixed(2),ttc:+(+simResult.mTTC).toFixed(2)}:null;
   var batteriePhysique=(iType==='pvb'||iType==='bat');   // batterie physique (≠ virtuelle pvbv) → seuil de solvabilité 7 % au lieu de 4 % (avis d'imposition)
   var elecCb=document.getElementById('sl-elec-newacq');   // « nouvelle acquisition » → un échéancier est attendu à la place de la facture
-  return { adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique, pdl:v('sl-pdl'), nouvelleAcquisition:!!(elecCb&&elecCb.checked) };
+  var ctx={ adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique, pdl:v('sl-pdl'), nouvelleAcquisition:!!(elecCb&&elecCb.checked) };
+  if(ct==='pro'){   // pro : raison sociale attendue selon la pièce (Kbis exploitant vs Kbis propriétaire des murs) — [CMP-FORM]
+    ctx.raisonSociale=v('sl-pro-nom')||''; ctx.dirigeant=(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim();
+    ctx.estProprietaire=(propT==='oui'); ctx.proprietaireNom=(propT==='non'?(v('prop-nom')||''):'');
+    if(key==='kbis') ctx.raisonSocialeAttendue=ctx.raisonSociale;
+    else if(key==='kbis-prop') ctx.raisonSocialeAttendue=ctx.proprietaireNom;
+  }
+  return ctx;
 }
 /* Analyse IA d'un document (débouncée par clé) → verdict au format « document » du schéma. */
 function scheduleDocCheck(key){ if(!DOC_VERIFY[key]) return; clearTimeout(_docTimers[key]); _docTimers[key]=setTimeout(function(){ doDocCheck(key); },600); }
@@ -3063,7 +3116,7 @@ function doDocCheck(key){
   _docChecking[key]=true; docVerdicts[key]=null; renderDoc(key);
   var seq=(_docSeqs[key]=(_docSeqs[key]||0)+1);
   fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-    action:'verifyid', draftId:getDraftId(), type_client:ct, docType:docType, ids:ids, refIds:refIds, form:docFormContext()
+    action:'verifyid', draftId:getDraftId(), type_client:ct, docType:docType, ids:ids, refIds:refIds, form:docFormContext(key)
   })}).then(function(r){ return r.ok?r.json():Promise.reject(); }).then(function(v){
     if(seq!==_docSeqs[key]) return; _docChecking[key]=false;
     docVerdicts[key]=(v&&v.ok===true)?v:null;   // ok!==true → dégradé (non bloquant)
@@ -3099,7 +3152,7 @@ function restoreDocVerdicts(draftId){
       });
       docs=nd;
     }
-    renderAbonneDocs(); syncDocZones(); recheck();
+    renderAbonneDocs(); renderDirigeantDocs(); syncDocZones(); recheck();
   }).catch(recheck);
 }
 /* Auto-enregistrement du brouillon (débounce) après dépôt/retrait — le dossier + le mapping des fichiers
@@ -3146,7 +3199,7 @@ function buildDocStatuts(){
 /* Rapport de validation du dossier (persisté sur la fiche pour le routage) : {statutGlobal, pointsBloquants, rapport}. */
 function buildValidation(){
   var pb=[];
-  var c=(ct==='part')?cniBlockReason():null; if(c) pb.push(c);
+  var c=cniBlockReason(); if(c) pb.push(c);   // CNI abonnés (part) ou dirigeant (pro)
   var d=docsBlockReason(); if(d) pb.push(d);
   var documents=[], anyAV=false;
   Object.keys(DOC_VERIFY).forEach(function(k){
@@ -3163,6 +3216,12 @@ function buildValidation(){
       if(st==='a_verifier') anyAV=true;
       documents.push({type:'CNI', abonne:label, statut:st, points:res.block.concat(res.warn)});
     }
+  }
+  else if(ct==='pro'){
+    var prD=cniPersonFor('dir'), resD=aboCniIssues('dir',prD.label);
+    var stD=resD.block.length?'non_conforme':((resD.missing.length||resD.warn.length)?'a_verifier':'conforme');
+    if(stD==='a_verifier') anyAV=true;
+    documents.push({type:'CNI', abonne:('Dirigeant'+(prD.named?(' — '+prD.label):'')), statut:stD, points:resD.block.concat(resD.warn)});
   }
   var statutGlobal = pb.length ? 'non_conforme' : (anyAV ? 'a_verifier' : 'conforme');
   var synth = pb.length ? ('À corriger : '+pb.join(' ; ')) : (anyAV ? 'Dossier à vérifier (contrôles non concluants).' : 'Dossier conforme.');
@@ -3718,6 +3777,7 @@ function hydrateDraft(p){
     docs = (p.docs && typeof p.docs==='object') ? p.docs : {};
     Object.keys(docs).forEach(function(k){ if(docs[k] && !Array.isArray(docs[k])) docs[k]=[docs[k]]; });   // compat ancien format (objet unique) → tableau
     renderAbonneDocs();   // reconstruit les cartes CNI par abonné (clés cni-recto/verso-<uid>)
+    renderDirigeantDocs();   // pro : carte CNI du dirigeant (clés cni-recto/verso-dir)
     syncDocZones();
     // La table Documents fait foi : reconstruit les fichiers réellement déposés + leurs verdicts (survit même si le brouillon n'a pas été ré-enregistré), et ne re-analyse que le manquant.
     restoreDocVerdicts(p.draftId || getDraftId());

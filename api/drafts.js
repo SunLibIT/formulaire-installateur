@@ -176,7 +176,7 @@ const TYPE_BY_KEY = {
   impots: "Avis d'imposition",
   elec: 'Facture énergie',
   prop: 'Titre de propriété',
-  kbis: 'Kbis'
+  kbis: 'Kbis', 'kbis-prop': 'Kbis'
 };
 function typeForKey(key) {
   if (/^cni-(recto|verso)-/.test(String(key || ''))) return 'CNI';
