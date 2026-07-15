@@ -2844,6 +2844,13 @@ function cniPersonFor(uid){
   var full=(p+' '+n).trim();
   return { prenom:p, nom:n, label:(full||fallback), named:!!full };
 }
+/* Nom détecté sur la CNI d'une personne (recto ou verso), pour un contrôle croisé [CMP-DOC]. Vide si indisponible. */
+function cniDetectedName(uid){
+  var faces=['recto','verso'];
+  for(var i=0;i<faces.length;i++){ var it=getDocList(cniKey(uid,faces[i]))[0]; var full=it&&it._verdict&&it._verdict.full;
+    if(full){ var nm=(((full.prenomDetecte||'')+' '+(full.nomDetecte||'')).trim())||(full.nomDetecte||''); if(nm) return nm; } }
+  return '';
+}
 
 /* ── Uploader CNI (analyse IA) : helpers + config d'états (couleur = sens) ── */
 function _cnuSize(b){ if(b==null) return ''; if(b<1024) return b+' o'; if(b<1048576) return (b/1024).toFixed(0)+' Ko'; return (b/1048576).toFixed(1)+' Mo'; }
@@ -3062,6 +3069,7 @@ function doCniFaceCheck(key){
     }
     renderCniSlot(key); renderAboAggregate(uid);
     if(it&&it.id&&it._verdict) persistDocVerdict([{ id:it.id, statut:((it._verdict.lisible===false||it._verdict.estPiece===false)?'ko':'ok'), controles:JSON.stringify(it._verdict), confiance:(it._verdict.full&&typeof it._verdict.full.confiance==='number')?it._verdict.full.confiance:null }]);
+    if(uid==='dir' && DOC_VERIFY['kbis'] && getDocList('kbis').length) scheduleDocCheck('kbis');   // [CMP-DOC] : la CNI du dirigeant vient d'être analysée → re-vérifie le Kbis exploitant (nom du représentant)
   }).catch(function(){ if(seq!==_cniSeqs[key]) return; _cniChecking[key]=false; renderCniSlot(key); renderAboAggregate(uid); });
 }
 /* Motif de blocage (string) si un abonné n'a pas de CNI conforme, sinon null. IA indispo → non bloquant. */
@@ -3085,7 +3093,7 @@ function cniBlockReason(){
 
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
-var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
+var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', 'dev-pro':'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
@@ -3105,7 +3113,7 @@ function docFormContext(key){
   if(ct==='pro'){   // pro : raison sociale attendue selon la pièce (Kbis exploitant vs Kbis propriétaire des murs) — [CMP-FORM]
     ctx.raisonSociale=v('sl-pro-nom')||''; ctx.dirigeant=(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim();
     ctx.estProprietaire=(propT==='oui'); ctx.proprietaireNom=(propT==='non'?(v('prop-nom')||''):'');
-    if(key==='kbis') ctx.raisonSocialeAttendue=ctx.raisonSociale;
+    if(key==='kbis'){ ctx.raisonSocialeAttendue=ctx.raisonSociale; ctx.dirigeantCni=cniDetectedName('dir')||ctx.dirigeant; }   // [CMP-DOC] : représentant du Kbis vs nom de la CNI du dirigeant
     else if(key==='kbis-prop') ctx.raisonSocialeAttendue=ctx.proprietaireNom;
   }
   return ctx;
