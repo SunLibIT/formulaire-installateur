@@ -1986,6 +1986,11 @@ function resetForm(){
   var mdv=document.getElementById('sl-map-div');if(mdv)mdv.style.setProperty('display','none','important');
   // (segmented + libellés + boutons + badge sont masqués via .adr-map.empty)
   var clr=document.getElementById('adr-clear');if(clr)clr.hidden=true;
+  // « Libellés » (noms de rues) : coché par défaut + carte sur Satellite sur un dossier vierge
+  // (resetForm décoche toutes les cases ci-dessus → on rétablit l'état par défaut voulu de la carte)
+  var _lbl=document.getElementById('adr-labels'); if(_lbl){ _lbl.checked=true; _lbl.disabled=false; }
+  var _seg=document.getElementById('adr-seg'); if(_seg) _seg.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-mt')==='hybrid'?'true':'false'); });
+  if(typeof applyMapTypeId==='function') applyMapTypeId();   // met à jour une carte déjà créée (réutilisée entre dossiers)
 }
 
 /* ── Verrou du type : confirmation destructrice avant d'effacer ── */
