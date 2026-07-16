@@ -103,14 +103,14 @@ Assistant (wizard) multi-étapes. Variables d'état clés dans l'IIFE : `ct` (`'
 
 ### Documents & contrôles par type (récap)
 
-Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, ou PDF/JPG/PNG — filtre natif, non revérifié) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd », limite non affichée). **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
+Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, PDF/JPG/PNG, ou **PDF/Word** pour le devis — filtre natif, non revérifié ; le sous-titre de la zone de dépôt est dérivé de `accept` par `_acceptLabel`) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd », limite non affichée). **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
 
 | Document (clé `docs`) | Portée | Part. | Pro | Formats | Contenu |
 |---|---|:--:|:--:|---|---|
 | CNI **recto + verso** — par abonné (part.) / du **dirigeant** (pro, `uid='dir'`) (`cni-recto-<uid>` / `cni-verso-<uid>`) | abonné / dirigeant | ✅ | ✅ | PDF/JPG/PNG | **IA par face** (§ Feature CNI) — nom vs formulaire [CMP-FORM] |
 | Google Maps toiture (`maps` / `map-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (§ docs génériques) — [CMP-ÉTUDE] vs calepinage |
 | Étude + calepinage (`calep` / `cal-pro`) | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (§ docs génériques) — présence prod/conso/taux/courbe/cash-flow |
-| Devis abonnement (`devis` part. / `dev-pro` pro) | dossier | ✅ | ✅ | PDF | **IA** (§ docs génériques) — signature, total HT=0, montant/durée vs formulaire, matériel (identique part./pro) |
+| Devis abonnement (`devis` part. / `dev-pro` pro) | dossier | ✅ | ✅ | PDF, **Word** (`.doc`/`.docx`) | **IA** (§ docs génériques) — signature, total HT=0, montant/durée vs formulaire, matériel (identique part./pro). **Word non analysé par l'IA** : Claude vision ne lit que PDF/images → un devis `.docx` est accepté et enregistré mais `doDocCheck` **saute** l'appel IA (fichier non analysable → pièce fournie, sans verdict, non bloquant, revue humaine). |
 | Avis d'imposition (`impots`) ³ | dossier | ✅ | — | PDF | **IA** (§ docs génériques) — pages complètes + nom cohérent + solvabilité |
 | Facture d'électricité (`elec` part. / `elec-pro` pro) | dossier | ✅ | ✅ | PDF/JPG/PNG | **IA** (§ docs génériques) — PDL vs formulaire + échéancier si « nouvelle acquisition » ; part. = conso annuelle, **pro = 12 factures mensuelles** (coût + conso) |
 | Titre de propriété (`prop` part. / `prop-pro` pro) | dossier | ✅ | ✅ | PDF | **IA** (§ docs génériques) — acte/taxe + adresse vs formulaire ; **pro** : + adresse vs étude [CMP-ÉTUDE], sans contrôle de nom |
