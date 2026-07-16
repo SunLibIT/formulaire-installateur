@@ -351,7 +351,7 @@ async function handleGetDocVerdicts(p, res) {
   if (!draftId) return res.status(200).json({ docs: [] });
   try {
     var formula = encodeURIComponent("{ID Brouillon}='" + esc(draftId) + "'");
-    var d = await atGet(tbl(DOCS_TABLE) + '?pageSize=200&filterByFormula=' + formula);
+    var d = await atGet(tbl(DOCS_TABLE) + '?pageSize=100&filterByFormula=' + formula);   // Airtable plafonne pageSize à 100 : au-delà → 422 → atGet throw → catch renvoie [] → l'IA se relançait à tort à la reprise
     var out = (d.records || []).map(function (r) {
       var f = r.fields || {};
       var att = (Array.isArray(f['Fichier']) && f['Fichier'][0]) || {};
