@@ -721,10 +721,10 @@
     #sl-root .uz.uz-card { cursor: default !important; padding: 16px !important; border-style: solid !important; border-color: var(--line) !important; background: var(--surface, #fff) !important; transition: border-color .18s !important; }
     #sl-root .uz.uz-card:hover { border-color: var(--line) !important; background: var(--surface, #fff) !important; }
     #sl-root .uz.uz-card.ok, #sl-root .uz-card[data-state="ok"] { border-color: var(--green) !important; background: var(--surface, #fff) !important; }
-    #sl-root .uz-card[data-state="uploading"] { border-color: var(--amber-border) !important; }
+    #sl-root .uz.uz-card[data-state="uploading"] { border-color: var(--teal) !important; }   /* téléversement = teal (même couleur que le bouton d'envoi), l'ambre est réservé à l'analyse IA en cours ; spécificité alignée sur .uz.uz-card.ok pour l'emporter */
     #sl-root .uz-card[data-state="err"] { border-color: var(--red-border) !important; }
     #sl-root .uz-card[data-state="ok"] .cnu-ico { background: #dff3e6 !important; color: var(--green) !important; }
-    #sl-root .uz-card[data-state="uploading"] .cnu-ico { background: var(--amber-bg) !important; color: var(--amber) !important; }
+    #sl-root .uz-card[data-state="uploading"] .cnu-ico { background: var(--teal-soft) !important; color: var(--teal-ink) !important; }
     #sl-root .uz-card[data-state="err"] .cnu-ico { background: var(--red-bg) !important; color: var(--danger) !important; }
 
     /* ── DOCUMENTS : sous-sections (projet / abonnés) + cartes CNI par abonné ── */
@@ -745,6 +745,7 @@
     /* Slot recto/verso : la couleur de bordure suit le VERDICT, pas la simple présence du fichier */
     #sl-root .uz.cni-slot { padding: 14px !important; }
     #sl-root .uz.cni-slot.ok { border-color: var(--line) !important; }
+    #sl-root .uz.cni-slot[data-state="uploading"] { border-color: var(--teal) !important; }   /* envoi = teal (comme le bouton), avant l'analyse IA (ambre) */
     #sl-root .uz.cni-slot[data-state="analyzing"] { border-color: var(--amber-border) !important; }
     #sl-root .uz.cni-slot[data-state="conform"] { border-color: var(--green) !important; }
     #sl-root .uz.cni-slot[data-state="nonconform"] { border-color: var(--red-border) !important; }
