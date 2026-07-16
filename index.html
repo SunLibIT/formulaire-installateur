@@ -2547,16 +2547,18 @@ function setDocList(key,a){ docs[key]=a; }
 function renderDocZone(key){ if(isCniKey(key)){ renderCniSlot(key); renderAboAggregate(cniUidOf(key)); } else renderDoc(key); }
 /* Zone de dépôt (état vide) — clic + glisser-déposer, multi-fichiers. */
 function _docDropzone(key){
+  var single=isSingleDoc(key);
   var dz=_cnuEl('button','cnu-drop'); dz.type='button';
   dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
-  dz.appendChild(_cnuEl('span','cnu-drop-t','Cliquez ou déposez un ou plusieurs fichiers'));
+  dz.appendChild(_cnuEl('span','cnu-drop-t', single?'Cliquez ou déposez votre fichier':'Cliquez ou déposez un ou plusieurs fichiers'));
   dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG'));
   dz.onclick=function(){ trig('f-'+key); };
   dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
   dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
   dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('is-over');
     var fs=(e.dataTransfer&&e.dataTransfer.files)?Array.prototype.slice.call(e.dataTransfer.files):[];
-    fs.forEach(function(f){ uploadFileFor(key,f); }); });
+    if(single){ if(fs[0]) uploadFileFor(key,fs[0],{single:true}); }   // mono-fichier : un seul, en remplacement
+    else fs.forEach(function(f){ uploadFileFor(key,f); }); });
   return dz;
 }
 /* Chip d'un fichier avec coloration + motif PAR FICHIER (tous documents).
@@ -2578,7 +2580,7 @@ function _docChip(key,item,idx,vinfo){
     // « Remplacer » ce fichier — sur la vignette, pour TOUTES les pièces (CNI incluse).
     var rep2=_cnuEl('button','cnu-frep'); rep2.type='button'; rep2.setAttribute('aria-label','Remplacer '+(item.filename||'ce document'));
     rep2.innerHTML=REFRESH_SVG; rep2.appendChild(_cnuEl('span',null,'Remplacer'));
-    if(isCniKey(key)){   // slot mono-fichier : onCniFace remplace directement (single)
+    if(isCniKey(key) || isSingleDoc(key)){   // pièce mono-fichier : dépôt = remplacement direct (single via prevId), sans _replace
       rep2.onclick=(function(k){ return function(e){ e.stopPropagation(); trig('f-'+k); }; })(key);
     } else {             // multi-fichiers : retire l'ancien puis dépose le nouveau (via _replace consommé par onF)
       rep2.onclick=(function(k,fid){ return function(e){ e.stopPropagation(); _replace={key:k,id:fid}; trig('f-'+k); }; })(key,item.id);
@@ -2669,13 +2671,9 @@ function removeFileFor(key,idx){
     action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
   })}).catch(function(){}); }
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
-  if(isCniKey(key)) scheduleCniFaceCheck(key);   // slot mono-fichier : vidé → doCniFaceCheck efface le verdict sans appel IA (pas d'id)
-  else {
-    // Pièce multi-fichiers : NE PAS ré-analyser les fichiers restants (déjà analysés — on garde leur verdict).
-    // On ne relance doDocCheck que si la pièce est désormais vide (il sort alors sans appel IA et efface le verdict).
-    if(DOC_VERIFY[key] && !getDocList(key).length) scheduleDocCheck(key);
-    scheduleDependents(key);
-  }
+  // CNI + pièces mono-fichier : le retrait vide la pièce → doDocCheck/doCniFaceCheck sortent sans appel IA (aucun id) et effacent le verdict.
+  // Pièces multi-fichiers (facture élec, bilans) : re-vérification de l'ensemble restant (contrôle d'agrégat : nombre de pages/factures/exercices).
+  if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
   scheduleAutoSave();
 }
 /* Info-bulle « exemple attendu » (bouton i + popup au survol) pour la pièce Google Maps.
@@ -2710,6 +2708,17 @@ function mapsTipHTML(sfx){
     '</span>'+
   '</span>';
 }
+/* Info-bulle « i » pour une pièce MONO-FICHIER : un seul document, toutes les pages regroupées dans un même PDF. */
+function groupPagesTipHTML(sfx){
+  var pid='sun-tip-group_'+sfx;
+  return '<span class="sun-tip">'+
+    '<button type="button" class="sun-tip__icon" aria-label="Comment déposer ce document" aria-describedby="'+pid+'" onclick="return false;">i</button>'+
+    '<span class="sun-tip__popup" role="tooltip" id="'+pid+'">'+
+      '<span class="sun-tip__title"><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path><path d="M14 3v6h6"></path><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg></span> Un seul document</span>'+
+      '<ul class="sun-tip__points"><li>Déposez <strong>un seul fichier</strong> pour cette pièce.</li><li>S\'il comporte plusieurs pages, regroupez-les toutes dans un même document (PDF).</li></ul>'+
+    '</span>'+
+  '</span>';
+}
 /* Transforme chaque zone .uz simple en carte (en-tête + pastille + corps + pied),
    en réutilisant l'icône / le libellé / le sous-titre déjà présents dans le markup. */
 function upgradeDocZones(){
@@ -2724,13 +2733,16 @@ function upgradeDocZones(){
     var icoS=_cnuEl('span','cnu-ico'); icoS.setAttribute('aria-hidden','true'); icoS.innerHTML=icoHtml; head.appendChild(icoS);
     var ht=_cnuEl('div','cnu-htext');
     var tr=_cnuEl('div','cnu-titrow');
-    var ti=_cnuEl('span','cnu-title'); ti.innerHTML=lblHtml; if(key==='maps'||key==='map-pro') ti.insertAdjacentHTML('beforeend',' '+mapsTipHTML(key)); tr.appendChild(ti);
+    var ti=_cnuEl('span','cnu-title'); ti.innerHTML=lblHtml;
+    if(key==='maps'||key==='map-pro') ti.insertAdjacentHTML('beforeend',' '+mapsTipHTML(key));   // Google Maps : « i » d'exemple de capture
+    else if(isSingleDoc(key)) ti.insertAdjacentHTML('beforeend',' '+groupPagesTipHTML(key));      // autres pièces mono-fichier : « i » regrouper les pages
+    tr.appendChild(ti);
     var pill=_cnuEl('span','cnu-pill'); pill.setAttribute('data-pill',''); tr.appendChild(pill);
     ht.appendChild(tr);
     if(subTxt) ht.appendChild(_cnuEl('span','cnu-hint',subTxt));
     head.appendChild(ht); uz.appendChild(head);
     if(key==='elec'||key==='elec-pro') uz.appendChild(_elecAcqRow(key));   // case « nouvelle acquisition » → échéancier au lieu de la facture
-    try{ inp.multiple=true; }catch(e){}
+    try{ inp.multiple=!isSingleDoc(key); }catch(e){}   // mono-fichier : sélection native limitée à un seul fichier
     uz.appendChild(inp);
     var body=_cnuEl('div','cnu-body'); body.setAttribute('data-body',''); uz.appendChild(body);
     var foot=_cnuEl('div','cnu-foot'); foot.setAttribute('data-foot',''); uz.appendChild(foot);
@@ -2818,7 +2830,7 @@ function renderDoc(key){
 
   var foot=card.querySelector('[data-foot]');
   if(foot){ foot.innerHTML='';
-    if(list.length){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-'+key); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }
+    if(list.length && !isSingleDoc(key)){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-'+key); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }   // mono-fichier : pas d'ajout (le remplacement est sur la vignette)
   }
   updateDocProgress();
 }
@@ -2842,6 +2854,7 @@ window.onF=function(inp,key){
     if(f){ var lst=getDocList(key), ix=-1; for(var j=0;j<lst.length;j++){ if(lst[j].id===rp.id){ ix=j; break; } } if(ix>-1) removeFileFor(key,ix); uploadFileFor(key,f); }
     return;
   }
+  if(isSingleDoc(key)){ if(fs[0]) uploadFileFor(key,fs[0],{single:true}); return; }   // pièce mono-fichier : un seul fichier, en remplacement (prevId)
   fs.forEach(function(f){ uploadFileFor(key,f); });
 };
 function updateDocProgress(){
@@ -3129,6 +3142,12 @@ function cniBlockReason(){
 /* ── Documents génériques vérifiés par IA (autres que la CNI) — analyse au dépôt, comparaison au FORMULAIRE ── */
 /* Registre extensible : clé du document → docType envoyé à n8n. Ajouter ici les futurs documents. */
 var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOOGLE_MAPS', 'map-pro':'GOOGLE_MAPS', calep:'ETUDE_INSTALLATEUR', 'cal-pro':'ETUDE_INSTALLATEUR', devis:'DEVIS', 'dev-pro':'DEVIS', impots:'AVIS_IMPOT', bilans:'BILANS', elec:'FACTURE_ELEC', 'elec-pro':'FACTURE_ELEC', kbis:'KBIS', 'kbis-prop':'KBIS' };
+/* Pièces MONO-FICHIER (un seul document par pièce) : dépôt = remplacement, pas d'ajout. Toutes les pages d'un
+   document (avis, titre, devis…) doivent être regroupées dans un même fichier PDF. Les pièces ABSENTES d'ici
+   restent MULTI-fichiers (plusieurs documents distincts légitimes : facture élec, 3 bilans) et se re-vérifient
+   au retrait d'un fichier (contrôle d'agrégat : nombre de pages/factures/exercices). CNI = déjà mono par face. */
+var DOC_SINGLE={ maps:1, 'map-pro':1, calep:1, 'cal-pro':1, devis:1, 'dev-pro':1, prop:1, 'prop-pro':1, impots:1, kbis:1, 'kbis-prop':1, 'bat-tech':1 };
+function isSingleDoc(key){ return !!DOC_SINGLE[key]; }
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
@@ -3218,6 +3237,8 @@ function restoreDocVerdicts(draftId){
         if(vd){ if(isCniKey(row.cle)) it._verdict=vd; else docVerdicts[row.cle]=vd; }
         nd[row.cle].push(it);
       });
+      // Pièce mono-fichier : d'anciennes lignes en double (ex. brouillon d'avant le passage en mono) peuvent subsister → ne garder qu'un fichier.
+      Object.keys(nd).forEach(function(k){ if(isSingleDoc(k) && nd[k].length>1) nd[k]=[nd[k][nd[k].length-1]]; });
       docs=nd;
     }
     renderAbonneDocs(); renderDirigeantDocs(); syncDocZones(); recheck();
