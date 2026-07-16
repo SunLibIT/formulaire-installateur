@@ -2669,7 +2669,13 @@ function removeFileFor(key,idx){
     action:'removedoc', draftId:getDraftId(), type_client:ct, id:item.id
   })}).catch(function(){}); }
   list.splice(idx,1); setDocList(key,list); renderDocZone(key); toast('Document retiré');
-  if(isCniKey(key)) scheduleCniFaceCheck(key); else { if(DOC_VERIFY[key]) scheduleDocCheck(key); scheduleDependents(key); }
+  if(isCniKey(key)) scheduleCniFaceCheck(key);   // slot mono-fichier : vidé → doCniFaceCheck efface le verdict sans appel IA (pas d'id)
+  else {
+    // Pièce multi-fichiers : NE PAS ré-analyser les fichiers restants (déjà analysés — on garde leur verdict).
+    // On ne relance doDocCheck que si la pièce est désormais vide (il sort alors sans appel IA et efface le verdict).
+    if(DOC_VERIFY[key] && !getDocList(key).length) scheduleDocCheck(key);
+    scheduleDependents(key);
+  }
   scheduleAutoSave();
 }
 /* Info-bulle « exemple attendu » (bouton i + popup au survol) pour la pièce Google Maps.
