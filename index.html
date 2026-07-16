@@ -1032,7 +1032,7 @@
     #sl-root .doc-prog-bar{display:block!important;width:100%!important;height:8px!important;background:#eee!important;border-radius:10px!important;overflow:hidden!important;}
     #sl-root .doc-prog-fill{display:block!important;height:8px!important;background:var(--grad2)!important;border-radius:10px!important;transition:width .4s ease!important;width:0%;}
     /* ── MODAL ── */
-    #sl-root .modal-overlay{display:none!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,.45)!important;z-index:99999!important;align-items:center!important;justify-content:center!important;}
+    #sl-root .modal-overlay{display:none!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:rgba(0,0,0,.45)!important;z-index:99999!important;align-items:flex-start!important;justify-content:center!important;}   /* flex-start : la position verticale est fixée par JS (_anchorModal) au niveau du déclencheur — l'iframe auto-hauteur n'a pas de scroll propre, un centrage tomberait hors de la zone vue */
     #sl-root .modal-overlay.on{display:flex!important;}
     #sl-root .modal-box{background:#fff!important;border-radius:20px!important;padding:32px!important;width:480px!important;max-height:88vh!important;overflow-y:auto!important;box-shadow:0 20px 60px rgba(0,0,0,.2)!important;}
     #sl-root .modal-ico{display:block!important;font-size:40px!important;text-align:center!important;margin-bottom:12px!important;}
@@ -1056,7 +1056,7 @@
 
     /* ════════════ Modale « Revenir à vos dossiers ? » (sortie du wizard) ════════════ */
     /* Overlay sombre neutre, contenu centré */
-    #sl-root .sl-leave-ov{ display:none!important; position:fixed!important; inset:0!important; background:rgba(17,33,38,.45)!important; z-index:99999!important; align-items:center!important; justify-content:center!important; padding:20px!important; }
+    #sl-root .sl-leave-ov{ display:none!important; position:fixed!important; inset:0!important; background:rgba(17,33,38,.45)!important; z-index:99999!important; align-items:flex-start!important; justify-content:center!important; padding:20px!important; }   /* flex-start : position verticale fixée par JS (_anchorModal) — cf. .modal-overlay */
     #sl-root .sl-leave-ov.on{ display:flex!important; }
     /* Boîte blanche, rayon doux, ombre NEUTRE (pas de halo coloré), texte centré */
     #sl-root .sl-leave-box{ width:100%!important; max-width:440px!important; background:#fff!important; border-radius:16px!important; padding:30px 28px 22px!important; box-shadow:0 20px 60px rgba(17,33,38,.22)!important; text-align:center!important; animation:slLeaveIn .2s ease!important; }
@@ -2009,6 +2009,24 @@ function setBgInert(on){
     if(on) el.setAttribute('inert',''); else el.removeAttribute('inert');
   });
 }
+/* Ancre la boîte d'une modale au niveau du déclencheur (`_lastFocus`, forcément visible), car l'iframe est
+   redimensionnée à la hauteur totale du contenu (sendHeight) → elle n'a pas de scroll propre : un overlay
+   position:fixed couvre TOUT le document et un centrage classique place la modale hors de la zone vue par le
+   client (scroll du parent Softr inaccessible en cross-origin). On centre donc la modale sur le déclencheur. */
+function _anchorModal(overlayEl){
+  if(!overlayEl) return;
+  var box=overlayEl.querySelector('.modal-box, .sl-leave-box'); if(!box) return;
+  var trg=_lastFocus, top=null;
+  if(trg && document.body.contains(trg) && trg.getBoundingClientRect){
+    var r=trg.getBoundingClientRect();
+    if(r.height>0 || r.top>0){   // déclencheur visible (l'iframe n'a pas de scroll → rect.top = position absolue dans le document)
+      var bh=box.getBoundingClientRect().height;
+      var max=Math.max(12, overlayEl.clientHeight - bh - 12);
+      top=Math.max(12, Math.min(r.top + r.height/2 - bh/2, max));   // modale centrée verticalement sur le déclencheur, bornée au document
+    }
+  }
+  if(top==null) box.style.removeProperty('margin-top'); else box.style.setProperty('margin-top', Math.round(top)+'px', 'important');
+}
 window.confirmDanger=function(opts){
   opts=opts||{};
   document.getElementById('modal-danger-title').textContent=opts.title||'Confirmer l\'action ?';
@@ -2017,7 +2035,7 @@ window.confirmDanger=function(opts){
   _dangerCb=(typeof opts.onConfirm==='function')?opts.onConfirm:null;
   _lastFocus=document.activeElement;          // déclencheur (« Modifier » / « Retirer »)
   setBgInert(true);
-  document.getElementById('modal-danger-overlay').classList.add('on');
+  var _dov=document.getElementById('modal-danger-overlay'); _dov.classList.add('on'); _anchorModal(_dov);   // positionne la modale au niveau du déclencheur (visible)
   var cancel=document.getElementById('modal-danger-cancel');if(cancel)cancel.focus();   // focus sur l'action SÛRE
 };
 function _closeDanger(){
@@ -2037,7 +2055,7 @@ window.confirmLeave=function(opts){
   _leaveCb=opts||{};
   _lastFocus=document.activeElement;          // déclencheur (« Mes dossiers »)
   setBgInert(true);
-  document.getElementById('modal-leave-overlay').classList.add('on');
+  var _lov=document.getElementById('modal-leave-overlay'); _lov.classList.add('on'); _anchorModal(_lov);
   var save=document.getElementById('modal-leave-save'); if(save) save.focus();   // focus sur l'action RECOMMANDÉE
 };
 function _closeLeave(){
@@ -3623,7 +3641,7 @@ window.slAlert=function(msg,title){
   var t=document.getElementById('modal-alert-title');if(t)t.textContent=title||'Champs à compléter';
   var m=document.getElementById('modal-alert-msg');if(m)m.textContent=msg||'';
   _lastFocus=document.activeElement;
-  document.getElementById('modal-alert-overlay').classList.add('on');
+  var _aov=document.getElementById('modal-alert-overlay'); _aov.classList.add('on'); _anchorModal(_aov);
   var ok=document.getElementById('modal-alert-ok');if(ok)ok.focus();
 };
 window.closeAlert=function(){
@@ -3645,7 +3663,7 @@ function buildModalRecap(){
 window.slSubmit=function(){
   buildModalRecap();
   _lastFocus=document.activeElement;
-  var ov=document.getElementById('modal-confirm-overlay');ov.classList.add('on');
+  var ov=document.getElementById('modal-confirm-overlay');ov.classList.add('on'); _anchorModal(ov);
   var cf=ov.querySelector('.modal-confirm');if(cf)cf.focus();
 };
 window.doSubmit=function(){
