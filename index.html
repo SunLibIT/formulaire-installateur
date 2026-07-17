@@ -1682,6 +1682,9 @@
           <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span><span class="sec-txt">Documents obligatoires</span></div>
           <div class="doc-progress"><span class="doc-prog-lbl" id="doc-prog-lbl">0 document fourni</span><div class="doc-prog-bar"><span class="doc-prog-fill" id="doc-prog-fill"></span></div></div>
           <div id="docs-part">
+            <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.2"/><path d="M20 19v-1.4a3.5 3.5 0 0 0-2.6-3.4"/><path d="M14.8 5.1a3.2 3.2 0 0 1 0 6"/></svg></span><span class="sec-txt">Documents des abonnés</span></div>
+            <div class="doc-abo-hint">Pièce d'identité de chaque personne déclarant des revenus — <strong>recto et verso à déposer séparément</strong>.</div>
+            <div id="docs-abonnes"></div>
             <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span class="sec-txt">Documents du projet</span></div>
             <div class="uz" onclick="trig('f-calep')"><input type="file" id="f-calep" accept=".pdf,.jpg,.jpeg,.png" onchange="onF(this,'calep')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span><span class="uz-info"><span class="uz-lbl">Étude personnalisée avec calepinage PV <span class="req">*</span></span><span class="uz-sub">Plan de pose des panneaux</span></span></div>
@@ -1714,9 +1717,6 @@
                 <span class="uz-fn" id="fn-bat-tech"></span><span class="uz-chk" id="uz-bat-tech"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
               </div>
             </div>
-            <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.2"/><path d="M20 19v-1.4a3.5 3.5 0 0 0-2.6-3.4"/><path d="M14.8 5.1a3.2 3.2 0 0 1 0 6"/></svg></span><span class="sec-txt">Documents des abonnés</span></div>
-            <div class="doc-abo-hint">Pièce d'identité de chaque personne déclarant des revenus — <strong>recto et verso à déposer séparément</strong>.</div>
-            <div id="docs-abonnes"></div>
           </div>
           <div id="docs-pro" class="hide">
             <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="sec-txt">Pièce d'identité du dirigeant</span></div>
@@ -2563,7 +2563,7 @@ var _upTmp = 0;
 var _replace = null;   // remplacement d'UN fichier précis : {key, id} posé au clic « Remplacer », consommé par onF
 function getDocList(key){ var v=docs?docs[key]:null; if(!v) return []; return Array.isArray(v)?v:[v]; }
 function setDocList(key,a){ docs[key]=a; }
-function renderDocZone(key){ if(isCniKey(key)){ renderCniSlot(key); renderAboAggregate(cniUidOf(key)); } else renderDoc(key); }
+function renderDocZone(key){ if(isCniKey(key)){ renderCniSlot(key); renderAboAggregate(cniUidOf(key)); refreshCniGated(); } else renderDoc(key); }
 /* Libellé des formats acceptés, dérivé de l'attribut `accept` de l'input (reflète le format réel de CHAQUE pièce). */
 function _acceptLabel(key){
   var inp=document.getElementById('f-'+key);
@@ -2666,6 +2666,7 @@ function uploadFileFor(key,f,opts){
   opts=opts||{};
   if(f.size>3*1024*1024){ toast('Fichier trop lourd : '+f.name); return; }
   var _gt=docGateState(key); if(_gt.locked){ toast(_gt.reason); return; }   // pièce verrouillée (source pas encore valide)
+  var _mx=docMax(key); if(_mx && !opts.single && getDocList(key).length>=_mx){ toast('Maximum '+_mx+' documents pour cette pièce.'); return; }   // pièce multi-fichiers plafonnée (ex. 3 bilans)
   var prevId=null;
   if(opts.single){
     var cur=getDocList(key);
@@ -2860,7 +2861,9 @@ function renderDoc(key){
 
   var foot=card.querySelector('[data-foot]');
   if(foot){ foot.innerHTML='';
-    if(list.length && !isSingleDoc(key)){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-'+key); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }   // mono-fichier : pas d'ajout (le remplacement est sur la vignette)
+    var _mx=docMax(key);
+    if(list.length && !isSingleDoc(key) && (!_mx || list.length<_mx)){ var add=_cnuEl('button','cnu-add'); add.type='button'; add.onclick=function(){ trig('f-'+key); }; add.innerHTML=PLUS_SVG; add.appendChild(_cnuEl('span',null,'Ajouter un document')); foot.appendChild(add); }   // mono-fichier : pas d'ajout (le remplacement est sur la vignette)
+    else if(_mx && list.length>=_mx) foot.appendChild(_cnuEl('span','cnu-hint','Nombre maximum de documents atteint ('+_mx+').'));   // plafond (ex. 3 bilans) → plus d'ajout
   }
   updateDocProgress();
 }
@@ -2977,7 +2980,7 @@ function renderAbonneDocs(){
     ['recto','verso'].forEach(function(face){ renderCniSlot(cniKey(uid,face)); });
     renderAboAggregate(uid);
   });
-  updateDocProgress();
+  updateDocProgress(); refreshCniGated();
 }
 /* Pro : carte CNI (recto + verso) du dirigeant — réutilise l'infra abonnés (uid stable 'dir'). */
 function renderDirigeantDocs(){
@@ -3178,6 +3181,10 @@ var DOC_VERIFY={ prop:'TITRE_PROPRIETE', 'prop-pro':'TITRE_PROPRIETE', maps:'GOO
    au retrait d'un fichier (contrôle d'agrégat : nombre de pages/factures/exercices). CNI = déjà mono par face. */
 var DOC_SINGLE={ maps:1, 'map-pro':1, calep:1, 'cal-pro':1, devis:1, 'dev-pro':1, prop:1, 'prop-pro':1, impots:1, kbis:1, 'kbis-prop':1, 'bat-tech':1 };
 function isSingleDoc(key){ return !!DOC_SINGLE[key]; }
+/* Plafond de fichiers pour une pièce MULTI-fichiers (au-delà : dépôt refusé + bouton « Ajouter » masqué).
+   Bilans (pro) = 3 exercices → 3 documents au maximum. */
+var DOC_MAX={ bilans:3 };
+function docMax(key){ return DOC_MAX[key]||0; }
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
@@ -3185,10 +3192,19 @@ var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
    ET valide. La copie Google Maps est VÉRIFIÉE par rapport à l'étude/calepinage ([CMP-ÉTUDE]) → l'étude
    doit venir d'abord ; la copie Google Maps reste OBLIGATOIRE ensuite. */
 var DOC_GATE={ maps:'calep', 'map-pro':'cal-pro' };
+/* Verrou CNI → avis d'imposition : l'avis reste bloqué tant que la pièce d'identité (recto ET verso) de CHAQUE
+   abonné n'est pas déposée. L'avis d'imposition doit porter le même nom qu'une des cartes d'identité → la CNI vient
+   d'abord (elle est aussi placée en tête du formulaire). Particuliers uniquement (pas d'avis d'imposition en pro). */
+var DOC_GATE_CNI={ impots:1 };
 var LOCK_SVG='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
 /* État du verrou d'une pièce → {locked, reason}. Débloquée dès que la source est déposée et analysée sans rejet
    (`ko`). IA indisponible (analyse tentée, pas de verdict) → débloquée aussi (dégradé, ne bloque jamais). */
 function docGateState(key){
+  if(DOC_GATE_CNI[key]){   // verrou sur la CNI (avis d'imposition) — particuliers uniquement
+    if(ct!=='part') return {locked:false};
+    if(cniGatePending()) return {locked:true, reason:'Déposez d’abord la pièce d’identité (recto et verso) de chaque abonné : l’avis d’imposition, dont le nom doit correspondre à une pièce d’identité, se débloque ensuite.'};
+    return {locked:false};
+  }
   var gate=DOC_GATE[key]; if(!gate) return {locked:false};
   if(!getDocList(gate).length) return {locked:true, reason:'Déposez d’abord l’étude (calepinage) : la copie Google Maps (obligatoire) se débloque une fois l’étude validée.'};
   if(_docChecking[gate]) return {locked:true, reason:'Analyse de l’étude en cours… la copie Google Maps se débloquera ensuite.'};
@@ -3202,6 +3218,21 @@ function docGateState(key){
 function refreshGatedBy(gateKey){
   Object.keys(DOC_GATE).forEach(function(k){ if(DOC_GATE[k]===gateKey && document.getElementById('uz-'+k)) renderDoc(k); });
 }
+/* Vrai tant qu'une pièce d'identité (recto/verso) d'un abonné manque → l'avis d'imposition reste verrouillé.
+   On n'exige que la PRÉSENCE des deux faces ; le contrôle du nom de l'avis est fait côté formulaire ([CMP-FORM]). */
+function cniGatePending(){
+  if(ct!=='part') return false;
+  try{ if(typeof saveAbos==='function') saveAbos(); }catch(e){}
+  if(!abos.length) return false;
+  for(var i=0;i<abos.length;i++){
+    var uid=abos[i].uid; if(!uid) continue;
+    var g=aboCniVerdict(uid);
+    if(!g.rectoPresent || !g.versoPresent) return true;
+  }
+  return false;
+}
+/* Re-rend les pièces verrouillées par la CNI (l'avis d'imposition) quand une face change. */
+function refreshCniGated(){ Object.keys(DOC_GATE_CNI).forEach(function(k){ if(document.getElementById('uz-'+k)) renderDoc(k); }); }
 var docVerdicts={}, _docTimers={}, _docSeqs={}, _docChecking={}, _docTried={};
 /* Libellé lisible d'un document (pour les messages de blocage). */
 function docName(key){ var t=document.querySelector('#sl-root #uz-'+key+' .cnu-title'); return t?t.textContent.replace(/\*/g,'').replace(/\s+/g,' ').trim():key; }
