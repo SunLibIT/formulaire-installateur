@@ -3151,6 +3151,7 @@ function doCniFaceCheck(key){
     renderCniSlot(key); renderAboAggregate(uid);
     if(it&&it.id&&it._verdict) persistDocVerdict([{ id:it.id, statut:((it._verdict.lisible===false||it._verdict.estPiece===false)?'ko':'ok'), controles:JSON.stringify(it._verdict), confiance:(it._verdict.full&&typeof it._verdict.full.confiance==='number')?it._verdict.full.confiance:null }]);
     if(uid==='dir' && DOC_VERIFY['kbis'] && getDocList('kbis').length) scheduleDocCheck('kbis');   // [CMP-DOC] : la CNI du dirigeant vient d'être analysée → re-vérifie le Kbis exploitant (nom du représentant)
+    if(uid!=='dir' && DOC_VERIFY['impots'] && getDocList('impots').length) scheduleDocCheck('impots');   // [CMP-DOC] : la CNI d'un abonné vient d'être analysée → re-vérifie l'avis d'imposition (nom lu sur la CNI)
   }).catch(function(){ if(seq!==_cniSeqs[key]) return; _cniChecking[key]=false; renderCniSlot(key); renderAboAggregate(uid); });
 }
 /* Motif de blocage (string) si un abonné n'a pas de CNI conforme, sinon null. IA indispo → non bloquant. */
@@ -3187,7 +3188,7 @@ var DOC_MAX={ bilans:3 };
 function docMax(key){ return DOC_MAX[key]||0; }
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
-var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], 'prop-pro':['cal-pro'] };
+var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], prop:['calep'], 'prop-pro':['cal-pro'] };
 /* Verrou de séquence : la pièce (clé) reste bloquée tant que sa pièce SOURCE (valeur) n'est pas déposée
    ET valide. La copie Google Maps est VÉRIFIÉE par rapport à l'étude/calepinage ([CMP-ÉTUDE]) → l'étude
    doit venir d'abord ; la copie Google Maps reste OBLIGATOIRE ensuite. */
@@ -3246,6 +3247,9 @@ function docFormContext(key){
   var batteriePhysique=(iType==='pvb'||iType==='bat');   // batterie physique (≠ virtuelle pvbv) → seuil de solvabilité 7 % au lieu de 4 % (avis d'imposition)
   var elecCb=document.getElementById(key==='elec-pro'?'sl-elec-newacq-pro':'sl-elec-newacq');   // « nouvelle acquisition » → un échéancier attendu ; case propre au profil (part/pro)
   var ctx={ profil:ct, adresse:adresse, abonnes:abonnes, duree:duree, mensualite:mensualite, batteriePhysique:batteriePhysique, pdl:v('sl-pdl'), nouvelleAcquisition:!!(elecCb&&elecCb.checked) };
+  if(key==='impots'){   // [CMP-DOC] : le nom du foyer fiscal est comparé aux noms LUS sur les CNI des abonnés (repli : noms du formulaire)
+    ctx.cniNoms=(Array.isArray(abos)?abos.map(function(a){ return a.uid?cniDetectedName(a.uid):''; }).filter(Boolean):[]).join(' ; ');
+  }
   if(ct==='pro'){   // pro : raison sociale attendue selon la pièce (Kbis exploitant vs Kbis propriétaire des murs) — [CMP-FORM]
     ctx.raisonSociale=v('sl-pro-nom')||''; ctx.dirigeant=(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim();
     ctx.estProprietaire=(propT==='oui'); ctx.proprietaireNom=(propT==='non'?(v('prop-nom')||''):'');
