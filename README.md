@@ -24,7 +24,7 @@ Le widget est un assistant (wizard) multi-étapes :
 
 ### Fonctionnalités clés
 - **Brouillons** : enregistrement serveur (upsert sur `ID Brouillon`) ; reprise qui restaure **l'intégralité** des champs (snapshot complet), le type d'installation, l'adresse/carte, les abonnés/collaborateurs et les documents fournis.
-- **Documents** : chaque fichier = **une ligne dans la table Airtable `Documents`** (liée au dossier, avec type/portée/abonné/verdict), ≤ 3 Mo/fichier (au-delà : « Fichier trop lourd »). Deux portées — **documents du projet** (communs) et **documents des abonnés** (CNI **recto + verso par personne**, vérifiée par IA face par face). Liste complète et contrôles → [Documents & contrôles](#documents--contrôles).
+- **Documents** : chaque fichier = **une ligne dans la table Airtable `Documents`** (liée au dossier, avec type/portée/abonné/verdict), ≤ 25 Mo/fichier (au-delà : « Fichier trop lourd »). Le fichier part **directement du navigateur** vers un stockage tampon (Vercel Blob) puis est repris par Airtable, sans transiter par la fonction serverless — c'est ce qui permet de dépasser les 4,5 Mo imposés par Vercel. Deux portées — **documents du projet** (communs) et **documents des abonnés** (CNI **recto + verso par personne**, vérifiée par IA face par face). Liste complète et contrôles → [Documents & contrôles](#documents--contrôles).
 - **Adresse** : autocomplétion BAN (`api-adresse.data.gouv.fr`) + carte Google Maps satellite avec marqueur déplaçable.
 - **Pro** : recherche SIREN (préremplissage entreprise/dirigeant).
 - **Resize iframe** : la hauteur réelle est postée au parent (`postMessage({iframeHeight})`), anti-boucle.
@@ -39,7 +39,7 @@ Deux **portées** de documents :
 
 **Contrôles génériques (toutes les pièces) :**
 - **Format** : filtré par l'attribut `accept` du sélecteur — **PDF seul** ou **PDF / JPG / PNG** selon la pièce (filtre natif du navigateur, non revérifié ensuite).
-- **Poids** : refusé si **> 3 Mo** → message « Fichier trop lourd : *nom* (*taille*) — 3 Mo maximum par fichier ». La limite est aussi rappelée dans la zone de dépôt, sous les formats acceptés.
+- **Poids** : refusé si **> 25 Mo** → message « Fichier trop lourd : *nom* (*taille*) — 25 Mo maximum par fichier ». La limite est aussi rappelée dans la zone de dépôt, sous les formats acceptés. Les **photos** (JPG/PNG/WebP) sont automatiquement allégées dans le navigateur avant l'envoi — un cliché de smartphone de 8 Mo part à ~300 Ko, sans perte de lisibilité. Au-delà de **20 Mo**, le document est bien enregistré mais sort du périmètre de l'analyse IA (limite d'entrée du modèle) : revue humaine, sans blocage.
 - **Aucune analyse de contenu, sauf la CNI.**
 
 **Documents demandés, par type de client :**

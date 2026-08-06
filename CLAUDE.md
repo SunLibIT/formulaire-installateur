@@ -103,7 +103,7 @@ Assistant (wizard) multi-étapes. Variables d'état clés dans l'IIFE : `ct` (`'
 
 ### Documents & contrôles par type (récap)
 
-Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** (pro, **plafonnés à 3 fichiers via `DOC_MAX`**) qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, PDF/JPG/PNG, ou **PDF/Word** pour le devis — filtre natif, non revérifié ; le sous-titre de la zone de dépôt est dérivé de `accept` par `_acceptLabel`) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd : *nom* (*taille*) — 3 Mo maximum par fichier » ; seuil dans `DOC_MAX_MB`/`DOC_MAX_BYTES`, rappelé dans le sous-titre des zones de dépôt). **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
+Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** (pro, **plafonnés à 3 fichiers via `DOC_MAX`**) qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, PDF/JPG/PNG, ou **PDF/Word** pour le devis — filtre natif, non revérifié ; le sous-titre de la zone de dépôt est dérivé de `accept` par `_acceptLabel`) + poids **> 25 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd : *nom* (*taille*) — 25 Mo maximum par fichier » ; seuil dans `DOC_MAX_MB`/`DOC_MAX_BYTES`, rappelé dans le sous-titre des zones de dépôt). **Les photos sont recompressées avant envoi** (`compressImage` : > 900 Ko et JPEG/PNG/WebP → canvas, 2200 px sur le grand côté, JPEG q. 0,82 ; PDF jamais touchés, original conservé si la recompression ne gagne rien ou échoue) — la vignette et l'analyse IA portent sur le fichier réellement envoyé. **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
 
 | Document (clé `docs`) | Portée | Part. | Pro | Formats | Contenu |
 |---|---|:--:|:--:|---|---|
@@ -132,8 +132,9 @@ Proxy Airtable. Base par défaut `appmroXyuCrYwDbM7`, tables `Particulier`/`Pro`
 Actions (POST `body.action`) + GET/DELETE :
 - `GET ?email=` → dossiers « En cours ».
 - `POST` (payload) → upsert brouillon ; **si `p.validation`** écrit `Statut validation`/`Points bloquants`/`Rapport validation`/`Validé le` sur la fiche (C) ; **si `p.docStatuts`** met à jour le statut par ligne `Documents` (B).
-- `POST {action:'upload'}` → **crée une ligne `Documents`** (liée au dossier) + y attache le fichier (`typeForKey`/`scope`/`abo`/`key`). `prevId` → supprime l'ancienne ligne (remplacement). Renvoie l'id de ligne.
-- `POST {action:'verifyid'}` → vérification IA (voir plus bas) ; `filesFromIds` lit les fichiers **par id de ligne** `Documents`.
+- `POST {action:'blobsign', filename}` → **URL d'upload signée** (Vercel Blob) pour le dépôt direct depuis le navigateur (`handleBlobSign` : `issueSignedToken` + `presignUrl`, portée `put`, 30 min, plafond `UPLOAD_MAX_MB`). `503` si `BLOB_READ_WRITE_TOKEN` absent → le front bascule sur le repli base64.
+- `POST {action:'upload'}` → **crée une ligne `Documents`** (liée au dossier) + y attache le fichier (`typeForKey`/`scope`/`abo`/`key`). Deux sources : **`blobUrl`** (voie normale — Airtable télécharge lui-même depuis le blob, aucun octet ne traverse la fonction) ou **`dataBase64`** (repli ≤ 3 Mo). `prevId` → supprime l'ancienne ligne (remplacement). Renvoie l'id de ligne.
+- `POST {action:'verifyid'}` → vérification IA (voir plus bas) ; `filesFromIds` lit les fichiers **par id de ligne** `Documents`, et **saute les fichiers > `AI_MAX_BYTES` (20 Mo)** — au-delà, Claude refuse l'entrée (32 Mo max, base64 inclus) : le document reste enregistré, sans verdict, non bloquant.
 - `POST {action:'removedoc'}` → **supprime la ligne** `Documents` (par id).
 - `POST {action:'docverdict', items:[{id,statut,controles,confiance}]}` → **écrit le verdict sur les lignes** `Documents` ; appelé par le front **dès qu'une analyse se termine** (`persistDocVerdict`), pour persister sans attendre la création.
 - `POST {action:'getdocverdicts', draftId}` → relit les lignes `Documents` du dossier (`[{id,cle,filename,size,controles,statut}]`) ; à la reprise, `restoreDocVerdicts()` **reconstruit `docs` depuis ces lignes** (la table fait foi) + restaure les verdicts et **ne relance l'IA que sur les documents sans verdict stocké** (plus de re-trigger complet). `Contrôles` stocke le **verdict front complet** (JSON) pour permettre cette restauration.
@@ -141,7 +142,9 @@ Actions (POST `body.action`) + GET/DELETE :
 
 Verdict persisté (schéma dossier) : sur `Particulier`/`Pro` — `Statut validation` (Conforme/À vérifier/Non conforme), `Points bloquants`, `Rapport validation` (JSON), `Validé le` ; front `buildValidation()` + `buildDocStatuts()` (envoyés à la **création**). `sniffMedia` corrige le `media_type` (magic bytes) avant l'appel Claude.
 
-Variables d'env Vercel : `AIRTABLE_TOKEN` (requis), `AIRTABLE_BASE_ID`, `ALLOW_ORIGIN`, `N8N_ID_WEBHOOK_URL`, `N8N_ID_WEBHOOK_SECRET`, `N8N_ID_WEBHOOK_HEADER` (défaut `x-sl-secret`).
+Variables d'env Vercel : `AIRTABLE_TOKEN` (requis), `BLOB_READ_WRITE_TOKEN` (ajouté automatiquement en connectant un store Blob **public** au projet — sans lui, plus de gros fichiers : repli base64 à 3 Mo), `UPLOAD_MAX_MB` (défaut 25, à garder aligné sur `DOC_MAX_MB`), `AIRTABLE_BASE_ID`, `ALLOW_ORIGIN`, `N8N_ID_WEBHOOK_URL`, `N8N_ID_WEBHOOK_SECRET`, `N8N_ID_WEBHOOK_HEADER` (défaut `x-sl-secret`).
+
+**Upload (depuis 2026-08-06)** — le corps d'une requête Vercel est plafonné à **4,5 Mo**, ce qui limitait les pièces à 3 Mo. Le fichier ne traverse donc plus la fonction : `blobsign` renvoie une URL signée, le navigateur y fait un simple `PUT` (`uploadToBlob`, un seul en-tête `content-type` — pas de SDK côté front, le widget reste vanilla), puis `upload` transmet l'URL à Airtable qui télécharge le fichier. `absorbBlob` attend qu'Airtable ait sa copie (polling ≤ 24 s sur l'URL de la pièce jointe) puis **supprime le blob** : le store n'est qu'un tampon de transit, rien ne s'y accumule. `@vercel/blob` est la **seule** dépendance npm du dépôt et sert **uniquement** au serverless — la règle « vanilla, sans build » reste vraie pour `index.html`.
 
 ## Feature : vérification IA de la CNI (par abonné, recto/verso, asynchrone)
 
@@ -185,5 +188,7 @@ Même infra que la CNI, généralisée aux **autres pièces** (1ᵉʳ document c
 - **Webhook n8n** : doit être **actif** (sinon 404) et le secret Header Auth (`x-sl-secret`) doit correspondre **exactement** à `N8N_ID_WEBHOOK_SECRET` sur Vercel (sinon 403 « Authorization data is wrong »).
 - **Variables Vercel** : prises en compte au **prochain build** → *Redeploy* après ajout.
 - **Appel Claude (n8n)** : le nœud HTTP doit envoyer l'en-tête `anthropic-version: 2023-06-01` (le credential `anthropicApi` n'ajoute que `x-api-key`), sinon **400 « anthropic-version header is required »**. *(Historique : Gemini free tier bloquait en 429 quota=0.)*
-- **Limite Vercel** : corps de requête entrant ≤ 4,5 Mo (d'où l'approche par ids pour `verifyid`).
-- **Upload** : `uploadFileFor` limite chaque fichier à `DOC_MAX_MB` = 3 Mo (base64 ≈ 4 Mo). Faire évoluer le seuil **uniquement** via `DOC_MAX_MB` (toast + sous-titres des zones de dépôt en dérivent).
+- **Limite Vercel** : corps de requête entrant ≤ 4,5 Mo (d'où l'approche par ids pour `verifyid`, et l'upload direct navigateur → Blob pour les documents).
+- **Store Blob** : doit être en accès **public** (Airtable télécharge l'URL sans en-tête d'authentification). Les URLs comportent un suffixe aléatoire et vivent quelques secondes — mais restent publiques le temps du transit.
+- **Upload** : `uploadFileFor` limite chaque fichier à `DOC_MAX_MB` = **25 Mo** (le fichier ne traverse plus la fonction serverless, cf. § Upload). Faire évoluer le seuil via `DOC_MAX_MB` **et** `UPLOAD_MAX_MB` côté serveur — les deux doivent rester alignés. `BASE64_MAX_MB` = 3 Mo ne concerne que le **repli**.
+- **Blob = tampon, pas stockage** : `absorbBlob` supprime le blob dès qu'Airtable a sa copie. Ne pas s'appuyer sur la persistance d'une URL `blob.vercel-storage.com`.

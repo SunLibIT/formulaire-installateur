@@ -1,0 +1,9 @@
+{
+  "name": "formulaire-installateur",
+  "private": true,
+  "type": "module",
+  "description": "Widget de saisie de dossier abonné SunLib. Le front (index.html) reste vanilla sans build : cette dépendance ne sert QU'À la fonction serverless api/drafts.js, pour signer les URLs d'upload direct navigateur → Vercel Blob (contournement de la limite de 4,5 Mo sur le corps des requêtes Vercel).",
+  "dependencies": {
+    "@vercel/blob": "2.6.1"
+  }
+}

@@ -164,6 +164,58 @@ async function touchSession(email, device, link) {
   } catch (e) { /* journalisation best-effort */ }
 }
 
+// ── Upload direct navigateur → Vercel Blob (contourne la limite de 4,5 Mo du corps des requêtes Vercel) ──
+// Le fichier ne transite plus par cette fonction : le front reçoit une URL signée et y dépose le fichier
+// lui-même, puis nous transmet l'URL publique que l'on donne à Airtable. Le blob n'est qu'un TAMPON —
+// une fois Airtable servi, on le supprime (cf. `absorbBlob`) : rien ne s'accumule dans le store.
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || '';
+const BLOB_MAX_MB = Number(process.env.UPLOAD_MAX_MB || 25);   // plafond aligné sur DOC_MAX_MB (index.html)
+
+// Signe une URL d'upload pour UN fichier. Le front y fait un simple PUT (cf. § Upload dans le README).
+async function handleBlobSign(p, res) {
+  if (!BLOB_TOKEN) return res.status(503).json({ error: 'blob non configuré' });   // → le front retombe sur le base64
+  var name = String(p.filename || 'document').replace(/[^\w.\-]+/g, '_').slice(-80) || 'document';
+  var pathname = 'depots/' + (p.draftId || 'sans-dossier') + '/' + Date.now() + '-' + name;
+  try {
+    var blob = await import('@vercel/blob');
+    var signed = await blob.issueSignedToken({
+      token: BLOB_TOKEN, pathname: pathname, operations: ['put'],
+      maximumSizeInBytes: BLOB_MAX_MB * 1024 * 1024,
+      validUntil: Date.now() + 30 * 60 * 1000
+    });
+    var out = await blob.presignUrl(signed, {
+      operation: 'put', pathname: pathname, access: 'public',
+      maximumSizeInBytes: BLOB_MAX_MB * 1024 * 1024,
+      addRandomSuffix: true, allowOverwrite: false,
+      validUntil: Date.now() + 30 * 60 * 1000
+    });
+    return res.status(200).json({ ok: true, url: out.presignedUrl, maxMb: BLOB_MAX_MB });
+  } catch (e) {
+    return res.status(500).json({ error: 'signature impossible : ' + (e && e.message ? e.message : e) });
+  }
+}
+
+// Attend qu'Airtable ait fini de télécharger le fichier depuis l'URL du blob, puis supprime le blob.
+// Airtable ingère de façon ASYNCHRONE : tant que la pièce jointe pointe encore sur notre URL, il ne faut
+// pas supprimer. Best-effort et borné — si l'ingestion traîne, on laisse le blob (jamais bloquant).
+async function absorbBlob(rowId, blobUrl) {
+  if (!blobUrl || !BLOB_TOKEN) return;
+  try {
+    for (var i = 0; i < 12; i++) {                                   // ~24 s max, bien sous maxDuration
+      await new Promise(function (r) { setTimeout(r, 2000); });
+      var g = await fetch(tbl(DOCS_TABLE) + '/' + rowId, { headers: H });
+      if (!g.ok) continue;
+      var d = await g.json();
+      var att = (d.fields && d.fields['Fichier'] && d.fields['Fichier'][0]) || null;
+      if (att && att.url && att.url.indexOf('blob.vercel-storage.com') === -1) {   // Airtable héberge sa copie
+        var blob = await import('@vercel/blob');
+        await blob.del(blobUrl, { token: BLOB_TOKEN });
+        return;
+      }
+    }
+  } catch (e) { /* le blob restera — sans conséquence fonctionnelle */ }
+}
+
 // ── Documents → table dédiée « Documents » (1 ligne = 1 fichier, liée au dossier) ──
 const CONTENT = 'https://content.airtable.com/v0';
 const DOCS_TABLE = 'Documents';
@@ -202,7 +254,7 @@ async function ensureRecord(table, p) {
 // Upload d'UN document → crée une ligne dans la table « Documents » (liée au dossier) + y attache le fichier.
 // Renvoie l'id de la LIGNE (utilisé ensuite pour la lecture/retrait). prevId : ancienne ligne à supprimer (remplacement).
 async function handleUpload(p, res) {
-  if (!p.draftId || !p.dataBase64) return res.status(400).json({ error: 'draftId + dataBase64 requis' });
+  if (!p.draftId || (!p.dataBase64 && !p.blobUrl)) return res.status(400).json({ error: 'draftId + (blobUrl | dataBase64) requis' });
   var table = TABLES[p.type_client] || 'Particulier';
   var recId = await ensureRecord(table, p);   // dossier (pour le lien)
   if (!recId) return res.status(500).json({ error: 'dossier introuvable/non créé' });
@@ -223,17 +275,28 @@ async function handleUpload(p, res) {
   if (!cr.ok) return res.status(cr.status).json({ error: cd });
   var rowId = cd.records && cd.records[0] && cd.records[0].id;
   if (!rowId) return res.status(500).json({ error: 'ligne Documents non créée' });
-  // 2) attacher le fichier à la ligne
+  // 2) attacher le fichier à la ligne — depuis l'URL du blob (gros fichiers) ou en base64 (repli ≤ 3 Mo)
   var filename = p.filename || 'document';
-  var ur = await fetch(CONTENT + '/' + BASE + '/' + rowId + '/' + DOCS_FILE_FIELD + '/uploadAttachment', {
-    method: 'POST', headers: H,
-    body: JSON.stringify({ contentType: p.contentType || 'application/octet-stream', filename: filename, file: p.dataBase64 })
-  });
-  var ud = await ur.json();
+  var ur, ud;
+  if (p.blobUrl) {
+    // Airtable télécharge lui-même le fichier : aucun octet ne transite par cette fonction.
+    ur = await fetch(tbl(DOCS_TABLE) + '/' + rowId, {
+      method: 'PATCH', headers: H,
+      body: JSON.stringify({ fields: { 'Fichier': [{ url: String(p.blobUrl), filename: filename }] } })
+    });
+    ud = await ur.json();
+  } else {
+    ur = await fetch(CONTENT + '/' + BASE + '/' + rowId + '/' + DOCS_FILE_FIELD + '/uploadAttachment', {
+      method: 'POST', headers: H,
+      body: JSON.stringify({ contentType: p.contentType || 'application/octet-stream', filename: filename, file: p.dataBase64 })
+    });
+    ud = await ur.json();
+  }
   if (!ur.ok) {
     try { await fetch(tbl(DOCS_TABLE) + '/' + rowId, { method: 'DELETE', headers: H }); } catch (e) {}   // rollback de la ligne vide
     return res.status(ur.status).json({ error: ud });
   }
+  if (p.blobUrl) await absorbBlob(rowId, p.blobUrl);   // Airtable a sa copie → on vide le tampon
   if (p.prevId) { try { await fetch(tbl(DOCS_TABLE) + '/' + encodeURIComponent(p.prevId), { method: 'DELETE', headers: H }); } catch (e) {} }   // remplacement : supprime l'ancienne ligne
   return res.status(200).json({ ok: true, id: rowId, filename: filename });
 }
@@ -250,6 +313,9 @@ function sniffMedia(buf, fallback) {
   return fallback || 'application/octet-stream';
 }
 
+// Au-delà, un document n'est plus soumis à l'IA (limite d'entrée de Claude : 32 Mo par requête, base64 inclus).
+const AI_MAX_BYTES = 20 * 1024 * 1024;
+
 // Récupère les fichiers (par ids de LIGNES de la table Documents) et les renvoie en base64. Les URLs
 // d'attachement Airtable sont signées et lues juste-à-temps. Client → proxy ne transporte que des ids.
 async function filesFromIds(table, draftId, ids) {
@@ -261,8 +327,13 @@ async function filesFromIds(table, draftId, ids) {
     var gd = await gr.json();
     var atts = (gd.fields && gd.fields['Fichier']) || [];
     var a = atts[0]; if (!a || !a.url) continue;
+    // Trop lourd pour l'analyse : Claude plafonne à 32 Mo par requête (base64 ≈ +33 %) et le webhook n8n
+    // aurait de toute façon du mal. Le document reste enregistré, il sort juste du périmètre IA — le front
+    // le traite comme un verdict indisponible (non bloquant, revue humaine), comme un devis Word.
+    if (a.size && a.size > AI_MAX_BYTES) continue;
     var fr = await fetch(a.url); if (!fr.ok) continue;
     var buf = Buffer.from(await fr.arrayBuffer());
+    if (buf.length > AI_MAX_BYTES) continue;
     out.push({ dataBase64: buf.toString('base64'), contentType: sniffMedia(buf, a.type), filename: a.filename || '' });   // type réel (magic bytes), pas le contentType déclaré
   }
   return out;
@@ -382,6 +453,7 @@ export default async function handler(req, res) {
       var p = (typeof req.body === 'string') ? JSON.parse(req.body || '{}') : (req.body || {});
       if (p.action === 'verifyid') return handleVerifyId(p, res);   // vérification IA d'un document (n8n + Claude)
       if (p.action === 'removedoc') return handleRemoveDoc(p, res);   // suppression d'une ligne Documents
+      if (p.action === 'blobsign') return handleBlobSign(p, res);   // URL signée pour l'upload direct navigateur → Blob
       if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document → ligne Documents
       if (p.action === 'docverdict') return handleDocVerdict(p, res);   // persiste le verdict après analyse
       if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
