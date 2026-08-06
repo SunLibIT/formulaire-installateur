@@ -103,7 +103,7 @@ Assistant (wizard) multi-étapes. Variables d'état clés dans l'IIFE : `ct` (`'
 
 ### Documents & contrôles par type (récap)
 
-Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** (pro, **plafonnés à 3 fichiers via `DOC_MAX`**) qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, PDF/JPG/PNG, ou **PDF/Word** pour le devis — filtre natif, non revérifié ; le sous-titre de la zone de dépôt est dérivé de `accept` par `_acceptLabel`) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd », limite non affichée). **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
+Toutes les pièces : obligatoires. **Mono-fichier** (un seul document, cf. `DOC_SINGLE`) sauf **facture d'électricité** (part+pro) et **3 bilans** (pro, **plafonnés à 3 fichiers via `DOC_MAX`**) qui restent multi-fichiers. **Contrôles génériques** (toute pièce) = format via `accept` (PDF seul, PDF/JPG/PNG, ou **PDF/Word** pour le devis — filtre natif, non revérifié ; le sous-titre de la zone de dépôt est dérivé de `accept` par `_acceptLabel`) + poids **> 3 Mo refusé** (`uploadFileFor` → toast « Fichier trop lourd : *nom* (*taille*) — 3 Mo maximum par fichier » ; seuil dans `DOC_MAX_MB`/`DOC_MAX_BYTES`, rappelé dans le sous-titre des zones de dépôt). **Analyse de contenu uniquement sur les pièces marquées « IA » ci-dessous.**
 
 | Document (clé `docs`) | Portée | Part. | Pro | Formats | Contenu |
 |---|---|:--:|:--:|---|---|
@@ -186,4 +186,4 @@ Même infra que la CNI, généralisée aux **autres pièces** (1ᵉʳ document c
 - **Variables Vercel** : prises en compte au **prochain build** → *Redeploy* après ajout.
 - **Appel Claude (n8n)** : le nœud HTTP doit envoyer l'en-tête `anthropic-version: 2023-06-01` (le credential `anthropicApi` n'ajoute que `x-api-key`), sinon **400 « anthropic-version header is required »**. *(Historique : Gemini free tier bloquait en 429 quota=0.)*
 - **Limite Vercel** : corps de requête entrant ≤ 4,5 Mo (d'où l'approche par ids pour `verifyid`).
-- **Upload** : `onF` limite chaque fichier à 3 Mo (base64 ≈ 4 Mo).
+- **Upload** : `uploadFileFor` limite chaque fichier à `DOC_MAX_MB` = 3 Mo (base64 ≈ 4 Mo). Faire évoluer le seuil **uniquement** via `DOC_MAX_MB` (toast + sous-titres des zones de dépôt en dérivent).

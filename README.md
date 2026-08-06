@@ -39,7 +39,7 @@ Deux **portées** de documents :
 
 **Contrôles génériques (toutes les pièces) :**
 - **Format** : filtré par l'attribut `accept` du sélecteur — **PDF seul** ou **PDF / JPG / PNG** selon la pièce (filtre natif du navigateur, non revérifié ensuite).
-- **Poids** : refusé si **> 3 Mo** → message « Fichier trop lourd » (la limite n'est pas affichée).
+- **Poids** : refusé si **> 3 Mo** → message « Fichier trop lourd : *nom* (*taille*) — 3 Mo maximum par fichier ». La limite est aussi rappelée dans la zone de dépôt, sous les formats acceptés.
 - **Aucune analyse de contenu, sauf la CNI.**
 
 **Documents demandés, par type de client :**

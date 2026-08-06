@@ -2581,7 +2581,7 @@ function _docDropzone(key){
   var dz=_cnuEl('button','cnu-drop'); dz.type='button';
   dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
   dz.appendChild(_cnuEl('span','cnu-drop-t', single?'Cliquez ou déposez votre fichier':'Cliquez ou déposez un ou plusieurs fichiers'));
-  dz.appendChild(_cnuEl('span','cnu-drop-s',_acceptLabel(key)));
+  dz.appendChild(_cnuEl('span','cnu-drop-s',_acceptLabel(key)+' · '+DOC_MAX_MB+' Mo max par fichier'));
   dz.onclick=function(){ trig('f-'+key); };
   dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
   dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
@@ -2664,7 +2664,7 @@ function docAboFor(key){
 /* Upload d'un fichier pour une pièce. opts.single : un seul fichier (remplace l'existant via prevId). */
 function uploadFileFor(key,f,opts){
   opts=opts||{};
-  if(f.size>3*1024*1024){ toast('Fichier trop lourd : '+f.name); return; }
+  if(f.size>DOC_MAX_BYTES){ toast('Fichier trop lourd : '+f.name+' ('+_cnuSize(f.size)+') — '+DOC_MAX_MB+' Mo maximum par fichier.'); return; }
   var _gt=docGateState(key); if(_gt.locked){ toast(_gt.reason); return; }   // pièce verrouillée (source pas encore valide)
   var _mx=docMax(key); if(_mx && !opts.single && getDocList(key).length>=_mx){ toast('Maximum '+_mx+' documents pour cette pièce.'); return; }   // pièce multi-fichiers plafonnée (ex. 3 bilans)
   var prevId=null;
@@ -3027,7 +3027,7 @@ function _docDropzoneSingle(key,face){
   var dz=_cnuEl('button','cnu-drop'); dz.type='button';
   dz.innerHTML='<span class="cnu-drop-ico">'+UPLOAD_SVG+'</span>';
   dz.appendChild(_cnuEl('span','cnu-drop-t','Déposez le '+face));
-  dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG'));
+  dz.appendChild(_cnuEl('span','cnu-drop-s','PDF, JPG ou PNG · '+DOC_MAX_MB+' Mo max'));
   dz.onclick=function(){ trig('f-'+key); };
   dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('is-over'); });
   dz.addEventListener('dragleave',function(){ dz.classList.remove('is-over'); });
@@ -3186,6 +3186,10 @@ function isSingleDoc(key){ return !!DOC_SINGLE[key]; }
    Bilans (pro) = 3 exercices → 3 documents au maximum. */
 var DOC_MAX={ bilans:3 };
 function docMax(key){ return DOC_MAX[key]||0; }
+/* Poids maximum d'un fichier (le base64 gonfle d'environ 1/3 → on reste sous la limite de 4,5 Mo de Vercel).
+   Rappelé dans la zone de dépôt et dans le message de refus (`uploadFileFor`). */
+var DOC_MAX_MB=3;
+var DOC_MAX_BYTES=DOC_MAX_MB*1024*1024;
 /* Documents de RÉFÉRENCE (croisés) transmis à l'IA pour un contrôle [CMP-DOC]/[CMP-ÉTUDE].
    Ex. la copie Google Maps est comparée au calepinage de l'étude. */
 var DOC_REFS={ maps:['calep'], 'map-pro':['cal-pro'], prop:['calep'], 'prop-pro':['cal-pro'] };
