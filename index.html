@@ -308,6 +308,9 @@
     #sl-root .nav2 { display: flex !important; align-items: center !important; gap: 12px !important; }
     #sl-root .foot-status { flex: 1 1 auto !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; font-size: 12px !important; color: var(--ink-soft) !important; }
     #sl-root .foot-status.ok { color: var(--color-teal-deep) !important; font-weight: 600 !important; }
+    /* Obstacle à la création : ambre = il reste à faire, rouge = pièce non conforme (cf. refreshCreate). */
+    #sl-root .foot-status.warn { color: var(--amber) !important; font-weight: 600 !important; }
+    #sl-root .foot-status.bad { color: var(--danger) !important; font-weight: 600 !important; }
     #sl-root .foot-status svg { flex: 0 0 auto !important; width: 14px !important; height: 14px !important; }
     @media (max-width: 640px) {
       #sl-root .abo-grid { grid-template-columns: 1fr !important; }
@@ -2988,6 +2991,7 @@ function updateDocProgress(){
   var lbl=document.getElementById('doc-prog-lbl');
   if(fill)fill.style.setProperty('width',pct+'%','important');
   if(lbl)lbl.textContent=done+' document'+(done>1?'s':'')+' fourni'+(done>1?'s':'')+' sur '+total;
+  refreshCreate();   // point de passage de TOUT changement de document → le pied de page suit l'état réel
 }
 
 /* ── CNI PAR ABONNÉ : deux slots recto/verso, analyse IA ASYNCHRONE par face (n8n / Claude vision) ── */
@@ -3829,12 +3833,30 @@ window.doSubmit=function(){
 };
 /* ── Création finale : certification obligatoire + verrou anti double-envoi ── */
 var _creating=false;
+/* Premier obstacle à la création, dans le même ordre que `slCreate`. Renvoie {tone,msg} ou null si la
+   voie est libre. Les DEUX doivent rester alignés : sans cela le pied de page annonce « Prêt à créer le
+   dossier » alors que le clic échouera sur une alerte — le statut mentirait à l'installateur. */
+function createBlocker(){
+  var m=docsMissingReason(); if(m) return {tone:'warn', msg:m};            // pièces manquantes = à faire
+  var c=cniBlockReason();    if(c) return {tone:'bad',  msg:c};            // pièce d'identité non conforme
+  var d=docsBlockReason();   if(d) return {tone:'bad',  msg:d};            // document vérifié non conforme
+  return null;
+}
 function refreshCreate(){
   if(_creating) return;
-  var cert=document.getElementById('sl-certify'), ok=!!(cert&&cert.checked);
+  var cert=document.getElementById('sl-certify'), coche=!!(cert&&cert.checked);
+  var bl=createBlocker(), ok=coche&&!bl;
   var btn=document.getElementById('btn-create'); if(btn) btn.disabled=!ok;
-  var st=document.getElementById('sc6-status');
-  if(st){ if(ok){ st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Prêt à créer le dossier</span>'; } else { st.className='foot-status'; st.textContent='Cochez la certification pour créer le dossier.'; } }
+  var st=document.getElementById('sc6-status'); if(!st) return;
+  if(bl){                                   // un vrai obstacle : on le nomme, plutôt qu'un feu vert trompeur
+    st.className='foot-status '+(bl.tone==='bad'?'bad':'warn');
+    st.innerHTML=ALERT_SVG+'<span></span>';
+    st.querySelector('span').textContent=bl.msg;   // le motif contient des noms saisis → jamais en innerHTML
+  } else if(!coche){
+    st.className='foot-status'; st.textContent='Cochez la certification pour créer le dossier.';
+  } else {
+    st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Prêt à créer le dossier</span>';
+  }
 }
 window.slCreate=function(){
   var cert=document.getElementById('sl-certify');
