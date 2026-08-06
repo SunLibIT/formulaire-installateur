@@ -1,0 +1,4 @@
+# Fins de ligne figées en LF dans le dépôt, quel que soit le poste (Windows compris).
+# Sans cela, une écriture depuis Windows peut basculer un fichier entier en CRLF : le diff
+# devient alors illisible (des milliers de lignes « modifiées » pour un changement de dix).
+* text=auto eol=lf
