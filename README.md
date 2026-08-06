@@ -39,7 +39,7 @@ Deux **portées** de documents :
 
 **Contrôles génériques (toutes les pièces) :**
 - **Format** : filtré par l'attribut `accept` du sélecteur — **PDF seul** ou **PDF / JPG / PNG** selon la pièce (filtre natif du navigateur, non revérifié ensuite).
-- **Poids** : refusé si **> 25 Mo** → message « Fichier trop lourd : *nom* (*taille*) — 25 Mo maximum par fichier ». La limite est aussi rappelée dans la zone de dépôt, sous les formats acceptés. Les **photos** (JPG/PNG/WebP) sont automatiquement allégées dans le navigateur avant l'envoi — un cliché de smartphone de 8 Mo part à ~300 Ko, sans perte de lisibilité. Au-delà de **20 Mo**, le document est bien enregistré mais sort du périmètre de l'analyse IA (limite d'entrée du modèle) : revue humaine, sans blocage.
+- **Poids** : refusé si **> 25 Mo** → message « Fichier trop lourd : *nom* (*taille*) — 25 Mo maximum par fichier ». La limite est aussi rappelée dans la zone de dépôt, sous les formats acceptés. Les **photos** (JPG/PNG/WebP) sont automatiquement allégées dans le navigateur avant l'envoi — un cliché de smartphone de 8 Mo part à ~300 Ko, sans perte de lisibilité ; une photo qui dépasse la limite est donc compressée d'abord et acceptée, jamais refusée d'emblée. Un **PDF** ne peut pas être recompressé de façon fiable : au-delà de la limite il est refusé, avec le conseil de relancer le scan en 150 dpi ou en noir et blanc. Au-delà de **20 Mo**, le document est bien enregistré mais sort du périmètre de l'analyse IA (limite d'entrée du modèle) : revue humaine, sans blocage.
 - **Aucune analyse de contenu, sauf la CNI.**
 
 **Documents demandés, par type de client :**

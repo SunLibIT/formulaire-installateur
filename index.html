@@ -2661,32 +2661,53 @@ function docAboFor(key){
   var who=person.named?person.label:(uid==='dir'?'Dirigeant':'Abonné');
   return who+' — '+face;
 }
+/* Formats d'image que le navigateur sait décoder puis réencoder (canvas). Un PDF n'en fait pas partie :
+   il n'existe pas de recompression fiable d'un PDF en vanilla, et un PDF mal réécrit devient illisible —
+   pour l'installateur comme pour l'IA. Les PDF partent donc toujours tels quels. */
+function isCompressible(f){ return !!f && /^image\/(jpe?g|png|webp)$/i.test(f.type||'') && !!window.createImageBitmap; }
 /* Recompression d'une PHOTO avant envoi. Les clichés de smartphone (CNI, factures) pèsent 4 à 12 Mo pour
-   une définition très au-delà du lisible : on redimensionne à IMG_MAX_PX sur le grand côté et on réencode
-   en JPEG. Une CNI reste largement lisible (par l'œil comme par l'IA) autour de 300 Ko. Les PDF ne sont
-   jamais touchés (pas de recompression fiable en vanilla) — ils partent tels quels vers le Blob.
+   une définition très au-delà du lisible. On tente les paliers de IMG_STEPS dans l'ordre et on s'arrête au
+   PREMIER qui tient sous `target` : le premier suffit dans l'immense majorité des cas (une CNI y tombe vers
+   300 Ko, largement lisible à l'œil comme par l'IA) ; les suivants ne servent que pour des images
+   démesurées, où mieux vaut une image dégradée mais acceptée qu'un dépôt refusé. Le dernier palier reste
+   au-dessus de 1000 px sur le grand côté — une CNI y est encore à ~300 dpi.
    Résout la promesse en un File ; en cas de souci (format exotique, canvas indisponible) rend l'original. */
-var IMG_MAX_PX = 2200, IMG_QUALITY = 0.82;
-function compressImage(f){
+var IMG_STEPS = [ {px:2200,q:0.82}, {px:1800,q:0.75}, {px:1400,q:0.70}, {px:1100,q:0.62} ];
+function compressImage(f,target){
+  target = target || DOC_MAX_BYTES;
   return new Promise(function(resolve){
-    if(!f || !/^image\/(jpe?g|png|webp)$/i.test(f.type||'') || !window.createImageBitmap) return resolve(f);
+    if(!isCompressible(f)) return resolve(f);
     if(f.size <= 900*1024) return resolve(f);   // déjà léger : ne pas dégrader pour rien
-    var done=false, giveUp=function(){ if(!done){ done=true; resolve(f); } };
-    setTimeout(giveUp, 15000);   // filet : un décodage qui traîne ne doit pas bloquer le dépôt
+    var done=false, best=null;
+    var finish=function(x){ if(!done){ done=true; resolve(x||best||f); } };
+    setTimeout(finish, 20000);   // filet : un décodage qui traîne ne doit pas bloquer le dépôt
     window.createImageBitmap(f).then(function(bmp){
-      var w=bmp.width, h=bmp.height, sc=Math.min(1, IMG_MAX_PX/Math.max(w,h));
-      var cv=document.createElement('canvas'); cv.width=Math.round(w*sc); cv.height=Math.round(h*sc);
-      cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
-      if(bmp.close) bmp.close();
-      cv.toBlob(function(b){
+      var w=bmp.width, h=bmp.height;
+      var step=function(i){
         if(done) return;
-        if(!b || b.size>=f.size) return giveUp();   // recompression contre-productive → on garde l'original
-        done=true;
-        var nom=String(f.name||'photo').replace(/\.[^.]+$/,'')+'.jpg';
-        resolve(new File([b], nom, {type:'image/jpeg'}));
-      }, 'image/jpeg', IMG_QUALITY);
-    }).catch(giveUp);
+        if(i>=IMG_STEPS.length){ if(bmp.close) bmp.close(); return finish(); }   // rend le plus léger obtenu
+        var s=IMG_STEPS[i], sc=Math.min(1, s.px/Math.max(w,h));
+        var cv=document.createElement('canvas'); cv.width=Math.round(w*sc)||1; cv.height=Math.round(h*sc)||1;
+        cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+        cv.toBlob(function(b){
+          if(done) return;
+          if(b && b.size<f.size && (!best || b.size<best.size)){
+            var nom=String(f.name||'photo').replace(/\.[^.]+$/,'')+'.jpg';
+            best=new File([b], nom, {type:'image/jpeg'});
+          }
+          if(best && best.size<=target){ if(bmp.close) bmp.close(); return finish(best); }
+          step(i+1);
+        }, 'image/jpeg', s.q);
+      };
+      step(0);
+    }).catch(function(){ finish(); });
   });
+}
+/* Message de refus : pour un PDF, dire *comment* alléger — c'est presque toujours un scan trop détaillé. */
+function tooBigMsg(f){
+  var base='Fichier trop lourd : '+f.name+' ('+_cnuSize(f.size)+') — '+DOC_MAX_MB+' Mo maximum par fichier.';
+  if(/pdf/i.test(f.type||'')||/\.pdf$/i.test(f.name||'')) return base+' Relancez le scan en 150 dpi ou en noir et blanc pour l\'alléger.';
+  return base;
 }
 /* Envoi du fichier au stockage tampon (Vercel Blob) SANS passer par la fonction serverless : le corps des
    requêtes Vercel est plafonné à 4,5 Mo, ce chemin n'a donc pas de limite pratique. Rend l'URL publique
@@ -2704,7 +2725,10 @@ function uploadToBlob(f){
 /* Upload d'un fichier pour une pièce. opts.single : un seul fichier (remplace l'existant via prevId). */
 function uploadFileFor(key,f,opts){
   opts=opts||{};
-  if(f.size>DOC_MAX_BYTES){ toast('Fichier trop lourd : '+f.name+' ('+_cnuSize(f.size)+') — '+DOC_MAX_MB+' Mo maximum par fichier.'); return; }
+  // Une image dépassant la limite n'est PAS refusée d'emblée : la recompression la ramène presque toujours
+  // très en dessous (une photo de 30 Mo finit sous le mégaoctet). Le verdict de taille est rendu après,
+  // sur le fichier réellement envoyé. Un PDF, lui, n'est pas compressible → refus immédiat.
+  if(f.size>DOC_MAX_BYTES && !isCompressible(f)){ toast(tooBigMsg(f)); return; }
   var _gt=docGateState(key); if(_gt.locked){ toast(_gt.reason); return; }   // pièce verrouillée (source pas encore valide)
   var _mx=docMax(key); if(_mx && !opts.single && getDocList(key).length>=_mx){ toast('Maximum '+_mx+' documents pour cette pièce.'); return; }   // pièce multi-fichiers plafonnée (ex. 3 bilans)
   var prevId=null;
@@ -2740,13 +2764,16 @@ function uploadFileFor(key,f,opts){
     rd.onload=function(){ register({dataBase64:String(rd.result).split(',')[1]||''}).catch(function(){ drop('Échec de l\'envoi : '+f.name); }); };
     rd.readAsDataURL(f);
   };
-  compressImage(f).then(function(cf){
+  var ABORT=' abort';   // sentinelle : distingue « dépôt abandonné » de « stockage tampon indisponible »
+  compressImage(f,DOC_MAX_BYTES).then(function(cf){
     f=cf;                                            // la vignette et l'analyse IA portent sur le fichier réellement envoyé
+    if(f.size>DOC_MAX_BYTES){ drop(tooBigMsg(f)); return ABORT; }   // même compressée, l'image reste hors limite
     var l2=getDocList(key);
     for(var j=0;j<l2.length;j++){ if(l2[j]._tmp===tmp){ l2[j].filename=f.name; l2[j].size=f.size; break; } }
     setDocList(key,l2);
     return uploadToBlob(f);
   }).then(function(url){
+    if(url===ABORT) return;                          // déjà refusé et signalé
     if(!url) return viaBase64();                     // stockage tampon absent → ancien chemin
     return register({blobUrl:url}).catch(function(){ drop('Échec de l\'envoi : '+f.name); });
   }).catch(function(){ drop('Échec de l\'envoi : '+f.name); });
