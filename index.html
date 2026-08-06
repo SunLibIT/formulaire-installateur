@@ -3100,8 +3100,14 @@ function aboCniIssues(uid,label){
   });
   var fulls=[g.rV,g.vV].filter(Boolean);
   if(fulls.some(function(f){return f.estFrancaise===false;})) block.push('La pièce ne semble pas française.');
-  if(fulls.some(function(f){return f.ageMax75Respecte===false;})){ var af=fulls.filter(function(f){return f.age!=null;})[0]; block.push('Âge maximum dépassé'+(af?(' — '+af.age+' ans'):'')+' (limite : 75 ans).'); }
-  if(fulls.some(function(f){return f.perimee===true;})){ var pf=fulls.filter(function(f){return f.perimee===true;})[0]; var de=pf?_fmtDateFR(pf.dateExpirationEffective||pf.dateExpiration):''; block.push('Pièce périmée'+(de?(' (expirée le '+de+')'):'')+'.'); }
+  /* Âge et validité : chaque face n'est crue que sur ce qu'elle PORTE réellement (date de naissance au recto,
+     « Carte valable jusqu'au » au verso pour une CNI plastifiée). On ne retient donc que les faces qui ont lu la
+     donnée, et on ne bloque que si elles sont unanimes : si une face lit une date valide et l'autre non, c'est
+     celle qui a lu qui fait foi (une face qui ne porte pas l'information a pu la deviner). */
+  var ageFulls=fulls.filter(function(f){return f.ageMax75Respecte!=null;});
+  if(ageFulls.length && ageFulls.every(function(f){return f.ageMax75Respecte===false;})){ var af=ageFulls.filter(function(f){return f.age!=null;})[0]; block.push('Âge maximum dépassé'+(af?(' — '+af.age+' ans'):'')+' (limite : 75 ans).'); }
+  var expFulls=fulls.filter(function(f){return f.perimee!=null && (f.dateExpirationEffective||f.dateExpiration);});
+  if(expFulls.length && expFulls.every(function(f){return f.perimee===true;})){ var pf=expFulls[0]; var de=_fmtDateFR(pf.dateExpirationEffective||pf.dateExpiration); block.push('Pièce périmée'+(de?(' (expirée le '+de+')'):'')+'.'); }
   [['recto',g.rItem],['verso',g.vItem]].forEach(function(p){
     var it=p[1]; if(!it||it._pending) return; var vf=it._verdict; if(!vf) return;
     if(vf.face && vf.face!=='inconnu' && vf.face!==p[0]) warn.push('Le fichier du '+p[0]+' ressemble à un '+vf.face+'.');
