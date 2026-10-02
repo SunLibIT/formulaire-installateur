@@ -455,10 +455,10 @@ async function handleCheckSiren(p, res) {
 }
 
 // ── Dirigeant déjà connu : l'email existe-t-il dans BDD UTILISATEURS › Utilisateurs ? ──
-// Si oui, on renvoie son identité (civilité, nom, prénom, téléphone + fonction lue sur sa fiche Contacts)
+// Si oui, on renvoie son identité (civilité, nom, prénom, téléphone) — pas de fonction : le « Rôle » des
+// fiches Contacts est contractuel (« Titulaire 1 »), pas un poste (« Gérant ») → laissé à la saisie.
 // pour préremplir et verrouiller le bloc Dirigeant. Best-effort : erreur → { ok:false } (champs libres).
 const USERS_TABLE = 'tblE6J8wB1KlXadVv';      // table « Utilisateurs »
-const CONTACTS_TABLE = 'tbl9FbFOKHne4B4cf';   // table « Contacts » (porte le Rôle)
 async function handleCheckEmail(p, res) {
   var email = String(p.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(200).json({ ok: false, erreur: 'email_invalide' });
@@ -467,12 +467,8 @@ async function handleCheckEmail(p, res) {
     var d = await atGet(AT + '/' + CLIENTS_BASE + '/' + USERS_TABLE + '?maxRecords=1&filterByFormula=' + formula);
     var r = d.records && d.records[0];
     if (!r) return res.status(200).json({ ok: true, found: false });
-    var f = r.fields || {}, fonction = '';
-    var cids = f['Contacts'] || [];
-    if (cids.length) {
-      try { var c = await atGet(AT + '/' + CLIENTS_BASE + '/' + CONTACTS_TABLE + '/' + encodeURIComponent(cids[0])); fonction = (c.fields && c.fields['Rôle']) || ''; } catch (e) {}
-    }
-    return res.status(200).json({ ok: true, found: true, user: { civ: f['Civilité'] || '', prenom: f['Prénom'] || '', nom: f['Nom'] || '', tel: f['Téléphone'] || '', fonction: fonction } });
+    var f = r.fields || {};
+    return res.status(200).json({ ok: true, found: true, user: { civ: f['Civilité'] || '', prenom: f['Prénom'] || '', nom: f['Nom'] || '', tel: f['Téléphone'] || '' } });
   } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
 }
 

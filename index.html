@@ -2402,7 +2402,7 @@ function renderSirenDup(matches){
    Trouvé → encadré info + champs préremplis depuis la base et VERROUILLÉS (lecture seule) ; seuls les champs
    que la base renseigne sont verrouillés (un téléphone absent reste saisissable). Changer l'email déverrouille
    et vide ce qui avait été repris. Panne / introuvable → champs libres, rien de bloquant. */
-var DIR_FIELDS={civ:'sl-dir-civ',nom:'sl-dir-nom',prenom:'sl-dir-prenom',fonction:'sl-dir-fonction',tel:'sl-dir-tel'};
+var DIR_FIELDS={civ:'sl-dir-civ',nom:'sl-dir-nom',prenom:'sl-dir-prenom',tel:'sl-dir-tel'};   // fonction : jamais en base → toujours saisie
 var _dirLocked=[],_dirEmailReq=0,_dirEmailT=null,_dirEmailLast='';
 window.dirEmailInput=function(now){
   var email=(v('sl-dir-email')||'').trim().toLowerCase();
@@ -2434,7 +2434,7 @@ function _dirSetLock(el,on){
   if(on)el.setAttribute('aria-readonly','true');else el.removeAttribute('aria-readonly');
 }
 function lockDir(u){
-  var vals={civ:_civFromDb(u.civ),nom:u.nom,prenom:u.prenom,fonction:u.fonction,tel:u.tel};
+  var vals={civ:_civFromDb(u.civ),nom:u.nom,prenom:u.prenom,tel:u.tel};
   _dirLocked=[];
   Object.keys(DIR_FIELDS).forEach(function(k){
     var val=String(vals[k]||'').trim(), el=document.getElementById(DIR_FIELDS[k]);
