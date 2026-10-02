@@ -9,6 +9,17 @@ Widget web **mono-fichier** (HTML/CSS/JS vanilla, **sans framework ni build**) i
 - Prod : <https://formulaire-installateur.vercel.app> (embarqué dans Softr).
 - Déploiement : Vercel **redéploie automatiquement à chaque push sur `main`**. Remote `origin` en SSH (`git@github.com:SunLibIT/formulaire-installateur.git`).
 
+## Où on en est (point du 2026-10-02) — À LIRE EN PREMIER
+
+- **Ce widget est en cours de remplacement** par un bloc vibe coding Softr natif : projet `SUNLIB/1 CRM 3/2 INSTALLATEURS/INST_SUIVI DES DOSSIERS` (dépôt `SunLibIT/INST_SUIVI-DES-DOSSIERS`). **L'état d'avancement détaillé et le reste à faire sont dans le `CLAUDE.md` de ce projet** (§ « Où on en est »). Ce widget reste en ligne et **fait référence** jusqu'à la bascule : toute règle métier nouvelle se reporte dans les deux `CLAUDE.md`.
+- **Livré dans ce widget le 2026-10-02** (en prod) : les 13 règles métier intangibles ci-dessous — SIREN déjà client signalé, dirigeant repris depuis la base et verrouillé (email en premier), collaborateurs non signataires avec rôle obligatoire, type « Écosystème énergétique » + nature du projet adaptative, 9 kWc minimum, « Suivi par » facultatif, sous-traitants de l'installateur en menu, email créateur = utilisateur Softr, type « Collectivité » (commune / maire, blocage si commune déjà cliente, pas de bilans).
+- **Points ouverts** (à trancher avec l'utilisateur) :
+  - règle 3 : **fonction** du dirigeant non préremplie (le `Rôle` de `Contacts` vaut « Titulaire 1 » chez les particuliers) — proposé : ne la reprendre que si c'est un vrai poste ;
+  - règle 4 : le widget **ne crée pas** la fiche `Contacts` des collaborateurs (il transmet rôle + `signataire:false` dans le dossier) — prévu dans le futur bloc ;
+  - **collectivité** : le **Kbis** est encore obligatoire alors qu'une commune n'en a pas — pièce de remplacement à définir ;
+  - **écosystème sans PV** : étude + calepinage et copie Google Maps encore exigées — à confirmer ;
+  - collectivité stockée dans la table `Pro` sans colonne dédiée (seulement `sous_type` dans `Données JSON`).
+
 ## Fichiers
 
 | Fichier | Rôle |
