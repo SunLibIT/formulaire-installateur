@@ -513,7 +513,7 @@ async function handleSousTraitants(p, res) {
 // Les noms sont saisis librement (« COMMUNE DE PLESTIN LES GREVES », « Commune de Payssous »…) → on compare un
 // nom normalisé : sans accents ni casse, sans « commune / mairie / ville de », tirets et apostrophes = espaces.
 function normCommune(s) {
-  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ').trim()
     .replace(/^(commune|mairie|ville)( de| d| du| des)? /, '').trim();
 }
