@@ -472,6 +472,33 @@ async function handleCheckEmail(p, res) {
   } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
 }
 
+// ── Sous-traitants de l'entreprise de l'installateur connecté (menu « Sous-traitant » de l'étape Installation) ──
+// email (utilisateur Softr) → Utilisateurs › Installateurs (entreprise[s]) → Sous traitant reliés à ces entreprises.
+// Dans « Sous traitant », `Name` = le sous-traitant ; `Nom entreprise` = l'installateur (à ne pas afficher).
+const ST_TABLE = 'tbl1xryxoPLjfp7th';   // table « Sous traitant »
+async function handleSousTraitants(p, res) {
+  var email = String(p.email || '').trim().toLowerCase();
+  if (!email) return res.status(200).json({ ok: false, erreur: 'email_requis' });
+  try {
+    var uf = encodeURIComponent("LOWER(TRIM({Email}))='" + esc(email) + "'");
+    var u = await atGet(AT + '/' + CLIENTS_BASE + '/' + USERS_TABLE + '?maxRecords=1&filterByFormula=' + uf);
+    var inst = (u.records && u.records[0] && u.records[0].fields && u.records[0].fields['Installateurs']) || [];
+    if (!inst.length) return res.status(200).json({ ok: true, items: [] });
+    var conds = inst.map(function (id) { return "FIND('" + esc(id) + "',ARRAYJOIN({Record ID installateur}))"; });
+    var sf = encodeURIComponent(conds.length > 1 ? 'OR(' + conds.join(',') + ')' : conds[0]);
+    var d = await atGet(AT + '/' + CLIENTS_BASE + '/' + ST_TABLE + '?pageSize=100&filterByFormula=' + sf);
+    var seen = {}, items = [];
+    (d.records || []).forEach(function (r) {
+      var nom = String((r.fields && r.fields['Name']) || '').trim();
+      if (!nom || seen[nom.toLowerCase()]) return;
+      seen[nom.toLowerCase()] = 1;
+      items.push({ id: r.id, nom: nom });
+    });
+    items.sort(function (a, b) { return a.nom.localeCompare(b.nom, 'fr'); });
+    return res.status(200).json({ ok: true, items: items });
+  } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -499,6 +526,7 @@ export default async function handler(req, res) {
       if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
       if (p.action === 'checksiren') return handleCheckSiren(p, res);   // SIREN déjà client SunLib ? (BDD UTILISATEURS)
       if (p.action === 'checkemail') return handleCheckEmail(p, res);   // dirigeant déjà utilisateur ? (BDD UTILISATEURS)
+      if (p.action === 'soustraitants') return handleSousTraitants(p, res);   // sous-traitants de l'entreprise de l'installateur
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
       var fields = fieldsFromPayload(p);

@@ -1617,7 +1617,7 @@
             <!-- PV SEUL -->
             <div id="fl-pv" class="hide">
               <div class="row">
-                <div class="f f33"><label>Puissance (kWc) <span class="req">*</span></label><input type="number" id="sl-kwc" placeholder="3" step="0.5" min="1" oninput="updateSim()"/></div>
+                <div class="f f33"><label>Puissance (kWc) <span class="req">*</span></label><input type="number" id="sl-kwc" min="9" placeholder="9" step="0.5" oninput="updateSim()"/></div>
                 <div class="f f33"><label>Versement initial TTC (optionnel)</label><input type="number" id="sl-vers" placeholder="0" oninput="updateSim()"/></div>
                 <div class="f f33"><label>Prix installation HT (€)</label><input type="number" id="sl-prix" placeholder="5000" oninput="updateSim()"/></div>
               </div>
@@ -1629,13 +1629,13 @@
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
                 <div class="f f50"><label>Suivi par (Nom Prénom)</label><input type="text" id="sl-suivi-pv" placeholder="Jean Dupont"/></div>
-                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pv" placeholder="Nom de la société"/></div>
+                <div class="f f50"><label for="sl-st-pv">Sous-traitant</label><select id="sl-st-pv" data-st><option value="">— Aucun —</option></select></div>
               </div>
             </div>
             <!-- PV + BV -->
             <div id="fl-pvbv" class="hide">
               <div class="row">
-                <div class="f f33"><label>Puissance (kWc) <span class="req">*</span></label><input type="number" id="sl-kwc-bv" placeholder="3" step="0.5" oninput="updateSim()"/></div>
+                <div class="f f33"><label>Puissance (kWc) <span class="req">*</span></label><input type="number" id="sl-kwc-bv" min="9" placeholder="9" step="0.5" oninput="updateSim()"/></div>
                 <div class="f f33"><label>Versement initial TTC (optionnel)</label><input type="number" id="sl-vers-bv" placeholder="0" oninput="updateSim()"/></div>
                 <div class="f f33"><label>Prix installation HT (€)</label><input type="number" id="sl-prix-bv" placeholder="5000" oninput="updateSim()"/></div>
               </div>
@@ -1647,13 +1647,13 @@
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
                 <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-pvbv" placeholder="Jean Dupont"/></div>
-                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pvbv" placeholder="Nom de la société"/></div>
+                <div class="f f50"><label for="sl-st-pvbv">Sous-traitant</label><select id="sl-st-pvbv" data-st><option value="">— Aucun —</option></select></div>
               </div>
             </div>
             <!-- PV + BAT PHYSIQUE -->
             <div id="fl-pvb" class="hide">
               <div class="row">
-                <div class="f f25"><label>Puissance PV (kWc) <span class="req">*</span></label><input type="number" id="sl-pvb-kwc" placeholder="3" step="0.5" oninput="updateSim()"/></div>
+                <div class="f f25"><label>Puissance PV (kWc) <span class="req">*</span></label><input type="number" id="sl-pvb-kwc" min="9" placeholder="9" step="0.5" oninput="updateSim()"/></div>
                 <div class="f f25"><label>Versement initial TTC</label><input type="number" id="sl-pvb-vers" placeholder="0" oninput="updateSim()"/></div>
                 <div class="f f25"><label>Prix PV HT (€)</label><input type="number" id="sl-pvb-prix" placeholder="8000" oninput="updateSim()"/></div>
                 <div class="f f25"><label>Capacité batterie (kWh) <span class="req">*</span></label><input type="number" id="sl-pvb-kwh" placeholder="5" step="0.5" oninput="updateSim()"/></div>
@@ -1670,7 +1670,7 @@
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
                 <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-pvb" placeholder="Jean Dupont"/></div>
-                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pvb" placeholder="Nom de la société"/></div>
+                <div class="f f50"><label for="sl-st-pvb">Sous-traitant</label><select id="sl-st-pvb" data-st><option value="">— Aucun —</option></select></div>
               </div>
             </div>
             <!-- BAT SEULE -->
@@ -1687,7 +1687,7 @@
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
                 <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-bat" placeholder="Jean Dupont"/></div>
-                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-bat" placeholder="Nom de la société"/></div>
+                <div class="f f50"><label for="sl-st-bat">Sous-traitant</label><select id="sl-st-bat" data-st><option value="">— Aucun —</option></select></div>
               </div>
             </div>
             <!-- ÉCOSYSTÈME ÉNERGÉTIQUE -->
@@ -1698,7 +1698,7 @@
               </fieldset>
               <!-- Champs techniques selon la nature : PV → puissance + triphasé ; Batterie → capacité. Sans PV ni batterie (PAC, borne…) : rien de tout ça, ni PDL. -->
               <div class="row">
-                <div class="f f33 hide" id="eco-f-kwc"><label for="sl-eco-kwc">Puissance PV (kWc) <span class="req">*</span></label><input type="number" id="sl-eco-kwc" placeholder="3" step="0.5" min="1" oninput="refreshInstall()"/></div>
+                <div class="f f33 hide" id="eco-f-kwc"><label for="sl-eco-kwc">Puissance PV (kWc) <span class="req">*</span></label><input type="number" id="sl-eco-kwc" min="9" placeholder="9" step="0.5" oninput="refreshInstall()"/></div>
                 <div class="f f33 hide" id="eco-f-kwh"><label for="sl-eco-kwh">Capacité batterie (kWh) <span class="req">*</span></label><input type="number" id="sl-eco-kwh" placeholder="5" step="0.5" oninput="refreshInstall()"/></div>
                 <div class="f f33"><label for="sl-eco-prix">Prix installation HT (€)</label><input type="number" id="sl-eco-prix" placeholder="15000"/></div>
               </div>
@@ -1707,15 +1707,9 @@
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
                 <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-eco" placeholder="Jean Dupont"/></div>
-                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-eco" placeholder="Nom de la société"/></div>
+                <div class="f f50"><label for="sl-st-eco">Sous-traitant</label><select id="sl-st-eco" data-st><option value="">— Aucun —</option></select></div>
               </div>
             </div>
-            <!-- EMAIL CREATEUR -->
-            <div id="sl-suivi-global" class="hide">
-              <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span><span class="sec-txt">Créateur du dossier</span></div>
-              <div class="row">
-                <div class="f f50"><label>Email créateur <span class="req">*</span></label><input type="email" id="sl-email-cr" placeholder="installateur@societe.fr"/></div>
-              </div>
             </div>
           </div>
           <div class="nav nav2">
@@ -2421,7 +2415,7 @@ function checkSirenDup(siren){
   if(!siren||siren.length!==9||siren===_sirenDupLast)return;
   _sirenDupLast=siren;
   var req=++_sirenDupReq;
-  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'checksiren',siren:siren,email_installateur:_homeEmail||v('sl-email-cr')||''})})
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'checksiren',siren:siren,email_installateur:_homeEmail||''})})
     .then(function(r){return r.json();})
     .then(function(d){ if(req!==_sirenDupReq)return; renderSirenDup(d&&d.ok?d.matches:null); })
     .catch(function(){ if(req===_sirenDupReq){_sirenDupLast='';renderSirenDup(null);} });
@@ -2611,11 +2605,11 @@ window.setProp=function(v,el){
 
 window.setType=function(t){
   iType=t;
+  loadSousTraitants();   // menu « Sous-traitant » : sous-traitants de l'entreprise de l'installateur connecté
   var r=document.querySelector('#sl-root input[name="install"][value="'+t+'"]');if(r&&!r.checked)r.checked=true;   // sync si appelé programmatiquement
   ['pv','pvbv','pvb','bat','eco'].forEach(function(id){document.getElementById('tc-'+id).classList.toggle('on',id===t);});
   tog('install-fields',true);
   tog('fl-pv',t==='pv');tog('fl-pvbv',t==='pvbv');tog('fl-pvb',t==='pvb');tog('fl-bat',t==='bat');tog('fl-eco',t==='eco');applyEco();
-  tog('sl-suivi-global',true);
   var nf=(t==='pvb'||t==='bat');
   document.getElementById('nf-warn').classList.toggle('on',nf);
   tog('doc-bat',nf&&ct==='part');
@@ -2628,14 +2622,23 @@ function installReq(){
   if(!iType) return [];
   var per={pv:['sl-kwc'],pvbv:['sl-kwc-bv'],pvb:['sl-pvb-kwc','sl-pvb-kwh'],bat:['sl-bat-kwh']}[iType]||[];   // « Suivi par » : facultatif
   if(iType==='eco'){ var n=ecoNeeds(); per=(n.pv?['sl-eco-kwc']:[]).concat(n.bat?['sl-eco-kwh']:[]); }
-  return (needsPdl()?['sl-pdl']:[]).concat(['sl-duree']).concat(per).concat(['sl-email-cr']);
+  return (needsPdl()?['sl-pdl']:[]).concat(['sl-duree']).concat(per);
 }
 function installValid(){
   if(!iType) return false;
   var ids=installReq();
   for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(!el||!el.value.trim()) return false; }
   if(iType==='eco'&&!natureProjet().length) return false;   // écosystème : au moins une nature de projet
+  if(kwcTooLow()) return false;   // puissance PV < 9 kWc
   return true;
+}
+/* Puissance PV minimale financée par SunLib. Seul le champ du type actif compte (cf. installReq). */
+var KWC_MIN=9;
+function kwcTooLow(){
+  var id={pv:'sl-kwc',pvbv:'sl-kwc-bv',pvb:'sl-pvb-kwc',eco:'sl-eco-kwc'}[iType];
+  if(!id||(iType==='eco'&&!ecoNeeds().pv)) return false;
+  var raw=v(id); if(!raw) return false;   // vide → déjà traité comme « champ obligatoire »
+  return (parseFloat(raw)||0)<KWC_MIN;
 }
 /* Nature du projet (écosystème) : libellés cochés, identiques aux choix du champ « Nature du projet » de la base. */
 function natureProjet(){
@@ -2653,6 +2656,40 @@ function applyEco(){
   tog('f-pdl',needsPdl());
 }
 window.ecoNatChange=function(){ applyEco(); refreshInstall(); };
+/* Sous-traitants de l'entreprise de l'installateur connecté (BDD UTILISATEURS › Sous traitant), via /api/drafts.
+   Chargés une fois par email ; tous les menus « Sous-traitant » (un par type) partagent la liste. Une valeur
+   enregistrée qui n'est plus dans la liste (brouillon ancien, saisie libre d'avant) est conservée comme option. */
+var _stList=null,_stFor='',_stReq=0;
+function loadSousTraitants(){
+  var email=_homeEmail||'';
+  if(!email||(_stList&&_stFor===email)){ fillSousTraitants(); return; }
+  var req=++_stReq;
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'soustraitants',email:email})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(req!==_stReq)return; _stList=(d&&d.ok&&Array.isArray(d.items))?d.items:[]; _stFor=email; fillSousTraitants(); })
+    .catch(function(){ if(req===_stReq){ _stList=null; fillSousTraitants(); } });
+}
+function fillSousTraitants(){
+  var names=(_stList||[]).map(function(x){return x.nom;});
+  [].slice.call(document.querySelectorAll('#sl-root select[data-st]')).forEach(function(sel){
+    var cur=sel.getAttribute('data-want')||sel.value||'';
+    sel.innerHTML='';
+    var o0=document.createElement('option'); o0.value=''; o0.textContent=(_stList&&!_stList.length)?'— Aucun sous-traitant enregistré —':'— Aucun —'; sel.appendChild(o0);
+    var all=names.slice(); if(cur&&all.indexOf(cur)<0)all.push(cur);
+    all.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    sel.value=cur; sel.removeAttribute('data-want');
+    reEnhanceSelect(sel);
+  });
+}
+/* Rehabille un <select> dont les options ont changé (enhanceSelect ne lit les options qu'une fois). */
+function reEnhanceSelect(sel){
+  var box=sel.parentNode;
+  if(sel.dataset.enhanced && box && box.classList.contains('select')){
+    box.parentNode.insertBefore(sel,box); box.parentNode.removeChild(box);
+    delete sel.dataset.enhanced; sel.classList.remove('select-native'); sel.removeAttribute('tabindex'); sel.removeAttribute('aria-hidden');
+  }
+  enhanceSelect(sel);
+}
 /* refreshInstall() : « Suivant » actif seulement si tout est rempli + indicateur de pied (aria-live) */
 function refreshInstall(){
   var valid=installValid();
@@ -2661,6 +2698,7 @@ function refreshInstall(){
   if(st){
     if(valid){ st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Installation complète</span>'; }
     else if(!iType){ st.className='foot-status'; st.textContent='Choisissez un type d\'installation pour continuer.'; }
+    else if(kwcTooLow()){ st.className='foot-status'; st.textContent='La puissance doit être d\'au moins '+KWC_MIN+' kWc.'; }
     else if(iType==='eco'&&!natureProjet().length){ st.className='foot-status'; st.textContent='Choisissez la nature du projet pour continuer.'; }
     else { st.className='foot-status'; st.textContent='Renseignez les champs obligatoires (*) pour continuer.'; }
   }
@@ -2935,7 +2973,7 @@ function uploadFileFor(key,f,opts){
   /* Enregistre la ligne Documents : soit depuis l'URL du blob, soit (repli) avec le fichier en base64. */
   var register=function(src){
     return fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||v('sl-email-cr')||'',
+      action:'upload', draftId:getDraftId(), type_client:ct, email_installateur:_homeEmail||'',
       key:key, label:label, scope:(isCniKey(key)?'Abonné':'Dossier'), abo:docAboFor(key), filename:f.name,
       contentType:f.type||'application/octet-stream', blobUrl:src.blobUrl||null, dataBase64:src.dataBase64||null, prevId:prevId
     })}).then(function(r){ return r.ok?r.json():Promise.reject(new Error('upload')); }).then(function(resp){
@@ -4017,7 +4055,7 @@ window.doSubmit=function(){
   if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
   var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat',eco:'sl-suivi-eco'};
   var st={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat',eco:'sl-st-eco'};
-  var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:v('sl-email-cr'),nature:iType==='eco'?natureProjet():[]},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
+  var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:_homeEmail||'',nature:iType==='eco'?natureProjet():[]},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role,signataire:false};});}
@@ -4264,6 +4302,8 @@ function hydrateDraft(p){
       cC=collabs.length; renderCollabs();
     }
     // Tous les champs statiques (entreprise, adresse, installation, motivations, dates, cases…)
+    // Sous-traitant : la liste arrive en asynchrone → on retient la valeur enregistrée pour la réappliquer
+    if(p.fields) [].slice.call(document.querySelectorAll('#sl-root select[data-st]')).forEach(function(sel){ var w=p.fields[sel.id]; if(w) sel.setAttribute('data-want',w); });
     applyAllFields(p.fields);
     if(p.geocoding){ geo=p.geocoding; if(geo&&geo.lat!=null) adr.located=true; }   // la carte se (re)dessine quand sc4 s'affiche (ensureMapShown)
     // Documents déjà fournis (fichiers dans Airtable) → re-cocher les zones + nom de fichier
@@ -4415,9 +4455,9 @@ function buildDraftPayload(){
   var f=flow();
   var p={
     draftId:getDraftId(), status:'draft',
-    email_installateur:_homeEmail||v('sl-email-cr')||'',
+    email_installateur:_homeEmail||'',
     type_client:ct, step:flowPos+1, total:f.length, updatedAt:new Date().toISOString(),
-    installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(stt[iType]||''),email_createur:v('sl-email-cr'),nature:iType==='eco'?natureProjet():[]},
+    installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(stt[iType]||''),email_createur:_homeEmail||'',nature:iType==='eco'?natureProjet():[]},
     adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')}, geocoding:geo
   };
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
