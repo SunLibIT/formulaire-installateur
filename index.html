@@ -593,6 +593,18 @@
     #sl-root .ic-check { position: absolute !important; top: 10px !important; right: 10px !important; width: 22px !important; height: 22px !important; border-radius: 50% !important; background: var(--color-teal) !important; color: #fff !important; display: none !important; align-items: center !important; justify-content: center !important; z-index: 1 !important; }
     #sl-root .ic-card:has(input:checked) .ic-check { display: flex !important; }
     #sl-root .ic-check svg { width: 13px !important; height: 13px !important; }
+    #sl-root #tc-eco { grid-column: 1 / -1 !important; }   /* 5ᵉ carte : pleine largeur (grille à 2 colonnes) */
+    /* Nature du projet (écosystème) : multi-sélection → chips (case native masquée mais focusable) */
+    #sl-root .nat-chips { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; margin: 6px 0 0 !important; }
+    #sl-root .nat-fs { border: 0 !important; padding: 0 !important; margin: 0 0 4px !important; min-width: 0 !important; }
+    #sl-root .nat-fs legend { padding: 0 !important; font-size: 12px !important; font-weight: 600 !important; color: var(--ink) !important; }
+    #sl-root .nat-chip { position: relative !important; display: inline-flex !important; align-items: center !important; gap: 6px !important; padding: 7px 13px !important; border: 1.5px solid var(--line) !important; border-radius: 999px !important; background: #fff !important; color: var(--ink) !important; font-size: 13px !important; cursor: pointer !important; transition: border-color .15s, background .15s !important; }
+    #sl-root .nat-chip input { position: absolute !important; opacity: 0 !important; width: 1px !important; height: 1px !important; pointer-events: none !important; }
+    #sl-root .nat-chip .nat-ck { display: none !important; }
+    #sl-root .nat-chip .nat-ck svg { width: 13px !important; height: 13px !important; display: block !important; }
+    #sl-root .nat-chip:has(input:checked) { background: var(--teal-soft) !important; border-color: var(--teal) !important; color: var(--teal-ink) !important; font-weight: 700 !important; }
+    #sl-root .nat-chip:has(input:checked) .nat-ck { display: inline-flex !important; }
+    #sl-root .nat-chip:has(input:focus-visible) { box-shadow: var(--focus) !important; }
     @media (max-width: 640px) { #sl-root .ic-grid { grid-template-columns: 1fr !important; width: 100% !important; } }
 
     /* PROP TAGS */
@@ -1585,12 +1597,19 @@
               <span class="ic-sub">Sans panneaux solaires</span>
               <span class="ic-badge"><span>Norme NF C 15-100</span></span>
             </label>
+            <label class="ic-card" id="tc-eco">
+              <input type="radio" name="install" value="eco">
+              <span class="ic-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+              <span class="ic-em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>
+              <span class="ic-tit">Écosystème énergétique</span>
+              <span class="ic-sub">Plusieurs équipements : PAC, borne, ombrière…</span>
+            </label>
           </div>
           <div class="box-nf" id="nf-warn"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 1.8 21h20.4L12 3.5Z"/><line x1="12" y1="9.5" x2="12" y2="14.5"/><circle cx="12" cy="17.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span><strong>Toute implantation non conforme à la norme NF C 15-100 et à son amendement</strong> engage la responsabilité de l'installateur.</span></div>
           <div id="install-fields" class="hide">
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span><span class="sec-txt">Paramètres techniques</span></div>
             <div class="row">
-              <div class="f f50"><label>N° de PDL <span class="req">*</span></label><input type="text" id="sl-pdl" placeholder="14 chiffres" maxlength="14"/></div>
+              <div class="f f50" id="f-pdl"><label>N° de PDL <span class="req">*</span></label><input type="text" id="sl-pdl" placeholder="14 chiffres" maxlength="14"/></div>
               <div class="f f50"><label>Durée de l'abonnement <span class="req">*</span></label>
                 <select id="sl-duree" onchange="updateSim()"><option value="">— Choisir —</option><option>10 ans</option><option>15 ans</option><option>20 ans</option><option>25 ans</option></select>
               </div>
@@ -1609,7 +1628,7 @@
               </div>
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
-                <div class="f f50"><label>Suivi par (Nom Prénom) <span class="req">*</span></label><input type="text" id="sl-suivi-pv" placeholder="Jean Dupont"/></div>
+                <div class="f f50"><label>Suivi par (Nom Prénom)</label><input type="text" id="sl-suivi-pv" placeholder="Jean Dupont"/></div>
                 <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pv" placeholder="Nom de la société"/></div>
               </div>
             </div>
@@ -1627,7 +1646,7 @@
               </div>
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
-                <div class="f f50"><label>Suivi par <span class="req">*</span></label><input type="text" id="sl-suivi-pvbv" placeholder="Jean Dupont"/></div>
+                <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-pvbv" placeholder="Jean Dupont"/></div>
                 <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pvbv" placeholder="Nom de la société"/></div>
               </div>
             </div>
@@ -1650,7 +1669,7 @@
               </div>
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
-                <div class="f f50"><label>Suivi par <span class="req">*</span></label><input type="text" id="sl-suivi-pvb" placeholder="Jean Dupont"/></div>
+                <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-pvb" placeholder="Jean Dupont"/></div>
                 <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-pvb" placeholder="Nom de la société"/></div>
               </div>
             </div>
@@ -1667,8 +1686,28 @@
               </div>
               <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
               <div class="row">
-                <div class="f f50"><label>Suivi par <span class="req">*</span></label><input type="text" id="sl-suivi-bat" placeholder="Jean Dupont"/></div>
+                <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-bat" placeholder="Jean Dupont"/></div>
                 <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-bat" placeholder="Nom de la société"/></div>
+              </div>
+            </div>
+            <!-- ÉCOSYSTÈME ÉNERGÉTIQUE -->
+            <div id="fl-eco" class="hide">
+              <fieldset class="nat-fs">
+                <legend>Nature du projet <span class="req">*</span> <span style="font-weight:400;color:var(--ink-soft);">(une ou plusieurs)</span></legend>
+                <div class="nat-chips"><label class="nat-chip"><input type="checkbox" id="sl-nat-pv" data-nat="Photovoltaïque" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Photovoltaïque</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-bat" data-nat="Batterie" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Batterie</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-pac" data-nat="PAC" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>PAC</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-irve" data-nat="IRVE / Borne" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>IRVE / Borne</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-ombr" data-nat="Ombrière" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Ombrière</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-terr" data-nat="Terrassement" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Terrassement</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-maco" data-nat="Maçonnerie" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Maçonnerie</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-charp" data-nat="Charpente" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Charpente</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-clim" data-nat="Climatisation" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Climatisation</span></label><label class="nat-chip"><input type="checkbox" id="sl-nat-autre" data-nat="Autre" onchange="ecoNatChange()"/><span class="nat-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span><span>Autre</span></label></div>
+              </fieldset>
+              <!-- Champs techniques selon la nature : PV → puissance + triphasé ; Batterie → capacité. Sans PV ni batterie (PAC, borne…) : rien de tout ça, ni PDL. -->
+              <div class="row">
+                <div class="f f33 hide" id="eco-f-kwc"><label for="sl-eco-kwc">Puissance PV (kWc) <span class="req">*</span></label><input type="number" id="sl-eco-kwc" placeholder="3" step="0.5" min="1" oninput="refreshInstall()"/></div>
+                <div class="f f33 hide" id="eco-f-kwh"><label for="sl-eco-kwh">Capacité batterie (kWh) <span class="req">*</span></label><input type="number" id="sl-eco-kwh" placeholder="5" step="0.5" oninput="refreshInstall()"/></div>
+                <div class="f f33"><label for="sl-eco-prix">Prix installation HT (€)</label><input type="number" id="sl-eco-prix" placeholder="15000"/></div>
+              </div>
+              <label class="cb hide" id="eco-f-tri"><input type="checkbox" id="sl-eco-tri"/><span>Installation triphasée</span></label>
+              <div class="box-info" style="margin-top:10px;"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span>Pas d'estimation automatique pour un écosystème : SunLib établira la mensualité à partir du devis.</span></div>
+              <div class="sec" style="margin-top:14px;"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span><span class="sec-txt">Suivi</span></div>
+              <div class="row">
+                <div class="f f50"><label>Suivi par</label><input type="text" id="sl-suivi-eco" placeholder="Jean Dupont"/></div>
+                <div class="f f50"><label>Sous-traitant</label><input type="text" id="sl-st-eco" placeholder="Nom de la société"/></div>
               </div>
             </div>
             <!-- EMAIL CREATEUR -->
@@ -1981,7 +2020,7 @@ function resetForm(){
   collabs=[];cC=0;
   iType=null;geo=null;simResult=null;propT='oui';adr.located=false;docs={};docVerdicts={};_docChecking={};
   // Étape 4 : repartir sans type sélectionné (champs techniques masqués)
-  tog('install-fields',false);['fl-pv','fl-pvbv','fl-pvb','fl-bat'].forEach(function(f){tog(f,false);});
+  tog('install-fields',false);['fl-pv','fl-pvbv','fl-pvb','fl-bat','fl-eco'].forEach(function(f){tog(f,false);});
   var nfw=document.getElementById('nf-warn');if(nfw)nfw.classList.remove('on');
   document.querySelectorAll('#sl-root input:not([name="sl-type"]),#sl-root select,#sl-root textarea').forEach(function(el){
     if(el.type==='checkbox'||el.type==='radio')el.checked=false;else el.value='';
@@ -2573,9 +2612,9 @@ window.setProp=function(v,el){
 window.setType=function(t){
   iType=t;
   var r=document.querySelector('#sl-root input[name="install"][value="'+t+'"]');if(r&&!r.checked)r.checked=true;   // sync si appelé programmatiquement
-  ['pv','pvbv','pvb','bat'].forEach(function(id){document.getElementById('tc-'+id).classList.toggle('on',id===t);});
+  ['pv','pvbv','pvb','bat','eco'].forEach(function(id){document.getElementById('tc-'+id).classList.toggle('on',id===t);});
   tog('install-fields',true);
-  tog('fl-pv',t==='pv');tog('fl-pvbv',t==='pvbv');tog('fl-pvb',t==='pvb');tog('fl-bat',t==='bat');
+  tog('fl-pv',t==='pv');tog('fl-pvbv',t==='pvbv');tog('fl-pvb',t==='pvb');tog('fl-bat',t==='bat');tog('fl-eco',t==='eco');applyEco();
   tog('sl-suivi-global',true);
   var nf=(t==='pvb'||t==='bat');
   document.getElementById('nf-warn').classList.toggle('on',nf);
@@ -2587,15 +2626,33 @@ window.setType=function(t){
 /* Champs obligatoires (*) de l'étape Installation selon le type choisi */
 function installReq(){
   if(!iType) return [];
-  var per={pv:['sl-kwc','sl-suivi-pv'],pvbv:['sl-kwc-bv','sl-suivi-pvbv'],pvb:['sl-pvb-kwc','sl-pvb-kwh','sl-suivi-pvb'],bat:['sl-bat-kwh','sl-suivi-bat']}[iType]||[];
-  return ['sl-pdl','sl-duree'].concat(per).concat(['sl-email-cr']);
+  var per={pv:['sl-kwc'],pvbv:['sl-kwc-bv'],pvb:['sl-pvb-kwc','sl-pvb-kwh'],bat:['sl-bat-kwh']}[iType]||[];   // « Suivi par » : facultatif
+  if(iType==='eco'){ var n=ecoNeeds(); per=(n.pv?['sl-eco-kwc']:[]).concat(n.bat?['sl-eco-kwh']:[]); }
+  return (needsPdl()?['sl-pdl']:[]).concat(['sl-duree']).concat(per).concat(['sl-email-cr']);
 }
 function installValid(){
   if(!iType) return false;
   var ids=installReq();
   for(var i=0;i<ids.length;i++){ var el=document.getElementById(ids[i]); if(!el||!el.value.trim()) return false; }
+  if(iType==='eco'&&!natureProjet().length) return false;   // écosystème : au moins une nature de projet
   return true;
 }
+/* Nature du projet (écosystème) : libellés cochés, identiques aux choix du champ « Nature du projet » de la base. */
+function natureProjet(){
+  var out=[], els=document.querySelectorAll('#fl-eco input[data-nat]');
+  for(var i=0;i<els.length;i++) if(els[i].checked) out.push(els[i].getAttribute('data-nat'));
+  return out;
+}
+/* Écosystème : ce qu'implique la nature cochée. PV → puissance + triphasé ; Batterie → capacité ;
+   PDL dès qu'il y a production ou stockage. Sans PV ni batterie (PAC, borne, ombrière…) : aucun des trois. */
+function ecoNeeds(){ var n=natureProjet(); return {pv:n.indexOf('Photovoltaïque')>-1, bat:n.indexOf('Batterie')>-1}; }
+function needsPdl(){ if(iType!=='eco') return true; var n=ecoNeeds(); return n.pv||n.bat; }
+function applyEco(){
+  var eco=(iType==='eco'), n=eco?ecoNeeds():{pv:false,bat:false};
+  tog('eco-f-kwc',n.pv); tog('eco-f-tri',n.pv); tog('eco-f-kwh',n.bat);
+  tog('f-pdl',needsPdl());
+}
+window.ecoNatChange=function(){ applyEco(); refreshInstall(); };
 /* refreshInstall() : « Suivant » actif seulement si tout est rempli + indicateur de pied (aria-live) */
 function refreshInstall(){
   var valid=installValid();
@@ -2604,6 +2661,7 @@ function refreshInstall(){
   if(st){
     if(valid){ st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Installation complète</span>'; }
     else if(!iType){ st.className='foot-status'; st.textContent='Choisissez un type d\'installation pour continuer.'; }
+    else if(iType==='eco'&&!natureProjet().length){ st.className='foot-status'; st.textContent='Choisissez la nature du projet pour continuer.'; }
     else { st.className='foot-status'; st.textContent='Renseignez les champs obligatoires (*) pour continuer.'; }
   }
 }
@@ -3827,7 +3885,7 @@ function setupAdr(){
 
 function buildRecap(){
   saveAbos();if(ct==='pro')saveCollabs();
-  var tl={pv:'PV seul',pvbv:'PV + Batterie virtuelle',pvb:'PV + Batterie physique',bat:'Batterie seule'};
+  var tl={pv:'PV seul',pvbv:'PV + Batterie virtuelle',pvb:'PV + Batterie physique',bat:'Batterie seule',eco:'Écosystème énergétique'};
   // Icônes outline teal (pastilles) + enveloppe/téléphone des sous-fiches
   var I_TYPE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>';
   var I_USERS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19"/><circle cx="10" cy="8" r="3.2"/><path d="M20 19v-1.4a3.5 3.5 0 0 0-2.6-3.4"/><path d="M14.8 5.1a3.2 3.2 0 0 1 0 6"/></svg>';
@@ -3896,6 +3954,11 @@ function buildRecap(){
     if(v('sl-bat-kwh'))h+=rcr('Capacité',v('sl-bat-kwh')+' kWh');
     if(v('sl-bat-prix'))h+=rcr('Prix batterie HT',v('sl-bat-prix')+' €');
     if(v('sl-bat-dur'))h+=rcr('Durée batterie',v('sl-bat-dur'));
+  }else if(iType==='eco'){
+    h+=rcr('Nature du projet',natureProjet().join(', ')||'—');
+    if(ecoNeeds().pv&&v('sl-eco-kwc'))h+=rcr('Puissance PV',v('sl-eco-kwc')+' kWc');
+    if(ecoNeeds().bat&&v('sl-eco-kwh'))h+=rcr('Batterie',v('sl-eco-kwh')+' kWh');
+    if(v('sl-eco-prix'))h+=rcr('Prix HT',v('sl-eco-prix')+' €');
   }
   h+='</div></div>';
   if(simResult){
@@ -3932,7 +3995,7 @@ window.closeAlert=function(){
   if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
 };
 function buildModalRecap(){
-  var tl={pv:'PV seul',pvbv:'PV + Batterie Virtuelle',pvb:'PV + Batterie physique',bat:'Batterie seule'};
+  var tl={pv:'PV seul',pvbv:'PV + Batterie Virtuelle',pvb:'PV + Batterie physique',bat:'Batterie seule',eco:'Écosystème énergétique'};
   function mrow(l,val){return '<div class="modal-row"><span class="modal-rl">'+l+'</span><span class="modal-rv">'+(val||'—')+'</span></div>';}
   var h='';
   if(ct==='part'){saveAbos();h+=mrow('Abonné(s)',abos.length+' personne'+(abos.length>1?'s':''));if(abos[0])h+=mrow('Principal',((abos[0].prenom||'')+' '+(abos[0].nom||'')).trim()||'—');}
@@ -3952,9 +4015,9 @@ window.slSubmit=function(){
 window.doSubmit=function(){
   document.getElementById('modal-confirm-overlay').classList.remove('on');
   if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
-  var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat'};
-  var st={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat'};
-  var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:v('sl-email-cr')},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
+  var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat',eco:'sl-suivi-eco'};
+  var st={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat',eco:'sl-st-eco'};
+  var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:v('sl-email-cr'),nature:iType==='eco'?natureProjet():[]},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role,signataire:false};});}
@@ -4347,14 +4410,14 @@ function applyAllFields(map){
 /* État COMPLET du dossier (toutes étapes), pas seulement l'étape courante */
 function buildDraftPayload(){
   saveAbos(); if(ct==='pro') saveCollabs();
-  var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat'};
-  var stt={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat'};
+  var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat',eco:'sl-suivi-eco'};
+  var stt={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat',eco:'sl-st-eco'};
   var f=flow();
   var p={
     draftId:getDraftId(), status:'draft',
     email_installateur:_homeEmail||v('sl-email-cr')||'',
     type_client:ct, step:flowPos+1, total:f.length, updatedAt:new Date().toISOString(),
-    installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(stt[iType]||''),email_createur:v('sl-email-cr')},
+    installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(stt[iType]||''),email_createur:v('sl-email-cr'),nature:iType==='eco'?natureProjet():[]},
     adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')}, geocoding:geo
   };
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};

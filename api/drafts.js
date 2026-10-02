@@ -25,7 +25,7 @@ export const maxDuration = 60;
 
 const TABLES = { part: 'Particulier', pro: 'Pro' };
 const STATUT = { draft: 'En cours', submitted: 'Soumis' };
-const TYPE_LABEL = { pv: 'PV seul', pvbv: 'PV + Batterie Virtuelle', pvb: 'PV + Batterie physique', bat: 'Batterie seule' };
+const TYPE_LABEL = { pv: 'PV seul', pvbv: 'PV + Batterie Virtuelle', pvb: 'PV + Batterie physique', bat: 'Batterie seule', eco: 'Écosystème énergétique' };
 
 function tbl(name) { return AT + '/' + BASE + '/' + encodeURIComponent(name); }
 function fmtDM(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2); }
