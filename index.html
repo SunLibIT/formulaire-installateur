@@ -1363,14 +1363,18 @@
             </div>
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span><span class="sec-txt">Dirigeant</span></div>
             <div class="row">
+              <div class="f f100"><label for="sl-dir-email">Email <span class="req">*</span></label><input type="email" id="sl-dir-email" data-req data-val="email" aria-required="true" placeholder="dir@entreprise.fr" oninput="dirEmailInput()" onblur="dirEmailInput(true)"/>
+                <div id="dir-known" aria-live="polite"></div>
+              </div>
+            </div>
+            <div class="row">
               <div class="f f15"><label>Civilité</label><select id="sl-dir-civ"><option>—</option><option>M.</option><option>Mme</option></select></div>
               <div class="f f33"><label>Nom <span class="req">*</span></label><input type="text" id="sl-dir-nom" data-req aria-required="true" placeholder="Dupont"/></div>
               <div class="f f33"><label>Prénom <span class="req">*</span></label><input type="text" id="sl-dir-prenom" data-req aria-required="true" placeholder="Jean"/></div>
             </div>
             <div class="row">
-              <div class="f f33"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" data-req aria-required="true" placeholder="Gérant, PDG..."/></div>
-              <div class="f f33"><label>Email <span class="req">*</span></label><input type="email" id="sl-dir-email" data-req data-val="email" aria-required="true" placeholder="dir@entreprise.fr"/></div>
-              <div class="f f33"><label>Téléphone</label><input type="tel" id="sl-dir-tel" placeholder="06 12 34 56 78"/></div>
+              <div class="f f50"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" data-req aria-required="true" placeholder="Gérant, PDG..."/></div>
+              <div class="f f50"><label>Téléphone</label><input type="tel" id="sl-dir-tel" placeholder="06 12 34 56 78"/></div>
             </div>
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span><span class="sec-txt">Siège social</span></div>
             <div class="row">
@@ -1983,6 +1987,7 @@ function resetForm(){
   });
   var sgPays=document.getElementById('sl-siege-pays'); if(sgPays)sgPays.value='France';   // pays du siège : défaut UE = France
   _sirenDupReq++;_sirenDupLast='';renderSirenDup(null);   // efface l'alerte de doublon SIREN du dossier précédent
+  _dirEmailReq++;_dirEmailLast='';unlockDir(false);renderDirKnown(null);   // dirigeant : déverrouille les champs repris de la base
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.classList.remove('ok');});
   document.querySelectorAll('#sl-root .uz-fn').forEach(function(fn){fn.textContent='';});
   // Nettoie les erreurs/champs touchés (étapes 2 et 3)
@@ -2393,6 +2398,74 @@ function renderSirenDup(matches){
     :'Contactez votre interlocuteur SunLib avant de poursuivre, pour éviter un doublon.')));
   c.appendChild(t); host.appendChild(c);
 }
+/* Dirigeant déjà connu : l'email (saisi en premier) est cherché dans BDD UTILISATEURS › Utilisateurs.
+   Trouvé → encadré info + champs préremplis depuis la base et VERROUILLÉS (lecture seule) ; seuls les champs
+   que la base renseigne sont verrouillés (un téléphone absent reste saisissable). Changer l'email déverrouille
+   et vide ce qui avait été repris. Panne / introuvable → champs libres, rien de bloquant. */
+var DIR_FIELDS={civ:'sl-dir-civ',nom:'sl-dir-nom',prenom:'sl-dir-prenom',fonction:'sl-dir-fonction',tel:'sl-dir-tel'};
+var _dirLocked=[],_dirEmailReq=0,_dirEmailT=null,_dirEmailLast='';
+window.dirEmailInput=function(now){
+  var email=(v('sl-dir-email')||'').trim().toLowerCase();
+  clearTimeout(_dirEmailT);
+  if(email===_dirEmailLast)return;
+  if(_dirLocked.length)unlockDir(true);
+  renderDirKnown(null);
+  _dirEmailReq++;
+  if(!RE_EMAIL.test(email)){_dirEmailLast='';return;}
+  _dirEmailT=setTimeout(function(){checkDirEmail(email);},now===true?0:600);
+};
+function checkDirEmail(email){
+  _dirEmailLast=email;
+  var req=++_dirEmailReq;
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'checkemail',email:email})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(req!==_dirEmailReq)return;
+      if(d&&d.ok&&d.found&&d.user){lockDir(d.user);renderDirKnown(d.user);}
+    })
+    .catch(function(){ if(req===_dirEmailReq)_dirEmailLast=''; });
+}
+function _civFromDb(c){ c=String(c||'').trim(); if(/^(mme|madame|mlle|mademoiselle)/i.test(c))return 'Mme'; if(/^(m\.?|mr|monsieur)$/i.test(c))return 'M.'; return ''; }
+function _dirSetLock(el,on){
+  if(!el)return;
+  if(el.tagName==='SELECT'){var tr=el.parentNode&&el.parentNode.querySelector('.select-trigger');if(tr)tr.disabled=on;}
+  else el.readOnly=on;
+  el.classList.toggle('ro',on);
+  if(on)el.setAttribute('aria-readonly','true');else el.removeAttribute('aria-readonly');
+}
+function lockDir(u){
+  var vals={civ:_civFromDb(u.civ),nom:u.nom,prenom:u.prenom,fonction:u.fonction,tel:u.tel};
+  _dirLocked=[];
+  Object.keys(DIR_FIELDS).forEach(function(k){
+    var val=String(vals[k]||'').trim(), el=document.getElementById(DIR_FIELDS[k]);
+    if(!val||!el)return;
+    el.value=val;
+    if(el.tagName==='SELECT')el.dispatchEvent(new Event('change',{bubbles:true}));
+    if(el.hasAttribute('data-req')||el.hasAttribute('data-val'))paint(el);
+    _dirSetLock(el,true); _dirLocked.push(DIR_FIELDS[k]);
+  });
+  refresh();
+}
+function unlockDir(clear){
+  _dirLocked.forEach(function(id){
+    var el=document.getElementById(id); if(!el)return;
+    _dirSetLock(el,false);
+    if(clear){el.value='';if(el.tagName==='SELECT')el.dispatchEvent(new Event('change',{bubbles:true}));}
+  });
+  _dirLocked=[];
+  refresh();
+}
+function renderDirKnown(u){
+  var host=document.getElementById('dir-known'); if(!host)return;
+  host.innerHTML='';
+  if(!u)return;
+  var c=document.createElement('div'); c.className='cnu-callout t-info'; c.innerHTML=INFO_SVG;
+  var t=document.createElement('span'), b=document.createElement('strong');
+  b.textContent='Dirigeant déjà enregistré chez SunLib'+(((u.prenom||'')+' '+(u.nom||'')).trim()?' : '+((u.prenom||'')+' '+(u.nom||'')).trim():'');
+  t.appendChild(b);
+  t.appendChild(document.createTextNode('. Ses informations sont reprises de notre base et ne sont pas modifiables ici. Pour les corriger, contactez votre interlocuteur SunLib.'));
+  c.appendChild(t); host.appendChild(c);
+}
 /* Libellés des 21 sections NAF (INSEE) — l'API ne renvoie que le code + la lettre de section */
 var NAF_SECTIONS={
   A:'Agriculture, sylviculture et pêche', B:'Industries extractives', C:'Industrie manufacturière',
@@ -2435,7 +2508,7 @@ function fillFromAPI(r){
   var dirs=r.dirigeants||[],dir=null;
   dirs.forEach(function(d){var p=d.prenoms||d.prenom||'';if(!dir&&p&&d.nom)dir=d;});
   if(!dir&&dirs.length)dir=dirs[0];
-  if(dir){setV('sl-dir-nom',dir.nom||'');setV('sl-dir-prenom',dir.prenoms||dir.prenom||'');setV('sl-dir-fonction',dir.qualite||dir.fonction||'');var ce=document.getElementById('sl-dir-civ');if(ce){if(dir.sexe==='F')ce.value='Mme';else if(dir.sexe==='M')ce.value='M.';ce.dispatchEvent(new Event('change',{bubbles:true}));}}
+  if(dir&&!_dirLocked.length){setV('sl-dir-nom',dir.nom||'');setV('sl-dir-prenom',dir.prenoms||dir.prenom||'');setV('sl-dir-fonction',dir.qualite||dir.fonction||'');var ce=document.getElementById('sl-dir-civ');if(ce){if(dir.sexe==='F')ce.value='Mme';else if(dir.sexe==='M')ce.value='M.';ce.dispatchEvent(new Event('change',{bubbles:true}));}}
   refresh();   // le préremplissage SIRET ne déclenche pas d'évènement input → réévaluer le bouton
 }
 function setV(id,val){var el=document.getElementById(id);if(el&&val!=null)el.value=val;}
@@ -4133,7 +4206,7 @@ function hydrateDraft(p){
     // Type d'installation : affiche le bon panneau, fixe iType, recalcule la simulation
     if(p.installation && p.installation.type) setType(p.installation.type);
     // Recalculs d'état (boutons Suivant, simulation…)
-    if(p.type_client==='pro'){ _sirenDupLast=''; sirenDupInput(); }   // reprise : re-signale un SIREN déjà client SunLib
+    if(p.type_client==='pro'){ _sirenDupLast=''; sirenDupInput(); _dirEmailLast=''; dirEmailInput(true); }   // reprise : re-signale un SIREN déjà client SunLib
     if(typeof refresh==='function') refresh();
     if(typeof refreshInstall==='function') refreshInstall();
     if(typeof updateSim==='function') updateSim();

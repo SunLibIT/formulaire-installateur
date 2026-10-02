@@ -454,6 +454,28 @@ async function handleCheckSiren(p, res) {
   } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
 }
 
+// ── Dirigeant déjà connu : l'email existe-t-il dans BDD UTILISATEURS › Utilisateurs ? ──
+// Si oui, on renvoie son identité (civilité, nom, prénom, téléphone + fonction lue sur sa fiche Contacts)
+// pour préremplir et verrouiller le bloc Dirigeant. Best-effort : erreur → { ok:false } (champs libres).
+const USERS_TABLE = 'tblE6J8wB1KlXadVv';      // table « Utilisateurs »
+const CONTACTS_TABLE = 'tbl9FbFOKHne4B4cf';   // table « Contacts » (porte le Rôle)
+async function handleCheckEmail(p, res) {
+  var email = String(p.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(200).json({ ok: false, erreur: 'email_invalide' });
+  try {
+    var formula = encodeURIComponent("LOWER(TRIM({Email}))='" + esc(email) + "'");
+    var d = await atGet(AT + '/' + CLIENTS_BASE + '/' + USERS_TABLE + '?maxRecords=1&filterByFormula=' + formula);
+    var r = d.records && d.records[0];
+    if (!r) return res.status(200).json({ ok: true, found: false });
+    var f = r.fields || {}, fonction = '';
+    var cids = f['Contacts'] || [];
+    if (cids.length) {
+      try { var c = await atGet(AT + '/' + CLIENTS_BASE + '/' + CONTACTS_TABLE + '/' + encodeURIComponent(cids[0])); fonction = (c.fields && c.fields['Rôle']) || ''; } catch (e) {}
+    }
+    return res.status(200).json({ ok: true, found: true, user: { civ: f['Civilité'] || '', prenom: f['Prénom'] || '', nom: f['Nom'] || '', tel: f['Téléphone'] || '', fonction: fonction } });
+  } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -480,6 +502,7 @@ export default async function handler(req, res) {
       if (p.action === 'docverdict') return handleDocVerdict(p, res);   // persiste le verdict après analyse
       if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
       if (p.action === 'checksiren') return handleCheckSiren(p, res);   // SIREN déjà client SunLib ? (BDD UTILISATEURS)
+      if (p.action === 'checkemail') return handleCheckEmail(p, res);   // dirigeant déjà utilisateur ? (BDD UTILISATEURS)
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
       var fields = fieldsFromPayload(p);
