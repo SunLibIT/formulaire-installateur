@@ -942,6 +942,7 @@
     /* <select> natif conservé (source de vérité value/options/onchange) mais masqué visuellement */
     #sl-root .select-native { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; border: 0 !important; opacity: 0 !important; pointer-events: none !important; overflow: hidden !important; }
     #sl-root .select-trigger { width: 100% !important; height: 40px !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; font: inherit !important; font-size: 13px !important; color: var(--ink) !important; background: #fff !important; border: 1.5px solid var(--line) !important; border-radius: var(--r) !important; padding: 0 12px !important; cursor: pointer !important; text-align: left !important; transition: border-color .15s, box-shadow .15s !important; }
+    #sl-root .select-trigger.err { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1) !important; }
     #sl-root .select-trigger:focus-visible,
     #sl-root .select[data-open] .select-trigger { outline: none !important; border-color: var(--color-teal) !important; box-shadow: 0 0 0 3px rgba(14,163,180,.15) !important; }
     #sl-root .select-value { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
@@ -1404,7 +1405,7 @@
         <div class="screen" id="sc3">
           <div id="s3-pro-collab">
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="sec-txt">Collaborateurs de l'entreprise</span></div>
-            <div class="box-info" style="margin-bottom:14px;"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span><strong>Optionnel</strong> — Ajoutez les collaborateurs concernés par le dossier.</span></div>
+            <div class="box-info" style="margin-bottom:14px;"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span><strong>Optionnel</strong> — Ajoutez les collaborateurs concernés par le dossier. Chacun devient un <strong>contact de la société, non signataire</strong> : seul le dirigeant signe. Son rôle est obligatoire.</span></div>
             <div id="collab-list"></div>
             <button type="button" class="btn-add-abo" onclick="addCollab()"><span class="add-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span><span class="add-lbl">Ajouter un collaborateur</span></button>
           </div>
@@ -1906,6 +1907,7 @@ function validate(sc){
     if(ct==='part') saveAbos();
     return formValid();   // bouton déjà désactivé tant qu'invalide ; sécurité au clic
   }
+  if(sc===3) return ct!=='pro'||collabsValid();   // rôle obligatoire pour chaque collaborateur
   if(sc===4) return formValidAdr();   // bouton déjà désactivé tant qu'invalide ; sécurité au clic
   if(sc===5){
     if(!iType){ slAlert('Choisissez d\'abord un type d\'installation.','Type requis'); return false; }
@@ -2321,7 +2323,7 @@ function renderCollabs(){
       '<div class="f f33"><label>Prénom</label><input type="text" id="cc'+c.id+'-prenom" placeholder="Jean" value="'+esc(c.prenom)+'"/></div></div>'+
       '<div class="row"><div class="f f50"><label>Email</label><input type="email" id="cc'+c.id+'-email" value="'+esc(c.email)+'"/></div>'+
       '<div class="f f25"><label>Téléphone</label><input type="tel" id="cc'+c.id+'-tel" value="'+esc(c.tel)+'"/></div>'+
-      '<div class="f f25"><label>Rôle</label><select id="cc'+c.id+'-role"><option value="">— Choisir —</option>'+
+      '<div class="f f25"><label>Rôle <span class="req">*</span></label><select id="cc'+c.id+'-role" aria-required="true" onchange="collabRoleOk(this)"><option value="">— Choisir —</option>'+
       ROLES_COLLAB.map(function(r){return '<option'+(c.role===r?' selected':'')+'>'+r+'</option>';}).join('')+
       '</select></div></div>';
     list.appendChild(card);
@@ -2329,6 +2331,17 @@ function renderCollabs(){
   });
   wireLabels(list);
   initSelects(list);   // habille les <select> Civilité + Rôle des collaborateurs
+}
+/* Rôle du collaborateur : obligatoire (repris tel quel dans le « Rôle » de sa fiche Contacts, non signataire). */
+function _roleTrig(sel){return sel&&sel.parentNode?sel.parentNode.querySelector('.select-trigger'):null;}
+window.collabRoleOk=function(sel){var tr=_roleTrig(sel);if(tr&&sel.value){tr.classList.remove('err');tr.removeAttribute('aria-invalid');}};
+function collabsValid(){
+  saveCollabs();
+  var first=null;
+  collabs.forEach(function(c){var sel=document.getElementById('cc'+c.id+'-role'),tr=_roleTrig(sel);if(!tr)return;
+    if(c.role){tr.classList.remove('err');tr.removeAttribute('aria-invalid');}else{tr.classList.add('err');tr.setAttribute('aria-invalid','true');if(!first)first=tr;}});
+  if(first){first.focus();slAlert('Choisissez le rôle de chaque collaborateur : il figure sur sa fiche contact SunLib.','Rôle requis');return false;}
+  return true;
 }
 function saveCollabs(){collabs.forEach(function(c){['civ','nom','prenom','email','tel','role'].forEach(function(f){var el=document.getElementById('cc'+c.id+'-'+f);if(el)c[f]=el.value;});});}
 window.addCollab=function(){saveCollabs();cC++;collabs.push({id:cC,civ:'',nom:'',prenom:'',email:'',tel:'',role:''});renderCollabs();var card=document.getElementById('cc'+cC);if(card)setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'center'});},80);};
@@ -3944,7 +3957,7 @@ window.doSubmit=function(){
   var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:v('sl-email-cr')},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
-  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});}
+  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role,signataire:false};});}
   console.log('SunLib payload:',JSON.stringify(p,null,2));
   slAlert('Dossier créé — payload disponible en console (F12).','Dossier créé');
 };
@@ -4346,7 +4359,7 @@ function buildDraftPayload(){
   };
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{uid:a.uid,civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
-  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:(v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville')).trim(),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role};});p.proprietaire=propT;}
+  else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:(v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville')).trim(),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role,signataire:false};});p.proprietaire=propT;}
   p.fields=collectAllFields();   // snapshot complet → restauration intégrale à la reprise
   p.docs={};   // un tableau par pièce, uniquement les fichiers réellement uploadés (sans champs transitoires)
   Object.keys(docs).forEach(function(k){
