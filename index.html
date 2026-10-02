@@ -1791,10 +1791,12 @@
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 3 5.5v15.5l6-2.5 6 2.5 6-2.5V4.5l-6 2.5z"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></span><span class="uz-info"><span class="uz-lbl">Copie d'écran Google Maps — toiture <span class="req">*</span></span><span class="uz-sub">Vue satellite avec marqueur</span></span></div>
               <span class="uz-fn" id="fn-map-pro"></span><span class="uz-chk" id="uz-map-pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
             </div>
-            <div class="uz" onclick="trig('f-bilans')"><input type="file" id="f-bilans" accept=".pdf" onchange="onF(this,'bilans')"/>
-              <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="18" x2="8" y2="15"/><line x1="12" y1="18" x2="12" y2="13"/><line x1="16" y1="18" x2="16" y2="11"/></svg></span><span class="uz-info"><span class="uz-lbl">Bilans <span class="req">*</span></span><span class="uz-sub">Comptes annuels des 3 derniers exercices</span></span></div>
-              <span class="uz-fn" id="fn-bilans"></span><span class="uz-chk" id="uz-bilans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
-            </div>
+            <div id="doc-bilans">   <!-- pas de bilans pour une collectivité (tog dans setClient) -->
+              <div class="uz" onclick="trig('f-bilans')"><input type="file" id="f-bilans" accept=".pdf" onchange="onF(this,'bilans')"/>
+                <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="18" x2="8" y2="15"/><line x1="12" y1="18" x2="12" y2="13"/><line x1="16" y1="18" x2="16" y2="11"/></svg></span><span class="uz-info"><span class="uz-lbl">Bilans <span class="req">*</span></span><span class="uz-sub">Comptes annuels des 3 derniers exercices</span></span></div>
+                <span class="uz-fn" id="fn-bilans"></span><span class="uz-chk" id="uz-bilans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
+              </div>
+              </div>
             <div class="uz" onclick="trig('f-elec-pro')"><input type="file" id="f-elec-pro" accept=".pdf,.jpg,.jpeg,.png" onchange="onF(this,'elec-pro')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span><span class="uz-info"><span class="uz-lbl">12 derniers mois de factures d'électricité <span class="req">*</span></span><span class="uz-sub">12 factures mensuelles (coût + consommation)</span></span></div>
               <span class="uz-fn" id="fn-elec-pro"></span><span class="uz-chk" id="uz-elec-pro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg></span>
@@ -1972,6 +1974,7 @@ window.setClient=function(t){
   document.querySelectorAll('#sl-root .type-card').forEach(function(c){var inp=c.querySelector('input[name="sl-type"]');c.classList.toggle('sel', !!inp && inp.value===k);});
   tog('s1-info-part',k==='part');tog('s1-info-pro',k==='pro');tog('s1-info-coll',k==='coll');
   applyVocab();
+  tog('doc-bilans',!isColl);   // collectivité : pas de bilans comptables à fournir
   tog('s2-part',t==='part');tog('s2-pro',t==='pro');
   tog('s3-pro-collab',t==='pro');
   tog('s4-proprio',t==='pro');
