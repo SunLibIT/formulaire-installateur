@@ -476,13 +476,23 @@ async function handleCheckEmail(p, res) {
 // email (utilisateur Softr) → Utilisateurs › Installateurs (entreprise[s]) → Sous traitant reliés à ces entreprises.
 // Dans « Sous traitant », `Name` = le sous-traitant ; `Nom entreprise` = l'installateur (à ne pas afficher).
 const ST_TABLE = 'tbl1xryxoPLjfp7th';   // table « Sous traitant »
+const CONTACTS_TABLE = 'tbl9FbFOKHne4B4cf';   // table « Contacts » (relie Utilisateurs ↔ Installateurs / Clients)
 async function handleSousTraitants(p, res) {
   var email = String(p.email || '').trim().toLowerCase();
   if (!email) return res.status(200).json({ ok: false, erreur: 'email_requis' });
   try {
     var uf = encodeURIComponent("LOWER(TRIM({Email}))='" + esc(email) + "'");
     var u = await atGet(AT + '/' + CLIENTS_BASE + '/' + USERS_TABLE + '?maxRecords=1&filterByFormula=' + uf);
-    var inst = (u.records && u.records[0] && u.records[0].fields && u.records[0].fields['Installateurs']) || [];
+    var uf0 = (u.records && u.records[0] && u.records[0].fields) || {};
+    var inst = (uf0['Installateurs'] || []).slice();
+    // Le rattachement installateur passe surtout par les fiches Contacts (utilisateur ↔ Installateurs) — le lien
+    // direct Utilisateurs › Installateurs est rarement renseigné.
+    var cids = uf0['Contacts'] || [];
+    if (cids.length) {
+      var cf = encodeURIComponent('OR(' + cids.slice(0, 20).map(function (id) { return "RECORD_ID()='" + esc(id) + "'"; }).join(',') + ')');
+      var c = await atGet(AT + '/' + CLIENTS_BASE + '/' + CONTACTS_TABLE + '?pageSize=20&filterByFormula=' + cf);
+      (c.records || []).forEach(function (r) { ((r.fields && r.fields['Installateurs']) || []).forEach(function (id) { if (inst.indexOf(id) < 0) inst.push(id); }); });
+    }
     if (!inst.length) return res.status(200).json({ ok: true, items: [] });
     var conds = inst.map(function (id) { return "FIND('" + esc(id) + "',ARRAYJOIN({Record ID installateur}))"; });
     var sf = encodeURIComponent(conds.length > 1 ? 'OR(' + conds.join(',') + ')' : conds[0]);
