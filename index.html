@@ -1311,6 +1311,12 @@
                 <span class="tc-body"><span class="tc-title">Professionnel</span><span class="tc-desc">Entreprise — raison sociale et SIRET requis.</span></span>
                 <span class="tc-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg></span>
               </div>
+              <div class="type-card" onclick="pickType('coll')">
+                <input type="radio" name="sl-type" value="coll" aria-label="Collectivité" onchange="setClient('coll')">
+                <span class="tc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></svg></span>
+                <span class="tc-body"><span class="tc-title">Collectivité</span><span class="tc-desc">Commune — SIREN de la mairie, le maire signe.</span></span>
+                <span class="tc-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"></path></svg></span>
+              </div>
             </div>
           </fieldset>
           <!-- Encadré info bleu (icône « i ») -->
@@ -1321,6 +1327,10 @@
           <div class="box-info hide" id="s1-info-pro">
             <svg class="box-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.5" r="0.7" fill="currentColor" stroke="none"></circle></svg>
             <span><strong>Dossier professionnel</strong> — Le SIRET permet de préremplir automatiquement les données du siège social.</span>
+          </div>
+          <div class="box-info hide" id="s1-info-coll">
+            <svg class="box-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="11" x2="12" y2="16.5"></line><circle cx="12" cy="7.5" r="0.7" fill="currentColor" stroke="none"></circle></svg>
+            <span><strong>Dossier collectivité</strong> — Le SIREN de la mairie préremplit l'adresse ; le maire est le signataire.</span>
           </div>
           <!-- Bannière alerte ambre (icône triangle) -->
           <div class="box-warn">
@@ -1350,9 +1360,9 @@
             </div>
           </div>
           <div id="s2-pro" class="hide">
-            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"/><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"/><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"/><line x1="7.5" y1="8" x2="11.5" y2="8"/><line x1="7.5" y1="11.5" x2="11.5" y2="11.5"/><line x1="7.5" y1="15" x2="11.5" y2="15"/></svg></span><span class="sec-txt">Identification entreprise</span></div>
+            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"/><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"/><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"/><line x1="7.5" y1="8" x2="11.5" y2="8"/><line x1="7.5" y1="11.5" x2="11.5" y2="11.5"/><line x1="7.5" y1="15" x2="11.5" y2="15"/></svg></span><span class="sec-txt" data-coll="Identification commune">Identification entreprise</span></div>
             <div class="row">
-              <div class="f f100"><label>N° SIREN <span class="req">*</span></label>
+              <div class="f f100"><label><span data-coll="N° SIREN de la commune">N° SIREN</span> <span class="req">*</span></label>
                 <div class="siret-wrap">
                   <input type="text" id="sl-siren" data-req aria-required="true" placeholder="9 chiffres" maxlength="9" oninput="this.value=this.value.replace(/\D/g,'');sirenDupInput()"/>
                   <button class="btn-siret" id="btn-lookup" onclick="lookupSiren()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>Rechercher</button>
@@ -1362,8 +1372,9 @@
               </div>
             </div>
             <div class="row">
-              <div class="f f50"><label>Nom de l'entreprise <span class="req">*</span></label><input type="text" id="sl-pro-nom" data-req aria-required="true" placeholder="SAS MonEntreprise"/></div>
-              <div class="f f25"><label>Forme juridique <span class="req">*</span></label><select id="sl-pro-forme"><option value="">— Choisir —</option><option>SAS</option><option>SARL</option><option>SA</option><option>EURL</option><option>SCI</option><option>EI</option><option>Autre</option></select></div>
+              <div class="f f50"><label><span data-coll="Nom de la commune">Nom de l'entreprise</span> <span class="req">*</span></label><input type="text" id="sl-pro-nom" data-req aria-required="true" placeholder="SAS MonEntreprise" data-coll-ph="Commune de Saint-Martin" oninput="collNameInput()"/>
+                <div id="coll-dup" aria-live="polite"></div></div>
+              <div class="f f25"><label>Forme juridique <span class="req">*</span></label><select id="sl-pro-forme"><option value="">— Choisir —</option><option>SAS</option><option>SARL</option><option>SA</option><option>EURL</option><option>SCI</option><option>EI</option><option>Collectivité</option><option>Autre</option></select></div>
               <div class="f f25"><label>Capital (€)</label><input type="number" id="sl-pro-capital" placeholder="10000"/></div>
             </div>
             <div class="row">
@@ -1374,9 +1385,9 @@
             <div class="row">
               <div class="f f100"><label>Descriptif de l'activité <span class="req">*</span></label><input type="text" id="sl-pro-activite" placeholder="Ex : Commerce, BTP, Industrie..."/></div>
             </div>
-            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span><span class="sec-txt">Dirigeant</span></div>
+            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 19.5c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></span><span class="sec-txt" data-coll="Maire">Dirigeant</span></div>
             <div class="row">
-              <div class="f f100"><label for="sl-dir-email">Email <span class="req">*</span></label><input type="email" id="sl-dir-email" data-req data-val="email" aria-required="true" placeholder="dir@entreprise.fr" oninput="dirEmailInput()" onblur="dirEmailInput(true)"/>
+              <div class="f f100"><label for="sl-dir-email">Email <span class="req">*</span></label><input type="email" id="sl-dir-email" data-req data-val="email" aria-required="true" placeholder="dir@entreprise.fr" data-coll-ph="maire@commune.fr" oninput="dirEmailInput()" onblur="dirEmailInput(true)"/>
                 <div id="dir-known" aria-live="polite"></div>
               </div>
             </div>
@@ -1386,7 +1397,7 @@
               <div class="f f33"><label>Prénom <span class="req">*</span></label><input type="text" id="sl-dir-prenom" data-req aria-required="true" placeholder="Jean"/></div>
             </div>
             <div class="row">
-              <div class="f f50"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" data-req aria-required="true" placeholder="Gérant, PDG..."/></div>
+              <div class="f f50"><label>Fonction <span class="req">*</span></label><input type="text" id="sl-dir-fonction" data-req aria-required="true" placeholder="Gérant, PDG..." data-coll-ph="Maire"/></div>
               <div class="f f50"><label>Téléphone</label><input type="tel" id="sl-dir-tel" placeholder="06 12 34 56 78"/></div>
             </div>
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span><span class="sec-txt">Siège social</span></div>
@@ -1416,8 +1427,8 @@
         <!-- SC3 : COLLABORATEURS (PRO) -->
         <div class="screen" id="sc3">
           <div id="s3-pro-collab">
-            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="sec-txt">Collaborateurs de l'entreprise</span></div>
-            <div class="box-info" style="margin-bottom:14px;"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span><strong>Optionnel</strong> — Ajoutez les collaborateurs concernés par le dossier. Chacun devient un <strong>contact de la société, non signataire</strong> : seul le dirigeant signe. Son rôle est obligatoire.</span></div>
+            <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="sec-txt" data-coll="Collaborateurs de la commune">Collaborateurs de l'entreprise</span></div>
+            <div class="box-info" style="margin-bottom:14px;"><span class="box-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.7" fill="currentColor" stroke="none"/></svg></span><span><strong>Optionnel</strong> — Ajoutez les collaborateurs concernés par le dossier. Chacun devient un <strong data-coll="contact de la commune, non signataire">contact de la société, non signataire</strong> : <span data-coll="seul le maire signe.">seul le dirigeant signe.</span> Son rôle est obligatoire.</span></div>
             <div id="collab-list"></div>
             <button type="button" class="btn-add-abo" onclick="addCollab()"><span class="add-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span><span class="add-lbl">Ajouter un collaborateur</span></button>
           </div>
@@ -1432,7 +1443,7 @@
           <div id="s4-proprio" class="hide">
             <div class="sec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="sec-txt">Propriétaire des murs</span></div>
             <div class="row">
-              <div class="f f100"><label>L'entreprise est-elle propriétaire des murs ?</label>
+              <div class="f f100"><label data-coll="La commune est-elle propriétaire des murs ?">L'entreprise est-elle propriétaire des murs ?</label>
                 <div class="prop-tags">
                   <span class="prop-tag on" onclick="setProp('oui',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7"/></svg>Oui, propriétaire</span>
                   <span class="prop-tag" onclick="setProp('non',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20.5V5.5A1.5 1.5 0 0 1 6.5 4h6A1.5 1.5 0 0 1 14 5.5V20.5"/><path d="M14 10h3.5A1.5 1.5 0 0 1 19 11.5V20.5"/><line x1="3.5" y1="20.5" x2="20.5" y2="20.5"/><line x1="7.5" y1="8" x2="11.5" y2="8"/><line x1="7.5" y1="11.5" x2="11.5" y2="11.5"/><line x1="7.5" y1="15" x2="11.5" y2="15"/></svg>Non — autre propriétaire</span>
@@ -1761,8 +1772,8 @@
             </div>
           </div>
           <div id="docs-pro" class="hide">
-            <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="sec-txt">Pièce d'identité du dirigeant</span></div>
-            <div class="doc-abo-hint">Carte d'identité du dirigeant — <strong>recto et verso à déposer séparément</strong>.</div>
+            <div class="sec doc-subsec"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M4.5 16.5c.4-1.5 1.8-2.5 3.5-2.5s3.1 1 3.5 2.5"/><line x1="14.5" y1="10" x2="18.5" y2="10"/><line x1="14.5" y1="14" x2="18.5" y2="14"/></svg></span><span class="sec-txt" data-coll="Pièce d'identité du maire">Pièce d'identité du dirigeant</span></div>
+            <div class="doc-abo-hint"><span data-coll="Carte d'identité du maire">Carte d'identité du dirigeant</span> — <strong>recto et verso à déposer séparément</strong>.</div>
             <div id="docs-dirigeant"></div>
             <div class="uz" onclick="trig('f-prop-pro')"><input type="file" id="f-prop-pro" accept=".pdf" onchange="onF(this,'prop-pro')"/>
               <div class="uz-top"><span class="uz-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="uz-info"><span class="uz-lbl">Titre de propriété <span class="req">*</span></span><span class="uz-sub">Acte notarié ou taxe foncière (site d'installation)</span></span></div>
@@ -1851,7 +1862,7 @@ var LBLS_PRO=['Accueil','Entreprise','Collaborateurs','Adresse','Installation','
 /* Construit le stepper sémantique (<ol>) : un <li> par étape. Ronds en dégradé de marque ;
    le rail et son remplissage sont gérés en CSS via --n et --progress (posés par setStep). */
 function buildStepper(){
-  var lbls=ct==='part'?LBLS_PART:LBLS_PRO, n=lbls.length;
+  var lbls=ct==='part'?LBLS_PART:LBLS_PRO.map(function(l){return l==='Entreprise'?W('ent'):l;}), n=lbls.length;
   var ol=document.getElementById('stepper');
   ol.innerHTML='';
   ol.style.setProperty('--n', n);
@@ -1951,27 +1962,93 @@ function validate(sc){
 }
 
 window.setClient=function(t){
+  isColl=(t==='coll'); if(isColl) t='pro';   // collectivité = parcours pro, vocabulaire commune / maire
   ct=t; flowPos=0; maxPos=0;
   // Synchronise la carte radio sélectionnée (source de vérité = ct)
-  var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+t+'"]');
+  var k=clientKind();
+  var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+k+'"]');
   if(radio) radio.checked=true;
   // Reflet visuel robuste de la sélection (indépendant du support de :has)
-  document.querySelectorAll('#sl-root .type-card').forEach(function(c){var inp=c.querySelector('input[name="sl-type"]');c.classList.toggle('sel', !!inp && inp.value===t);});
-  tog('s1-info-part',t==='part');tog('s1-info-pro',t==='pro');
+  document.querySelectorAll('#sl-root .type-card').forEach(function(c){var inp=c.querySelector('input[name="sl-type"]');c.classList.toggle('sel', !!inp && inp.value===k);});
+  tog('s1-info-part',k==='part');tog('s1-info-pro',k==='pro');tog('s1-info-coll',k==='coll');
+  applyVocab();
   tog('s2-part',t==='part');tog('s2-pro',t==='pro');
   tog('s3-pro-collab',t==='pro');
   tog('s4-proprio',t==='pro');
   tog('docs-part',t==='part');tog('docs-pro',t==='pro');
   resetForm();          // changer de type repart sur un dossier vierge
+  if(isColl) collDefaults();
   [1,2,3,4,5,6].forEach(function(n){var el=document.getElementById('sc'+n);if(el)el.classList.remove('on');});
   document.getElementById('sc1').classList.add('on');
   buildStepper();
   updateHeader();
 };
 
+/* ── Collectivité : même parcours que « pro » (ct='pro'), seul le vocabulaire change (commune, maire).
+   isColl est mémorisé dans le dossier (sous_type) ; clientKind() = 'part' | 'pro' | 'coll' pour l'UI. ── */
+var isColl=false;
+function clientKind(){ return ct==='part'?'part':(isColl?'coll':'pro'); }
+var VOCAB={
+  ent:['Entreprise','Commune'], l_ent:["l'entreprise",'la commune'], cette_ent:['Cette entreprise','Cette commune'],
+  dir:['Dirigeant','Maire'], le_dir:['le dirigeant','le maire'], du_dir:['du dirigeant','du maire'],
+  rs:['Raison sociale','Commune'], dossier:['Dossier professionnel','Dossier collectivité']
+};
+function W(k){ var e=VOCAB[k]; return e?e[isColl?1:0]:k; }
+/* Bascule les libellés statiques marqués data-coll / data-coll-ph (texte d'origine gardé dans data-pro). */
+function applyVocab(){
+  [].slice.call(document.querySelectorAll('#sl-root [data-coll]')).forEach(function(el){
+    if(!el.hasAttribute('data-pro')) el.setAttribute('data-pro',el.textContent);
+    el.textContent=isColl?el.getAttribute('data-coll'):el.getAttribute('data-pro');
+  });
+  [].slice.call(document.querySelectorAll('#sl-root [data-coll-ph]')).forEach(function(el){
+    if(!el.hasAttribute('data-pro-ph')) el.setAttribute('data-pro-ph',el.getAttribute('placeholder')||'');
+    el.setAttribute('placeholder',isColl?el.getAttribute('data-coll-ph'):el.getAttribute('data-pro-ph'));
+  });
+}
+/* Commune déjà cliente SunLib (BDD UTILISATEURS › Clients) → on BLOQUE le dossier : une commune n'a qu'un
+   dossier. Recherche sur le nom saisi (normalisé côté serveur : accents, casse, « commune / mairie / ville de »).
+   Panne ou réponse en attente → pas de blocage (jamais de faux positif). */
+var _collDup=null,_collReq=0,_collT=null,_collLast='';
+window.collNameInput=function(now){
+  if(!isColl){ return; }
+  var nom=(v('sl-pro-nom')||'').trim();
+  clearTimeout(_collT);
+  if(nom===_collLast) return;
+  _collReq++; _collDup=null; renderCollDup(); refresh();
+  if(nom.length<2){ _collLast=''; return; }
+  _collT=setTimeout(function(){ checkCollName(nom); },now===true?0:600);
+};
+function checkCollName(nom){
+  _collLast=nom;
+  var req=++_collReq;
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'checkcommune',nom:nom})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(req!==_collReq) return; _collDup=(d&&d.ok&&d.match)?d.match:null; renderCollDup(); refresh(); if(typeof refreshCreate==='function') refreshCreate(); })
+    .catch(function(){ if(req===_collReq) _collLast=''; });
+}
+function collDupReason(){ return (isColl&&_collDup)?('La commune « '+(_collDup.nom||v('sl-pro-nom'))+' » est déjà cliente SunLib : un nouveau dossier ne peut pas être créé. Contactez votre interlocuteur SunLib.'):''; }
+function renderCollDup(){
+  var host=document.getElementById('coll-dup'); if(!host) return;
+  host.innerHTML='';
+  var el=document.getElementById('sl-pro-nom');
+  if(el){ if(isColl&&_collDup){ el.classList.add('err'); el.setAttribute('aria-invalid','true'); } else if(el.getAttribute('aria-invalid')==='true'&&check(el).ok){ el.classList.remove('err'); el.removeAttribute('aria-invalid'); } }
+  if(!(isColl&&_collDup)) return;
+  var c=document.createElement('div'); c.className='cnu-callout t-red'; c.innerHTML=ALERT_SVG;
+  var t=document.createElement('span'), b=document.createElement('strong');
+  b.textContent='Commune déjà cliente SunLib';
+  t.appendChild(b);
+  t.appendChild(document.createTextNode(' (« '+(_collDup.nom||'')+' »'+(_collDup.statut?' · statut : '+String(_collDup.statut).toLowerCase():'')+'). Un nouveau dossier ne peut pas être créé pour cette commune : contactez votre interlocuteur SunLib.'));
+  c.appendChild(t); host.appendChild(c);
+}
+/* Valeurs par défaut d'un dossier collectivité : forme « Collectivité » (choix COLLECTIVITE de la base), fonction « Maire ». */
+function collDefaults(){
+  var f=document.getElementById('sl-pro-forme');
+  if(f){ f.value='Collectivité'; f.dispatchEvent(new Event('change',{bubbles:true})); }
+  var fn=document.getElementById('sl-dir-fonction'); if(fn&&!fn.value) fn.value='Maire';
+}
 /* Sélection du type via un clic n'importe où sur la carte (ne dépend pas du relais label→radio) */
 window.pickType=function(t){
-  if(ct===t) return;                 // déjà ce type : ne rien réinitialiser
+  if(clientKind()===t) return;                 // déjà ce type : ne rien réinitialiser
   var r=document.querySelector('#sl-root input[name="sl-type"][value="'+t+'"]');
   if(r) r.checked=true;
   setClient(t);
@@ -1986,7 +2063,7 @@ function updateHeader(){
   var badge=document.getElementById('type-badge');
   if(badge){
     badge.classList.toggle('hide', flowPos===0);
-    var lab=document.getElementById('type-chip-label');if(lab)lab.textContent='Dossier '+(ct==='part'?'particulier':'professionnel');
+    var lab=document.getElementById('type-chip-label');if(lab)lab.textContent=(ct==='part'?'Dossier particulier':W('dossier'));
     var ico=document.getElementById('type-chip-ico');if(ico)ico.innerHTML=(ct==='part'?SVG_PERSON:SVG_BUILDING);
   }
   // Soleil-logo : rayons allumés proportionnellement à la progression
@@ -2022,7 +2099,8 @@ function resetForm(){
   });
   var sgPays=document.getElementById('sl-siege-pays'); if(sgPays)sgPays.value='France';   // pays du siège : défaut UE = France
   _sirenDupReq++;_sirenDupLast='';renderSirenDup(null);   // efface l'alerte de doublon SIREN du dossier précédent
-  _dirEmailReq++;_dirEmailLast='';unlockDir(false);renderDirKnown(null);   // dirigeant : déverrouille les champs repris de la base
+  _dirEmailReq++;_dirEmailLast='';unlockDir(false);renderDirKnown(null);
+  _collReq++;_collLast='';_collDup=null;renderCollDup();   // collectivité : efface le blocage « commune déjà cliente »   // dirigeant : déverrouille les champs repris de la base
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.classList.remove('ok');});
   document.querySelectorAll('#sl-root .uz-fn').forEach(function(fn){fn.textContent='';});
   // Nettoie les erreurs/champs touchés (étapes 2 et 3)
@@ -2131,8 +2209,8 @@ window.askChangeType=function(){
     message:'Vous repasserez à l\'étape Accueil et les informations déjà saisies (abonnés, adresse, installation) seront définitivement supprimées.',
     confirmLabel:'Changer de type',
     onConfirm:function(){
-      setClient(ct);   // efface les données, revient à l'Accueil, type déverrouillé
-      var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+ct+'"]');
+      setClient(clientKind());   // efface les données, revient à l'Accueil, type déverrouillé
+      var radio=document.querySelector('#sl-root input[name="sl-type"][value="'+clientKind()+'"]');
       if(radio) radio.focus();
     }
   });
@@ -2214,6 +2292,7 @@ function formValid(){
   var inputs=scope.querySelectorAll('[data-req],[data-val]');
   if(ct==='part'&&inputs.length===0) return false;
   for(var i=0;i<inputs.length;i++){ if(!check(inputs[i]).ok) return false; }
+  if(collDupReason()) return false;   // collectivité déjà cliente → bloquant
   return true;
 }
 // refresh() : (dé)active le bouton Suivant + met à jour l'indicateur de pied
@@ -2223,6 +2302,7 @@ function refresh(){
   var st=document.getElementById('sc2-status');
   if(st){
     if(valid){ st.className='foot-status ok'; st.innerHTML=CHECK_SVG_SM+'<span>Tout est prêt</span>'; }
+    else if(collDupReason()){ st.className='foot-status'; st.textContent='Commune déjà cliente SunLib : dossier bloqué.'; }
     else { st.className='foot-status'; st.textContent='Renseignez les champs obligatoires pour continuer.'; }
   }
 }
@@ -2432,7 +2512,7 @@ function renderSirenDup(matches){
   var m=matches[0],mine=matches.some(function(x){return x.mine;});
   var c=document.createElement('div'); c.className='cnu-callout t-amber'; c.innerHTML=ALERT_SVG;
   var t=document.createElement('span');
-  var b=document.createElement('strong'); b.textContent='Cette entreprise est déjà enregistrée chez SunLib';
+  var b=document.createElement('strong'); b.textContent=W('cette_ent')+' est déjà enregistrée chez SunLib';
   t.appendChild(b);
   var info=[];
   if(m.nom)info.push('« '+m.nom+' »');
@@ -2507,7 +2587,7 @@ function renderDirKnown(u){
   if(!u)return;
   var c=document.createElement('div'); c.className='cnu-callout t-info'; c.innerHTML=INFO_SVG;
   var t=document.createElement('span'), b=document.createElement('strong');
-  b.textContent='Dirigeant déjà enregistré chez SunLib'+(((u.prenom||'')+' '+(u.nom||'')).trim()?' : '+((u.prenom||'')+' '+(u.nom||'')).trim():'');
+  b.textContent=W('dir')+' déjà enregistré chez SunLib'+(((u.prenom||'')+' '+(u.nom||'')).trim()?' : '+((u.prenom||'')+' '+(u.nom||'')).trim():'');
   t.appendChild(b);
   t.appendChild(document.createTextNode('. Ses informations sont reprises de notre base et ne sont pas modifiables ici. Pour les corriger, contactez votre interlocuteur SunLib.'));
   c.appendChild(t); host.appendChild(c);
@@ -2555,6 +2635,7 @@ function fillFromAPI(r){
   dirs.forEach(function(d){var p=d.prenoms||d.prenom||'';if(!dir&&p&&d.nom)dir=d;});
   if(!dir&&dirs.length)dir=dirs[0];
   if(dir&&!_dirLocked.length){setV('sl-dir-nom',dir.nom||'');setV('sl-dir-prenom',dir.prenoms||dir.prenom||'');setV('sl-dir-fonction',dir.qualite||dir.fonction||'');var ce=document.getElementById('sl-dir-civ');if(ce){if(dir.sexe==='F')ce.value='Mme';else if(dir.sexe==='M')ce.value='M.';ce.dispatchEvent(new Event('change',{bubbles:true}));}}
+  collNameInput(true);   // collectivité : le nom prérempli est vérifié aussitôt
   refresh();   // le préremplissage SIRET ne déclenche pas d'évènement input → réévaluer le bouton
 }
 function setV(id,val){var el=document.getElementById(id);if(el&&val!=null)el.value=val;}
@@ -2887,7 +2968,7 @@ function docLabelFor(key){
 function docAboFor(key){
   if(!isCniKey(key)) return '';
   var uid=cniUidOf(key), face=cniFaceOf(key), person=cniPersonFor(uid);
-  var who=person.named?person.label:(uid==='dir'?'Dirigeant':'Abonné');
+  var who=person.named?person.label:(uid==='dir'?W('dir'):'Abonné');
   return who+' — '+face;
 }
 /* Formats d'image que le navigateur sait décoder puis réencoder (canvas). Un PDF n'en fait pas partie :
@@ -3233,7 +3314,7 @@ function cniUidOf(k){ return String(k).replace(/^cni-(recto|verso)-/,''); }
    Sert de RÉFÉRENCE de comparaison du nom ([CMP-FORM]) et d'étiquette d'affichage. */
 function cniPersonFor(uid){
   var p='', n='', fallback='cet abonné';
-  if(uid==='dir'){ p=v('sl-dir-prenom')||''; n=v('sl-dir-nom')||''; fallback='le dirigeant'; }
+  if(uid==='dir'){ p=v('sl-dir-prenom')||''; n=v('sl-dir-nom')||''; fallback=W('le_dir'); }
   else { for(var i=0;i<abos.length;i++){ if(abos[i].uid===uid){ p=abos[i].prenom||''; n=abos[i].nom||''; break; } } }
   var full=(p+' '+n).trim();
   return { prenom:p, nom:n, label:(full||fallback), named:!!full };
@@ -3304,7 +3385,7 @@ function renderDirigeantDocs(){
   var card=_cnuEl('div','abo-doc'); card.id='abodoc-'+uid;
   var hd=_cnuEl('div','abo-doc-hd');
   var idn=_cnuEl('div','abo-doc-idn');
-  idn.appendChild(_cnuEl('span','abo-doc-name', person.named?person.label:'Dirigeant'));
+  idn.appendChild(_cnuEl('span','abo-doc-name', person.named?person.label:W('dir')));
   var fonction=v('sl-dir-fonction'); if(fonction) idn.appendChild(_cnuEl('span','abo-doc-mail', fonction));
   hd.appendChild(idn);
   var prog=_cnuEl('span','abo-doc-prog'); prog.setAttribute('data-abo-prog',uid); hd.appendChild(prog);
@@ -3477,8 +3558,8 @@ function doCniFaceCheck(key){
 function cniBlockReason(){
   if(ct==='pro'){   // pro : CNI recto/verso du dirigeant
     var resD=aboCniIssues('dir', cniPersonFor('dir').label);
-    if(resD.missing.length) return 'CNI du dirigeant : il manque '+resD.missing.join(' et ')+'.';
-    if(resD.block.length) return 'CNI du dirigeant : '+resD.block[0];
+    if(resD.missing.length) return 'CNI '+W('du_dir')+' : il manque '+resD.missing.join(' et ')+'.';
+    if(resD.block.length) return 'CNI '+W('du_dir')+' : '+resD.block[0];
     return null;
   }
   if(ct!=='part') return null;
@@ -3702,6 +3783,7 @@ function buildDocStatuts(){
 /* Rapport de validation du dossier (persisté sur la fiche pour le routage) : {statutGlobal, pointsBloquants, rapport}. */
 function buildValidation(){
   var pb=[];
+  var cdr=collDupReason(); if(cdr) pb.push(cdr);
   var mm=docsMissingReason(); if(mm) pb.push(mm);   // pièces requises manquantes
   var c=cniBlockReason(); if(c) pb.push(c);   // CNI abonnés (part) ou dirigeant (pro)
   var d=docsBlockReason(); if(d) pb.push(d);
@@ -3725,7 +3807,7 @@ function buildValidation(){
     var prD=cniPersonFor('dir'), resD=aboCniIssues('dir',prD.label);
     var stD=resD.block.length?'non_conforme':((resD.missing.length||resD.warn.length)?'a_verifier':'conforme');
     if(stD==='a_verifier') anyAV=true;
-    documents.push({type:'CNI', abonne:('Dirigeant'+(prD.named?(' — '+prD.label):'')), statut:stD, points:resD.block.concat(resD.warn)});
+    documents.push({type:'CNI', abonne:(W('dir')+(prD.named?(' — '+prD.label):'')), statut:stD, points:resD.block.concat(resD.warn)});
   }
   var statutGlobal = pb.length ? 'non_conforme' : (anyAV ? 'a_verifier' : 'conforme');
   var synth = pb.length ? ('À corriger : '+pb.join(' ; ')) : (anyAV ? 'Dossier à vérifier (contrôles non concluants).' : 'Dossier conforme.');
@@ -3934,7 +4016,7 @@ function buildRecap(){
   var I_PHONE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h3l1.4 4.5-2 1.3a13 13 0 0 0 5.3 5.3l1.3-2 4.5 1.4v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.2 2 2 0 0 1 6.5 3z"/></svg>';
   var h='';
   // Carte TYPE DE DOSSIER (Modifier = action destructrice → confirmation)
-  h+='<div class="rc-card-full">'+rcHead(I_TYPE,'Type de dossier','askChangeType()')+rcr('Type',ct==='part'?'Particulier':'Professionnel')+'</div>';
+  h+='<div class="rc-card-full">'+rcHead(I_TYPE,'Type de dossier','askChangeType()')+rcr('Type',ct==='part'?'Particulier':(isColl?'Collectivité':'Professionnel'))+'</div>';
   if(ct==='part'){
     h+='<div class="rc-card-full">'+rcHead(I_USERS,'Abonné(s) ('+abos.length+')','goToStep(2)')+'<div class="rc-person-grid">';
     abos.forEach(function(a){
@@ -3945,9 +4027,9 @@ function buildRecap(){
     });
     h+='</div></div>';
   }else{
-    h+='<div class="rc-card-full">'+rcHead(I_BUILD,'Entreprise','goToStep(2)');
-    h+=rcr('Raison sociale',v('sl-pro-nom'))+rcr('SIREN',v('sl-siren'))+rcr('Forme',v('sl-pro-forme'));
-    h+=rcr('Dirigeant',(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim())+rcr('Fonction',v('sl-dir-fonction'));
+    h+='<div class="rc-card-full">'+rcHead(I_BUILD,W('ent'),'goToStep(2)');
+    h+=rcr(W('rs'),v('sl-pro-nom'))+rcr('SIREN',v('sl-siren'))+rcr('Forme',v('sl-pro-forme'));
+    h+=rcr(W('dir'),(v('sl-dir-prenom')+' '+v('sl-dir-nom')).trim())+rcr('Fonction',v('sl-dir-fonction'));
     h+=rcr('Siège',(v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville')).trim());
     h+=rcr('Pays du siège',v('sl-siege-pays'));
     h+='</div>';
@@ -4037,7 +4119,7 @@ function buildModalRecap(){
   function mrow(l,val){return '<div class="modal-row"><span class="modal-rl">'+l+'</span><span class="modal-rv">'+(val||'—')+'</span></div>';}
   var h='';
   if(ct==='part'){saveAbos();h+=mrow('Abonné(s)',abos.length+' personne'+(abos.length>1?'s':''));if(abos[0])h+=mrow('Principal',((abos[0].prenom||'')+' '+(abos[0].nom||'')).trim()||'—');}
-  else{h+=mrow('Entreprise',v('sl-pro-nom'));h+=mrow('SIREN',v('sl-siren'));}
+  else{h+=mrow(W('ent'),v('sl-pro-nom'));h+=mrow('SIREN',v('sl-siren'));}
   h+=mrow('Adresse',((v('sl-num')+' '+v('sl-rue')).trim()+', '+v('sl-cp')+' '+v('sl-commune')).trim());
   h+=mrow('Installation',tl[iType]||'—');
   if(v('sl-duree'))h+=mrow('Durée',v('sl-duree'));
@@ -4055,7 +4137,7 @@ window.doSubmit=function(){
   if(_lastFocus&&_lastFocus.focus)_lastFocus.focus();
   var sm={pv:'sl-suivi-pv',pvbv:'sl-suivi-pvbv',pvb:'sl-suivi-pvb',bat:'sl-suivi-bat',eco:'sl-suivi-eco'};
   var st={pv:'sl-st-pv',pvbv:'sl-st-pvbv',pvb:'sl-st-pvb',bat:'sl-st-bat',eco:'sl-st-eco'};
-  var p={type_client:ct,installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:_homeEmail||'',nature:iType==='eco'?natureProjet():[]},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
+  var p={type_client:ct,sous_type:isColl?'collectivite':'',installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(st[iType]||''),email_createur:_homeEmail||'',nature:iType==='eco'?natureProjet():[]},adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')},geocoding:geo};
   if(simResult)p.mensualite_estimee={ht:simResult.mHT.toFixed(2),ttc:simResult.mTTC.toFixed(2)};
   if(ct==='part')p.abonnes=abos.map(function(a){return{civ:a.civ,nom:a.nom,prenom:a.prenom,email:a.email,tel:a.tel};});
   else{p.entreprise={siret:v('sl-siren'),nom:v('sl-pro-nom'),forme:v('sl-pro-forme'),siege:v('sl-siege-addr')+' '+v('sl-siege-cp')+' '+v('sl-siege-ville'),pays:v('sl-siege-pays'),dirigeant:v('sl-dir-prenom')+' '+v('sl-dir-nom'),email:v('sl-dir-email')};p.collaborateurs=collabs.map(function(c){return{civ:c.civ,nom:c.nom,prenom:c.prenom,email:c.email,tel:c.tel,role:c.role,signataire:false};});}
@@ -4068,6 +4150,7 @@ var _creating=false;
    voie est libre. Les DEUX doivent rester alignés : sans cela le pied de page annonce « Prêt à créer le
    dossier » alors que le clic échouera sur une alerte — le statut mentirait à l'installateur. */
 function createBlocker(){
+  var cd=collDupReason();     if(cd) return {tone:'bad',  msg:cd};           // commune déjà cliente
   var m=docsMissingReason(); if(m) return {tone:'warn', msg:m};            // pièces manquantes = à faire
   var c=cniBlockReason();    if(c) return {tone:'bad',  msg:c};            // pièce d'identité non conforme
   var d=docsBlockReason();   if(d) return {tone:'bad',  msg:d};            // document vérifié non conforme
@@ -4092,6 +4175,8 @@ function refreshCreate(){
 window.slCreate=function(){
   var cert=document.getElementById('sl-certify');
   if(!cert||!cert.checked||_creating) return;   // sécurité : case requise + un seul envoi
+  var _collReason=collDupReason();               // blocage si la commune est déjà cliente SunLib
+  if(_collReason){ slAlert(_collReason,'Commune déjà cliente'); return; }
   var _missReason=docsMissingReason();           // blocage si une pièce requise n'est pas déposée
   if(_missReason){ slAlert(_missReason,'Documents à compléter'); return; }
   var _cniReason=cniBlockReason();               // blocage si la vérif IA a un verdict négatif clair
@@ -4278,7 +4363,7 @@ function enterWizard(){ var w=document.querySelector('#sl-root .wrap'); if(w)w.c
 function goHome(){ var w=document.querySelector('#sl-root .wrap'); if(w)w.classList.add('home-mode'); }
 window.slResume=function(id){
   var d=findDossier(id); if(!d)return;
-  enterWizard(); setClient(d.type);    // setClient réinitialise → on hydrate ENSUITE
+  enterWizard(); setClient(d.data&&d.data.sous_type==='collectivite'?'coll':d.type);    // setClient réinitialise → on hydrate ENSUITE
   setDraftId(d.draftId || (d.data && d.data.draftId));   // les saves suivants UPSERT sur CE dossier (jamais de doublon)
   if(d.data) hydrateDraft(d.data);
   var tot=totalSteps(d.type), step=Math.max(1,Math.min(d.step||1,tot)), f=flow();
@@ -4322,7 +4407,7 @@ function hydrateDraft(p){
     // Type d'installation : affiche le bon panneau, fixe iType, recalcule la simulation
     if(p.installation && p.installation.type) setType(p.installation.type);
     // Recalculs d'état (boutons Suivant, simulation…)
-    if(p.type_client==='pro'){ _sirenDupLast=''; sirenDupInput(); _dirEmailLast=''; dirEmailInput(true); }   // reprise : re-signale un SIREN déjà client SunLib
+    if(p.type_client==='pro'){ _sirenDupLast=''; sirenDupInput(); _dirEmailLast=''; dirEmailInput(true); _collLast=''; collNameInput(true); }   // reprise : re-signale un SIREN déjà client SunLib
     if(typeof refresh==='function') refresh();
     if(typeof refreshInstall==='function') refreshInstall();
     if(typeof updateSim==='function') updateSim();
@@ -4456,7 +4541,7 @@ function buildDraftPayload(){
   var p={
     draftId:getDraftId(), status:'draft',
     email_installateur:_homeEmail||'',
-    type_client:ct, step:flowPos+1, total:f.length, updatedAt:new Date().toISOString(),
+    type_client:ct, sous_type:isColl?'collectivite':'', step:flowPos+1, total:f.length, updatedAt:new Date().toISOString(),
     installation:{type:iType,pdl:v('sl-pdl'),duree:v('sl-duree'),suivi_par:v(sm[iType]||''),sous_traitant:v(stt[iType]||''),email_createur:_homeEmail||'',nature:iType==='eco'?natureProjet():[]},
     adresse:{numero:v('sl-num'),rue:v('sl-rue'),cp:v('sl-cp'),commune:v('sl-commune')}, geocoding:geo
   };

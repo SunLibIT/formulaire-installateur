@@ -509,6 +509,36 @@ async function handleSousTraitants(p, res) {
   } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
 }
 
+// ── Collectivité : la commune est-elle déjà cliente ? (bloquant côté front) ──
+// Les noms sont saisis librement (« COMMUNE DE PLESTIN LES GREVES », « Commune de Payssous »…) → on compare un
+// nom normalisé : sans accents ni casse, sans « commune / mairie / ville de », tirets et apostrophes = espaces.
+function normCommune(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim()
+    .replace(/^(commune|mairie|ville)( de| d| du| des)? /, '').trim();
+}
+async function handleCheckCommune(p, res) {
+  var key = normCommune(p.nom);
+  if (key.length < 2) return res.status(200).json({ ok: false, erreur: 'nom_invalide' });
+  try {
+    // Candidats : clients typés collectivité, forme COLLECTIVITE, ou dont le nom évoque une commune / mairie.
+    var f = encodeURIComponent("OR({Type de client}='Collectivité',{Forme Juridique}='COLLECTIVITE',SEARCH('commune',LOWER({Nom / Raison sociale})),SEARCH('mairie',LOWER({Nom / Raison sociale})))");
+    var url = AT + '/' + CLIENTS_BASE + '/' + CLIENTS_TABLE + '?pageSize=100&filterByFormula=' + f;
+    var offset = '', match = null;
+    for (var page = 0; page < 10 && !match; page++) {
+      var d = await atGet(url + (offset ? '&offset=' + encodeURIComponent(offset) : ''));
+      (d.records || []).some(function (r) {
+        var fl = r.fields || {};
+        if (normCommune(fl['Nom / Raison sociale']) !== key) return false;
+        match = { nom: fl['Nom / Raison sociale'] || '', statut: fl['Statut global'] || '' };
+        return true;
+      });
+      offset = d.offset || ''; if (!offset) break;
+    }
+    return res.status(200).json({ ok: true, match: match });
+  } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -536,6 +566,7 @@ export default async function handler(req, res) {
       if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
       if (p.action === 'checksiren') return handleCheckSiren(p, res);   // SIREN déjà client SunLib ? (BDD UTILISATEURS)
       if (p.action === 'checkemail') return handleCheckEmail(p, res);   // dirigeant déjà utilisateur ? (BDD UTILISATEURS)
+      if (p.action === 'checkcommune') return handleCheckCommune(p, res);   // collectivité déjà cliente ? (bloquant)
       if (p.action === 'soustraitants') return handleSousTraitants(p, res);   // sous-traitants de l'entreprise de l'installateur
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
