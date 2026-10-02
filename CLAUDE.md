@@ -41,6 +41,31 @@ Pas d'ouverture de PR ni de commit sans demande explicite de l'utilisateur.
 - **Français** partout, **avec accents** (é è ê à ç…). Ne jamais remplacer par l'ASCII.
 - Écrire du code qui ressemble à l'existant (densité de commentaires, nommage, idiomes).
 
+## Règles métier fixées par SunLib — INTANGIBLES
+
+> Décisions prises par le responsable produit (2026-10-02). **Ce sont des règles permanentes : ne jamais les modifier, les assouplir ou les « simplifier » sans demande explicite de sa part.** Toute nouvelle règle métier donnée par l'utilisateur s'ajoute ici. Le détail technique (fonctions, actions serveur) est décrit plus bas ; en cas de doute, **c'est cette section qui fait foi**.
+
+**Base de référence**
+1. La base de données de référence est **BDD UTILISATEURS** (`app8yu8VaJ3GUDt1c`) : toutes les vérifications « existe déjà en base » s'y font (tables `Clients`, `Utilisateurs`, `Contacts`, `Installateurs`, `Sous traitant`, `Projets`). Les choix proposés dans le formulaire reprennent **ceux de cette base** (« comme en base »).
+
+**Entreprise (pro)**
+2. **SIREN déjà en base** : à la saisie du SIREN, vérifier s'il existe déjà dans `Clients` (champ `SIRET`, comparé sur les 9 premiers chiffres). S'il existe → **le notifier** à l'installateur (avertissement, non bloquant).
+3. **Dirigeant : le formulaire commence par l'email.** L'email est vérifié dans `Utilisateurs` ; s'il existe déjà → **l'indiquer**, **remplir toutes les données** de ce dirigeant depuis la base, et ces données sont **non modifiables**.
+4. **Collaborateur** : chaque collaborateur ajouté devient un **contact relié au client (la société)**, **non signataire** (seul le dirigeant / le maire signe). Son **rôle est obligatoire** et sert à remplir le `Rôle` de sa fiche contact. L'écran le dit à l'installateur.
+
+**Installation**
+5. Type **« Écosystème énergétique »** (comme dans le champ `Type d'installation` de `Projets`). S'il est choisi, la **nature du projet** (choix du champ `Nature du projet` de `Projets`, une ou plusieurs) est **obligatoire avant de passer à la suite**.
+6. Écosystème **sans photovoltaïque ni batterie** (ex. PAC seule) : **pas de PDL, pas de puissance, pas d'installation triphasée**. PDL demandé seulement s'il y a PV ou batterie ; puissance + triphasé seulement s'il y a du PV ; capacité seulement s'il y a une batterie.
+7. **Puissance PV : 9 kWc minimum**, bloquée en dessous (SunLib ne fait jamais moins).
+8. **« Suivi par » n'est pas obligatoire.**
+9. **Sous-traitant = menu déroulant**, qui ne propose **que les sous-traitants de l'entreprise de l'installateur** connecté.
+10. **Pas de champ « Email créateur »** : l'email est récupéré automatiquement depuis l'utilisateur **connecté à Softr**.
+
+**Collectivité**
+11. Troisième type de client à l'accueil : **Collectivité**. Le vocabulaire « entreprise » devient **« commune »** (« Identification commune », « Nom de la commune », « Numéro de SIREN de la commune »…) et **« dirigeant » devient « maire »**.
+12. **Commune déjà en base** : le nom de la commune saisi est recherché dans `Clients` ; si elle existe déjà → **le formulaire est bloqué** (pas de nouveau dossier possible).
+13. Une collectivité **ne fournit pas de bilans** comptables.
+
 ## Charte UI/UX (design) — fait autorité pour toute UI
 
 > Standard de conception SunLib : **réutiliser ces patterns avant d'en inventer** ; une même notion garde partout la même couleur et la même icône. Charte d'origine pensée pour React/`lucide-react` — **ici la sortie est 100 % vanilla** (voir §Sortie technique).
