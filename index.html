@@ -1341,10 +1341,11 @@
             <div class="row">
               <div class="f f100"><label>N° SIREN <span class="req">*</span></label>
                 <div class="siret-wrap">
-                  <input type="text" id="sl-siren" data-req aria-required="true" placeholder="9 chiffres" maxlength="9" oninput="this.value=this.value.replace(/\D/g,'')"/>
+                  <input type="text" id="sl-siren" data-req aria-required="true" placeholder="9 chiffres" maxlength="9" oninput="this.value=this.value.replace(/\D/g,'');sirenDupInput()"/>
                   <button class="btn-siret" id="btn-lookup" onclick="lookupSiren()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>Rechercher</button>
                 </div>
                 <span class="siret-st" id="siret-st"></span>
+                <div id="siren-dup" aria-live="polite"></div>
               </div>
             </div>
             <div class="row">
@@ -1981,6 +1982,7 @@ function resetForm(){
     if(el.tagName==='SELECT')el.dispatchEvent(new Event('change',{bubbles:true}));   // resync l'affichage du select custom
   });
   var sgPays=document.getElementById('sl-siege-pays'); if(sgPays)sgPays.value='France';   // pays du siège : défaut UE = France
+  _sirenDupReq++;_sirenDupLast='';renderSirenDup(null);   // efface l'alerte de doublon SIREN du dossier précédent
   document.querySelectorAll('#sl-root .uz').forEach(function(uz){uz.classList.remove('ok');});
   document.querySelectorAll('#sl-root .uz-fn').forEach(function(fn){fn.textContent='';});
   // Nettoie les erreurs/champs touchés (étapes 2 et 3)
@@ -2341,7 +2343,7 @@ window.lookupSiren=function(){
   xhr.onload=function(){
     btn.innerHTML=BTN_SEARCH;btn.style.opacity='1';
     if(xhr.status===200){try{var data=JSON.parse(xhr.responseText),r=data.results&&data.results[0];
-      if(r){fillFromAPI(r);st.innerHTML='<span class="ok">'+CHECK_SVG_SM+'Entreprise trouvée !</span>';}
+      if(r){fillFromAPI(r);st.innerHTML='<span class="ok">'+CHECK_SVG_SM+'Entreprise trouvée !</span>';checkSirenDup(siren);}
       else st.innerHTML='<span class="ko">'+ICO_X+'SIREN introuvable</span>';
     }catch(e){st.innerHTML='<span class="ko">'+ICO_X+'Erreur</span>';}}
     else st.innerHTML='<span class="ko">'+ICO_X+'Erreur API</span>';
@@ -2349,6 +2351,48 @@ window.lookupSiren=function(){
   xhr.onerror=function(){btn.innerHTML=BTN_SEARCH;btn.style.opacity='1';st.innerHTML='<span class="ko">'+ICO_X+'Connexion impossible</span>';};
   xhr.send();
 };
+/* Doublon de SIREN : l'entreprise est-elle déjà cliente SunLib ? (BDD UTILISATEURS › Clients, via /api/drafts).
+   Avertissement ambre NON bloquant — une panne ou une réponse tardive n'affiche rien. */
+var _sirenDupReq=0,_sirenDupT=null,_sirenDupLast='';
+window.sirenDupInput=function(){
+  var siren=(document.getElementById('sl-siren').value||'').replace(/\D/g,'');
+  clearTimeout(_sirenDupT);
+  if(siren.length!==9){_sirenDupReq++;_sirenDupLast='';renderSirenDup(null);return;}
+  _sirenDupT=setTimeout(function(){checkSirenDup(siren);},400);
+};
+function checkSirenDup(siren){
+  if(!siren||siren.length!==9||siren===_sirenDupLast)return;
+  _sirenDupLast=siren;
+  var req=++_sirenDupReq;
+  fetch(SL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'checksiren',siren:siren,email_installateur:_homeEmail||v('sl-email-cr')||''})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(req!==_sirenDupReq)return; renderSirenDup(d&&d.ok?d.matches:null); })
+    .catch(function(){ if(req===_sirenDupReq){_sirenDupLast='';renderSirenDup(null);} });
+}
+function _relDays(iso){
+  var t=new Date(iso); if(isNaN(t))return '';
+  var j=Math.floor((Date.now()-t.getTime())/864e5);
+  return j<=0?'aujourd\'hui':j===1?'hier':'il y a '+j+' j';
+}
+function renderSirenDup(matches){
+  var host=document.getElementById('siren-dup'); if(!host)return;
+  host.innerHTML='';
+  if(!matches||!matches.length)return;
+  var m=matches[0],mine=matches.some(function(x){return x.mine;});
+  var c=document.createElement('div'); c.className='cnu-callout t-amber'; c.innerHTML=ALERT_SVG;
+  var t=document.createElement('span');
+  var b=document.createElement('strong'); b.textContent='Cette entreprise est déjà enregistrée chez SunLib';
+  t.appendChild(b);
+  var info=[];
+  if(m.nom)info.push('« '+m.nom+' »');
+  if(m.statut)info.push('statut : '+String(m.statut).toLowerCase());
+  t.appendChild(document.createTextNode(info.length?' ('+info.join(' · ')+(matches.length>1?', +'+(matches.length-1)+' autre'+(matches.length>2?'s':''):'')+')':''));
+  if(m.creeLe){var d=document.createElement('span');d.title=new Date(m.creeLe).toLocaleDateString('fr-FR');d.textContent=', fiche créée '+_relDays(m.creeLe);t.appendChild(d);}
+  t.appendChild(document.createTextNode('. '+(mine
+    ?'Vous l\'avez déjà saisie : reprenez ce dossier plutôt que d\'en créer un nouveau.'
+    :'Contactez votre interlocuteur SunLib avant de poursuivre, pour éviter un doublon.')));
+  c.appendChild(t); host.appendChild(c);
+}
 /* Libellés des 21 sections NAF (INSEE) — l'API ne renvoie que le code + la lettre de section */
 var NAF_SECTIONS={
   A:'Agriculture, sylviculture et pêche', B:'Industries extractives', C:'Industrie manufacturière',
@@ -4089,6 +4133,7 @@ function hydrateDraft(p){
     // Type d'installation : affiche le bon panneau, fixe iType, recalcule la simulation
     if(p.installation && p.installation.type) setType(p.installation.type);
     // Recalculs d'état (boutons Suivant, simulation…)
+    if(p.type_client==='pro'){ _sirenDupLast=''; sirenDupInput(); }   // reprise : re-signale un SIREN déjà client SunLib
     if(typeof refresh==='function') refresh();
     if(typeof refreshInstall==='function') refreshInstall();
     if(typeof updateSim==='function') updateSim();

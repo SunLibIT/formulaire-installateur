@@ -432,6 +432,28 @@ async function handleGetDocVerdicts(p, res) {
   } catch (e) { return res.status(200).json({ docs: [] }); }
 }
 
+// ── Doublon de SIREN : la base « BDD UTILISATEURS » (table Clients) est la référence clients SunLib ──
+// Le champ SIRET y est saisi tantôt en SIREN (9 chiffres), tantôt en SIRET (14) → on compare les 9 premiers chiffres.
+// Best-effort : toute erreur renvoie { ok:false } → le front n'affiche rien (jamais bloquant).
+const CLIENTS_BASE = process.env.CLIENTS_BASE_ID || 'app8yu8VaJ3GUDt1c';
+const CLIENTS_TABLE = 'tbl4BMdIxocin4LXw';   // table « Clients »
+async function handleCheckSiren(p, res) {
+  var siren = String(p.siren || '').replace(/\D/g, '');
+  if (siren.length !== 9) return res.status(200).json({ ok: false, erreur: 'siren_invalide' });
+  var me = String(p.email_installateur || '').trim().toLowerCase();
+  try {
+    var formula = encodeURIComponent("LEFT(REGEX_REPLACE({SIRET}&'','[^0-9]',''),9)='" + siren + "'");
+    var d = await atGet(AT + '/' + CLIENTS_BASE + '/' + CLIENTS_TABLE + '?maxRecords=5&filterByFormula=' + formula);
+    var matches = (d.records || []).map(function (r) {
+      var f = r.fields || {};
+      var emails = (f['Email (from Créé par)'] || []).map(function (x) { return String(x || '').toLowerCase(); });
+      // Pas d'identité d'un autre installateur côté front : on indique seulement si c'est « le vôtre ».
+      return { nom: f['Nom / Raison sociale'] || '', statut: f['Statut global'] || '', creeLe: f['Date de création'] || r.createdTime || '', mine: !!(me && emails.indexOf(me) > -1) };
+    });
+    return res.status(200).json({ ok: true, matches: matches });
+  } catch (e) { return res.status(200).json({ ok: false, erreur: 'lecture' }); }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
@@ -457,6 +479,7 @@ export default async function handler(req, res) {
       if (p.action === 'upload') return handleUpload(p, res);   // upload d'un document → ligne Documents
       if (p.action === 'docverdict') return handleDocVerdict(p, res);   // persiste le verdict après analyse
       if (p.action === 'getdocverdicts') return handleGetDocVerdicts(p, res);   // relit les verdicts à la reprise
+      if (p.action === 'checksiren') return handleCheckSiren(p, res);   // SIREN déjà client SunLib ? (BDD UTILISATEURS)
       if (!p.draftId) return res.status(400).json({ error: 'draftId requis' });
       var table = TABLES[p.type_client] || 'Particulier';
       var fields = fieldsFromPayload(p);
